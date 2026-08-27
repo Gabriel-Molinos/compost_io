@@ -19,7 +19,13 @@
 
 ### Em progresso
 - 2026-08-27 — autenticação por sessão nativa do PHP: `Session`, `Csrf`, `AuthService`, `AuthController`, guard `auth` no Router, telas de login/logout. Primeiro ADMIN via `database/seeds/create_admin.php`. Ver [requisitos §64.2](docs/technical/requisitos.md#642-autenticação). *(merge em `develop`)*
-- 2026-08-27 — CRUD de usuários e sites (somente ADMIN) + vínculo `user_site`; `Router` com parâmetros e guard `admin`; `Validator` e `Form` (campos acessíveis); `ErrorController` 401/403/404. Cobre RF-002, RF-003, RF-004 (backend), RF-017. *(branch `feature/users-sites`)*
+- 2026-08-27 — CRUD de usuários e sites (somente ADMIN) + vínculo `user_site`; `Router` com parâmetros e guard `admin`; `Validator` e `Form` (campos acessíveis); `ErrorController` 401/403/404. Cobre RF-002, RF-003, RF-004 (backend), RF-017. *(merge em `develop`)*
+
+## [Fase 3] - Planejamento
+
+### Em progresso (branch `feature/editorial-config`)
+- 2026-08-27 — configuração editorial por site: área de trabalho `/sites/{id}` com abas; CRUD de **categorias** (nome único por site + diretrizes) e de **interesses / não-interesses** (intensidade 1–5). Acesso por site via `Controller::requireSite()` / `AuthService::canAccessSite()` — Redator-Chefe só nos sites vinculados.
+- 2026-08-27 — **metas editoriais por site** (`/sites/{id}/goals`): CRUD de metas por período (`AAAA-MM`, único por site), total de artigos, diretrizes gerais e distribuição por categoria (`goal_categories`, reescrita em transação). Valida formato do período e impede a soma por categoria passar do total. Fecha RF-015.
 
 > Pode ser gerado manualmente ou, se o [padrão de commits](docs/technical/padroes-de-codigo.md#90-padrão-de-commits-proposta) for adotado, automatizado com ferramentas como `standard-version` ou `release-please`.
 

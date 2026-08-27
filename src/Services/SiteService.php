@@ -40,6 +40,16 @@ final class SiteService
         return $stmt->fetch() ?: null;
     }
 
+    public function hasUser(int $siteId, int $userId): bool
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT 1 FROM user_site WHERE site_id = :s AND user_id = :u LIMIT 1'
+        );
+        $stmt->execute(['s' => $siteId, 'u' => $userId]);
+
+        return $stmt->fetchColumn() !== false;
+    }
+
     /** @param array<string, mixed> $data */
     public function create(array $data): int
     {

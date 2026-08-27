@@ -102,4 +102,18 @@ final class AuthService
 
         return $user !== null ? (int) $user['id'] : null;
     }
+
+    /** ADMIN acessa qualquer site; REDATOR_CHEFE só os vinculados (user_site). */
+    public static function canAccessSite(int $siteId): bool
+    {
+        $user = self::user();
+        if ($user === null) {
+            return false;
+        }
+        if ($user['role'] === 'ADMIN') {
+            return true;
+        }
+
+        return (new SiteService())->hasUser($siteId, (int) $user['id']);
+    }
 }

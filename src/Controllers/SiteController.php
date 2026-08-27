@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Services\AuthService;
+use App\Services\CategoryService;
+use App\Services\EditorialRuleService;
+use App\Services\GoalService;
 use App\Services\SiteService;
 use App\Support\Csrf;
 use App\Support\Http;
@@ -11,7 +15,7 @@ use App\Support\Session;
 use App\Support\Validator;
 use App\View;
 
-final class SiteController
+final class SiteController extends Controller
 {
     private SiteService $sites;
 
@@ -20,17 +24,41 @@ final class SiteController
         $this->sites = new SiteService();
     }
 
+    /** Lista de sites — ADMIN vê todos, Redator-Chefe vê os vinculados. */
     public function index(): void
     {
+        $user = AuthService::user();
+        $sites = ($user !== null && $user['role'] === 'ADMIN')
+            ? $this->sites->all()
+            : $this->sites->forUser((int) $user['id']);
+
         View::render('sites/index', [
-            'title' => 'Sites',
-            'sites' => $this->sites->all(),
+            'title'   => 'Sites',
+            'sites'   => $sites,
+            'isAdmin' => AuthService::isAdmin(),
         ]);
     }
 
+    /** Área de trabalho de um site (configuração editorial). */
+    public function show(string $id): void
+    {
+        $site = $this->requireSite($id);
+
+        View::render('sites/show', [
+            'title'       => $site['name'],
+            'site'        => $site,
+            'categories'  => (new CategoryService())->allForSite((int) $site['id']),
+            'ruleCounts'  => (new EditorialRuleService())->countsForSite((int) $site['id']),
+            'goalCount'   => (new GoalService())->countForSite((int) $site['id']),
+            'canEditSite' => AuthService::isAdmin(),
+        ]);
+    }
+
+    // --- CRUD da estrutura do site (somente ADMIN, via guard de rota) ---
+
     public function create(): void
     {
-        $this->form('sites/form', [
+        View::render('sites/form', [
             'title'  => 'Novo site',
             'site'   => ['language' => 'pt-BR', 'is_active' => 1],
             'action' => '/sites',
@@ -45,29 +73,20 @@ final class SiteController
         $errors = $this->validate($_POST);
         if ($errors !== []) {
             http_response_code(422);
-            $this->form('sites/form', [
-                'title'  => 'Novo site',
-                'site'   => $_POST,
-                'action' => '/sites',
-                'errors' => $errors,
-            ]);
+            View::render('sites/form', ['title' => 'Novo site', 'site' => $_POST, 'action' => '/sites', 'errors' => $errors]);
             return;
         }
 
-        $id = $this->sites->create($_POST);
+        $newId = $this->sites->create($_POST);
         Session::flash('success', 'Site criado.');
-        Http::redirect('/sites/' . $id . '/edit');
+        Http::redirect('/sites/' . $newId . '/edit');
     }
 
     public function edit(string $id): void
     {
-        $site = $this->sites->find((int) $id);
-        if ($site === null) {
-            (new ErrorController())->show(404);
-            return;
-        }
+        $site = $this->sites->find((int) $id) ?? $this->notFound();
 
-        $this->form('sites/form', [
+        View::render('sites/form', [
             'title'  => 'Editar site',
             'site'   => $site,
             'action' => '/sites/' . $site['id'],
@@ -78,17 +97,12 @@ final class SiteController
     public function update(string $id): void
     {
         Csrf::verify();
-
-        $site = $this->sites->find((int) $id);
-        if ($site === null) {
-            (new ErrorController())->show(404);
-            return;
-        }
+        $site = $this->sites->find((int) $id) ?? $this->notFound();
 
         $errors = $this->validate($_POST);
         if ($errors !== []) {
             http_response_code(422);
-            $this->form('sites/form', [
+            View::render('sites/form', [
                 'title'  => 'Editar site',
                 'site'   => $_POST + ['id' => $site['id']],
                 'action' => '/sites/' . $site['id'],
@@ -105,26 +119,15 @@ final class SiteController
     /** @param array<string, mixed> $data @return array<string, string> */
     private function validate(array $data): array
     {
-        $v = new Validator($data, [
+        return (new Validator($data, [
             'name'          => ['required', 'max:191'],
             'language'      => ['required', 'max:20'],
             'wordpress_url' => ['max:255'],
             'niche'         => ['max:191'],
             'tone'          => ['max:100'],
         ], [
-            'name'          => 'Nome',
-            'language'      => 'Idioma',
-            'wordpress_url' => 'URL do WordPress',
-            'niche'         => 'Nicho',
-            'tone'          => 'Tom',
-        ]);
-
-        return $v->errors();
-    }
-
-    /** @param array<string, mixed> $data */
-    private function form(string $view, array $data): void
-    {
-        View::render($view, $data);
+            'name' => 'Nome', 'language' => 'Idioma', 'wordpress_url' => 'URL do WordPress',
+            'niche' => 'Nicho', 'tone' => 'Tom',
+        ]))->errors();
     }
 }

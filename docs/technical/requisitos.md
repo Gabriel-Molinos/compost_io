@@ -54,16 +54,19 @@
 
 > Base: [Usuários e permissões (seção 14)](../editorial/fluxo-editorial.md#14-usuários-e-permissões), [RB-001/RB-002](#64-regras-de-negócio-rb), [Regra de aprovação (seção 51)](../ai/regras-claude-code.md#51-regra-de-aprovação-e-controle-de-alterações). "Nos sites vinculados" reforça o isolamento por site (ver [seção 46](seguranca.md#46-credenciais-específicas-por-site)) — um Redator-Chefe nunca vê dado de um site ao qual não está vinculado.
 
-### 64.2 Autenticação `[PROPOSTA]`
+### 64.2 Autenticação
 
-> **Precisa aprovação — decisão arquitetural ainda não tomada.** O README original nunca definiu tecnicamente como o login (RF-001) funciona. Proposta de valor-padrão, a validar com o responsável do projeto antes de virar decisão:
+> **Implementado na Fase 2** (branch `feature/login`). Decisão confirmada pelo responsável.
 
-- **Sessão via PHP nativo** (`session_start()` / `$_SESSION`), sem biblioteca externa de autenticação/JWT — coerente com a filosofia "sem dependência pesada" das [ADR-002](../decisions/adr-002-php-pdo.md) e [ADR-006](../decisions/adr-006-fila-redis.md).
-- Senha armazenada com hash (`password_hash`/`password_verify` do PHP), nunca em texto puro — reforça a [Política de segurança para credenciais](seguranca.md#48-política-de-segurança-para-credenciais).
-- Cookie de sessão `HttpOnly` + `Secure` (em produção) para reduzir risco de XSS/roubo de sessão.
-- Sem "lembrar-me"/token de longa duração na primeira versão — pode entrar depois como necessidade adicional (ver [Mudança de escopo, seção 57](../ai/regras-claude-code.md#57-mudança-de-escopo)).
+- **Sessão via PHP nativo** (`session_start()` / `$_SESSION`), sem biblioteca externa de autenticação/JWT — coerente com a filosofia "sem dependência pesada" das [ADR-002](../decisions/adr-002-php-pdo.md) e [ADR-006](../decisions/adr-006-fila-redis.md). Wrapper em `src/Support/Session.php`.
+- Senha com hash (`password_hash` / `password_verify`, `PASSWORD_DEFAULT` = bcrypt), nunca em texto puro — coluna `users.password_hash`. Ver [Política de segurança para credenciais](seguranca.md#48-política-de-segurança-para-credenciais).
+- Cookie de sessão `HttpOnly` sempre; `Secure` fora de `development`; `SameSite=Lax`; `session.use_strict_mode`; `session_regenerate_id` no login (contra fixation).
+- **CSRF** em todo formulário POST (`src/Support/Csrf.php`, token por sessão + `hash_equals`).
+- Rotas protegidas via flag `auth` no `Router`: `GET` sem sessão redireciona para `/login`, demais métodos → `401`.
+- Primeiro `ADMIN` criado por `database/seeds/create_admin.php` (senha só por variável de ambiente).
+- Sem "lembrar-me" / token de longa duração na primeira versão — pode entrar depois ([Mudança de escopo, seção 57](../ai/regras-claude-code.md#57-mudança-de-escopo)).
 
-Alternativas possíveis (não escolhidas, só registradas): JWT stateless, ou sessão armazenada no Redis (útil se a aplicação rodar em múltiplas instâncias na Fase 9 — escala). Ambas adicionam dependência/complexidade que não parece justificada nas fases iniciais.
+Alternativas registradas e não escolhidas: JWT stateless, ou sessão no Redis (útil com múltiplas instâncias na Fase 9). Ambas adicionam complexidade não justificada agora.
 
 ### 65. Máquina de estados do artigo
 

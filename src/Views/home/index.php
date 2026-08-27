@@ -5,10 +5,15 @@ declare(strict_types=1);
 use App\View;
 
 /** @var array{connected: bool, tables?: int, users?: int, error?: string} $db */
+/** @var array<string, mixed>|null $user */
 ?>
-<h1 class="text-2xl font-bold text-text-primary">Fundação instalada</h1>
+<h1 class="text-2xl font-bold text-text-primary">
+    Olá<?= $user !== null ? ', ' . View::e($user['name']) : '' ?>
+</h1>
 <p class="mt-2 text-text-secondary">
-    O esqueleto da aplicação está no ar: PHP puro, roteador manual, Views e conexão PDO.
+    <?php if ($user !== null): ?>
+        Você está autenticado como <span class="font-mono text-text-primary"><?= View::e($user['role']) ?></span>.
+    <?php endif; ?>
 </p>
 
 <section aria-labelledby="status-banco" class="mt-8 rounded-lg border border-border bg-surface p-5">
@@ -41,11 +46,10 @@ use App\View;
 
 <section aria-labelledby="proximos" class="mt-8">
     <h2 id="proximos" class="text-sm font-semibold uppercase tracking-wide text-text-muted">
-        Próximo: Fase 2
+        Em construção — Fase 2
     </h2>
     <ul class="mt-3 space-y-1 text-text-secondary">
-        <li>Login e autenticação (sessão nativa do PHP)</li>
         <li>CRUD de usuários e sites</li>
-        <li>Sistema de permissões por site</li>
+        <li>Sistema de permissões por site (<span class="font-mono">user_site</span>)</li>
     </ul>
 </section>

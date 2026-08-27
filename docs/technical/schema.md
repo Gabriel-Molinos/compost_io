@@ -91,7 +91,7 @@ Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mant
 
 ### 87.1 Autenticação — sem tabela
 
-O login (RF-001) usa **sessão nativa do PHP** ([requisitos §64.2](requisitos.md#642-autenticação-proposta)) — não há tabela de sessão nem de token. `users.password_hash` guarda o hash (`password_hash()`).
+O login (RF-001) usa **sessão nativa do PHP** ([requisitos §64.2](requisitos.md#642-autenticação)) — não há tabela de sessão nem de token. `users.password_hash` guarda o hash (`password_hash()`).
 
 ### 87.2 Pendências de modelagem `[PROPOSTA]`
 

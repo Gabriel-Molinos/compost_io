@@ -2,10 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Services\AuthService;
+use App\Support\Csrf;
 use App\View;
 
 /** @var string $content  Conteúdo já renderizado pela View. */
 /** @var string $title */
+
+$authUser = AuthService::user();
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -39,13 +43,29 @@ use App\View;
     <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
 
     <div class="mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-10">
-        <header class="mb-10 flex items-center gap-3">
-            <span aria-hidden="true"
-                  class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-cyan/10 text-cyan">◆</span>
-            <div>
-                <p class="text-sm font-semibold tracking-[0.2em] text-cyan">COMPOST</p>
-                <p class="text-xs text-text-muted">Dashboard Inteligente</p>
+        <header class="mb-10 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <span aria-hidden="true"
+                      class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-cyan/10 text-cyan">◆</span>
+                <div>
+                    <p class="text-sm font-semibold tracking-[0.2em] text-cyan">COMPOST</p>
+                    <p class="text-xs text-text-muted">Dashboard Inteligente</p>
+                </div>
             </div>
+
+            <?php if ($authUser !== null): ?>
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="hidden text-text-secondary sm:inline"><?= View::e($authUser['email']) ?></span>
+                    <form method="post" action="/logout">
+                        <?= Csrf::field() ?>
+                        <button type="submit"
+                                class="rounded-md border border-border px-3 py-1.5 text-text-secondary
+                                       hover:border-cyan hover:text-text-primary">
+                            Sair
+                        </button>
+                    </form>
+                </div>
+            <?php endif; ?>
         </header>
 
         <main id="conteudo" class="flex-1">
@@ -53,7 +73,7 @@ use App\View;
         </main>
 
         <footer class="mt-12 border-t border-border pt-6 text-xs text-text-muted">
-            Fase 1 — Fundação · <?= View::e(date('Y')) ?>
+            Fase 2 — Autenticação · <?= View::e(date('Y')) ?>
         </footer>
     </div>
 </body>

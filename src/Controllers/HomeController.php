@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Database\Connection;
+use App\Services\AuthService;
 use App\View;
 
 final class HomeController
@@ -12,7 +13,8 @@ final class HomeController
     public function index(): void
     {
         View::render('home/index', [
-            'title' => 'COMPOST — Fundação',
+            'title' => 'Início',
+            'user'  => AuthService::user(),
             'db'    => $this->databaseStatus(),
         ]);
     }

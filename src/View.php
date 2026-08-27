@@ -6,19 +6,23 @@ namespace App;
 
 /**
  * Renderização de Views em PHP puro (ADR-008). A View gera $content, que é
- * embutido no layout base. Todo dado dinâmico deve passar por View::e().
+ * embutido em um layout. Todo dado dinâmico deve passar por View::e().
  */
 final class View
 {
     private const VIEWS_DIR = __DIR__ . '/Views';
 
     /** @param array<string, mixed> $data */
-    public static function render(string $template, array $data = []): void
+    public static function render(string $template, array $data = [], string $layout = 'layout/base'): void
     {
         $viewFile = self::VIEWS_DIR . '/' . $template . '.php';
+        $layoutFile = self::VIEWS_DIR . '/' . $layout . '.php';
 
         if (!is_file($viewFile)) {
             throw new \RuntimeException("View não encontrada: {$template}");
+        }
+        if (!is_file($layoutFile)) {
+            throw new \RuntimeException("Layout não encontrado: {$layout}");
         }
 
         $title = $data['title'] ?? 'COMPOST';
@@ -29,7 +33,7 @@ final class View
         require $viewFile;
         $content = ob_get_clean();
 
-        require self::VIEWS_DIR . '/layout/base.php';
+        require $layoutFile;
     }
 
     /** Escapa saída para HTML (docs/technical/ui-ux-frontend.md §103). */

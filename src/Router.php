@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App;
 
 use App\Controllers\ErrorController;
+use App\Services\AuthService;
+use App\Support\Http;
 
 /**
  * Roteador manual (sem framework). Mapeia método + caminho exato para um
@@ -13,15 +15,16 @@ use App\Controllers\ErrorController;
  */
 final class Router
 {
-    /** @var array<int, array{method: string, path: string, handler: callable|array}> */
+    /** @var array<int, array{method: string, path: string, handler: callable|array, auth: bool}> */
     private array $routes = [];
 
-    public function add(string $method, string $path, callable|array $handler): void
+    public function add(string $method, string $path, callable|array $handler, bool $auth = false): void
     {
         $this->routes[] = [
             'method'  => strtoupper($method),
             'path'    => $this->normalize($path),
             'handler' => $handler,
+            'auth'    => $auth,
         ];
     }
 
@@ -31,10 +34,21 @@ final class Router
         $path = $this->normalize(parse_url($uri, PHP_URL_PATH) ?: '/');
 
         foreach ($this->routes as $route) {
-            if ($route['method'] === $method && $route['path'] === $path) {
-                $this->call($route['handler']);
+            if ($route['method'] !== $method || $route['path'] !== $path) {
+                continue;
+            }
+
+            if ($route['auth'] && !AuthService::check()) {
+                if ($method === 'GET') {
+                    Http::redirect('/login');
+                }
+
+                http_response_code(401);
                 return;
             }
+
+            $this->call($route['handler']);
+            return;
         }
 
         (new ErrorController())->notFound();

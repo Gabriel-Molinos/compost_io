@@ -6,7 +6,7 @@
 - RF-002 — Admin pode criar site ✅ *(Fase 2)*
 - RF-003 — Admin pode atribuir site ✅ *(Fase 2 — vínculo `user_site` na tela de usuário)*
 - RF-004 — Redator só vê sites permitidos — backend/permissão pronto *(Fase 2)*; telas do Redator-Chefe vêm nas próximas fases
-- RF-005 — Redator pode criar meta
+- RF-005 — Redator pode criar meta ✅ *(Fase 3 — meta por período com total, diretrizes gerais e distribuição por categoria)*
 - RF-006 — IA pode gerar pauta
 
 `[PROPOSTA — itens abaixo adicionados nesta reorganização, formalizando como RF fluxos já descritos em outras partes da documentação (não são funcionalidade nova)]`
@@ -19,7 +19,7 @@
 - RF-012 — Sistema pode publicar um artigo agendado no WordPress do site correspondente (ver [Integração WordPress](../editorial/fluxo-editorial.md#31-integração-wordpress))
 - RF-013 — Redator-Chefe pode visualizar relatórios (mensal, o que melhorou/não melhorou, aprendizados — ver [Relatórios](../editorial/fluxo-editorial.md#32-relatórios))
 - RF-014 — Redator-Chefe pode visualizar o Centro de Inteligência Editorial do site (ver [seção 33](../editorial/fluxo-editorial.md#33-centro-de-inteligência-editorial))
-- RF-015 — Redator-Chefe pode configurar categorias, interesses e não-interesses do site (ver [seções 15, 18, 19](../editorial/fluxo-editorial.md#15-estrutura-editorial-de-cada-site)) ✅ *(Fase 3 — categorias e regras; metas pendentes)*
+- RF-015 — Redator-Chefe pode configurar categorias, interesses e não-interesses do site (ver [seções 15, 18, 19](../editorial/fluxo-editorial.md#15-estrutura-editorial-de-cada-site)) ✅ *(Fase 3 — categorias, interesses/não-interesses e metas)*
 - RF-016 — Admin pode configurar a conexão WordPress (URL, usuário, credencial) de cada site (ver [Credenciais específicas por site](seguranca.md#46-credenciais-específicas-por-site))
 - RF-017 — Admin pode convidar/cadastrar um novo usuário e vincular Redator-Chefe(s) a sites (ver [Onboarding de usuário](../product/onboarding-usuario.md)) ✅ *(Fase 2 — cadastro por senha; convite por e-mail fica para depois)*
 - ...

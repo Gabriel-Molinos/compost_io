@@ -23,9 +23,11 @@
 
 ## [Fase 3] - Planejamento
 
-### Em progresso (branch `feature/editorial-config`)
+### Adicionado
 - 2026-08-27 — configuração editorial por site: área de trabalho `/sites/{id}` com abas; CRUD de **categorias** (nome único por site + diretrizes) e de **interesses / não-interesses** (intensidade 1–5). Acesso por site via `Controller::requireSite()` / `AuthService::canAccessSite()` — Redator-Chefe só nos sites vinculados.
-- 2026-08-27 — **metas editoriais por site** (`/sites/{id}/goals`): CRUD de metas por período (`AAAA-MM`, único por site), total de artigos, diretrizes gerais e distribuição por categoria (`goal_categories`, reescrita em transação). Valida formato do período e impede a soma por categoria passar do total. Fecha RF-015.
+- 2026-08-27 — **metas editoriais por site** (`/sites/{id}/goals`): CRUD de metas por período (`AAAA-MM`, único por site), total de artigos, diretrizes gerais e distribuição por categoria (`goal_categories`, reescrita em transação). Valida formato do período, trata período duplicado como erro de formulário e impede a soma por categoria passar do total.
+
+Cobre RF-005 e RF-015. Fase 3 (Planejamento) concluída — mergeada em `develop` via `feature/editorial-config`.
 
 > Pode ser gerado manualmente ou, se o [padrão de commits](docs/technical/padroes-de-codigo.md#90-padrão-de-commits-proposta) for adotado, automatizado com ferramentas como `standard-version` ou `release-please`.
 

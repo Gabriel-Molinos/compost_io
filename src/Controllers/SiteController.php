@@ -18,10 +18,16 @@ use App\View;
 final class SiteController extends Controller
 {
     private SiteService $sites;
+    private CategoryService $categories;
+    private EditorialRuleService $rules;
+    private GoalService $goals;
 
     public function __construct()
     {
         $this->sites = new SiteService();
+        $this->categories = new CategoryService();
+        $this->rules = new EditorialRuleService();
+        $this->goals = new GoalService();
     }
 
     /** Lista de sites — ADMIN vê todos, Redator-Chefe vê os vinculados. */
@@ -47,9 +53,9 @@ final class SiteController extends Controller
         View::render('sites/show', [
             'title'       => $site['name'],
             'site'        => $site,
-            'categories'  => (new CategoryService())->allForSite((int) $site['id']),
-            'ruleCounts'  => (new EditorialRuleService())->countsForSite((int) $site['id']),
-            'goalCount'   => (new GoalService())->countForSite((int) $site['id']),
+            'categories'  => $this->categories->allForSite((int) $site['id']),
+            'ruleCounts'  => $this->rules->countsForSite((int) $site['id']),
+            'goalCount'   => $this->goals->countForSite((int) $site['id']),
             'canEditSite' => AuthService::isAdmin(),
         ]);
     }

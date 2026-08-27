@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Labels;
 use App\View;
 
 /** @var list<array<string, mixed>> $users */
@@ -31,9 +32,7 @@ use App\View;
                 <tr class="border-b border-border/60 last:border-0">
                     <td class="px-4 py-3 text-text-primary"><?= View::e($user['name']) ?></td>
                     <td class="px-4 py-3 font-mono text-text-secondary"><?= View::e($user['email']) ?></td>
-                    <td class="px-4 py-3 text-text-secondary">
-                        <?= $user['role'] === 'ADMIN' ? 'Administrador' : 'Redator-Chefe' ?>
-                    </td>
+                    <td class="px-4 py-3 text-text-secondary"><?= View::e(Labels::role($user['role'])) ?></td>
                     <td class="px-4 py-3 text-text-secondary">
                         <?= $user['role'] === 'ADMIN' ? 'todos' : View::e($user['site_count']) ?>
                     </td>

@@ -16,6 +16,21 @@ final class SiteService
             ->fetchAll();
     }
 
+    /** Sites vinculados a um usuário (Redator-Chefe). @return list<array<string, mixed>> */
+    public function forUser(int $userId): array
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT s.id, s.name, s.niche, s.language, s.is_active
+             FROM sites s
+             JOIN user_site us ON us.site_id = s.id
+             WHERE us.user_id = :id
+             ORDER BY s.name'
+        );
+        $stmt->execute(['id' => $userId]);
+
+        return $stmt->fetchAll();
+    }
+
     /** @return array<string, mixed>|null */
     public function find(int $id): ?array
     {

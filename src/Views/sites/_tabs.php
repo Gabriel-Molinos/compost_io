@@ -12,6 +12,7 @@ $tabs = [
     ['overview',   'Visão geral', '/sites/' . $site['id'],                true],
     ['categories', 'Categorias',  '/sites/' . $site['id'] . '/categories', true],
     ['rules',      'Interesses',  '/sites/' . $site['id'] . '/rules',      true],
+    ['goals',      'Metas',       '/sites/' . $site['id'] . '/goals',      true],
     ['config',     'Configuração', '/sites/' . $site['id'] . '/edit',      AuthService::isAdmin()],
 ];
 ?>

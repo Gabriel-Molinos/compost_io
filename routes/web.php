@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Controllers\AuthController;
 use App\Controllers\CategoryController;
 use App\Controllers\EditorialRuleController;
+use App\Controllers\GoalController;
 use App\Controllers\HomeController;
 use App\Controllers\SiteController;
 use App\Controllers\UserController;
@@ -57,4 +58,12 @@ return static function (Router $router): void {
     $router->add('GET',  '/sites/{id}/rules/{rid}/edit',  [EditorialRuleController::class, 'edit'],     auth: true);
     $router->add('POST', '/sites/{id}/rules/{rid}',       [EditorialRuleController::class, 'update'],   auth: true);
     $router->add('POST', '/sites/{id}/rules/{rid}/delete', [EditorialRuleController::class, 'destroy'], auth: true);
+
+    // Metas editoriais do site
+    $router->add('GET',  '/sites/{id}/goals',             [GoalController::class, 'index'],   auth: true);
+    $router->add('GET',  '/sites/{id}/goals/new',         [GoalController::class, 'create'],  auth: true);
+    $router->add('POST', '/sites/{id}/goals',             [GoalController::class, 'store'],   auth: true);
+    $router->add('GET',  '/sites/{id}/goals/{gid}/edit',  [GoalController::class, 'edit'],    auth: true);
+    $router->add('POST', '/sites/{id}/goals/{gid}',       [GoalController::class, 'update'],  auth: true);
+    $router->add('POST', '/sites/{id}/goals/{gid}/delete', [GoalController::class, 'destroy'], auth: true);
 };

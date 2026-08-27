@@ -7,6 +7,7 @@ use App\View;
 /** @var array<string, mixed> $site */
 /** @var list<array<string, mixed>> $categories */
 /** @var array{INTEREST: int, NON_INTEREST: int} $ruleCounts */
+/** @var int $goalCount */
 /** @var bool $canEditSite */
 
 $activeTab = 'overview';
@@ -41,6 +42,9 @@ require __DIR__ . '/_tabs.php';
         <p class="text-xs uppercase tracking-wide text-text-muted">Não-interesses</p>
         <p class="mt-1 font-mono text-2xl text-text-primary"><?= View::e($ruleCounts['NON_INTEREST']) ?></p>
     </a>
+    <a href="/sites/<?= View::e($site['id']) ?>/goals"
+       class="rounded-lg border border-border bg-surface p-4 hover:border-cyan">
+        <p class="text-xs uppercase tracking-wide text-text-muted">Metas</p>
+        <p class="mt-1 font-mono text-2xl text-text-primary"><?= View::e($goalCount) ?></p>
+    </a>
 </div>
-
-<p class="mt-8 text-sm text-text-muted">Metas editoriais chegam na próxima etapa da Fase 3.</p>

@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Services\AuthService;
 use App\Services\CategoryService;
 use App\Services\EditorialRuleService;
+use App\Services\GoalService;
 use App\Services\SiteService;
 use App\Support\Csrf;
 use App\Support\Http;
@@ -48,6 +49,7 @@ final class SiteController extends Controller
             'site'        => $site,
             'categories'  => (new CategoryService())->allForSite((int) $site['id']),
             'ruleCounts'  => (new EditorialRuleService())->countsForSite((int) $site['id']),
+            'goalCount'   => (new GoalService())->countForSite((int) $site['id']),
             'canEditSite' => AuthService::isAdmin(),
         ]);
     }

@@ -8,9 +8,25 @@ use App\View;
 
 final class ErrorController
 {
+    private const MESSAGES = [
+        401 => 'Você precisa entrar para acessar esta página.',
+        403 => 'Você não tem permissão para acessar esta página.',
+        404 => 'Essa página não existe.',
+    ];
+
     public function notFound(): void
     {
-        http_response_code(404);
-        View::render('errors/404', ['title' => 'Página não encontrada']);
+        $this->show(404);
+    }
+
+    public function show(int $status): void
+    {
+        http_response_code($status);
+
+        View::render('errors/generic', [
+            'title'   => (string) $status,
+            'status'  => $status,
+            'message' => self::MESSAGES[$status] ?? 'Ocorreu um erro.',
+        ]);
     }
 }

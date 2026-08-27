@@ -2,10 +2,10 @@
 
 ### 63. Requisitos funcionais (RF)
 
-- RF-001 — Usuário pode fazer login
-- RF-002 — Admin pode criar site
-- RF-003 — Admin pode atribuir site
-- RF-004 — Redator só vê sites permitidos
+- RF-001 — Usuário pode fazer login ✅ *(Fase 2)*
+- RF-002 — Admin pode criar site ✅ *(Fase 2)*
+- RF-003 — Admin pode atribuir site ✅ *(Fase 2 — vínculo `user_site` na tela de usuário)*
+- RF-004 — Redator só vê sites permitidos — backend/permissão pronto *(Fase 2)*; telas do Redator-Chefe vêm nas próximas fases
 - RF-005 — Redator pode criar meta
 - RF-006 — IA pode gerar pauta
 
@@ -21,7 +21,7 @@
 - RF-014 — Redator-Chefe pode visualizar o Centro de Inteligência Editorial do site (ver [seção 33](../editorial/fluxo-editorial.md#33-centro-de-inteligência-editorial))
 - RF-015 — Redator-Chefe pode configurar categorias, interesses e não-interesses do site (ver [seções 15, 18, 19](../editorial/fluxo-editorial.md#15-estrutura-editorial-de-cada-site))
 - RF-016 — Admin pode configurar a conexão WordPress (URL, usuário, credencial) de cada site (ver [Credenciais específicas por site](seguranca.md#46-credenciais-específicas-por-site))
-- RF-017 — Admin pode convidar/cadastrar um novo usuário e vincular Redator-Chefe(s) a sites (ver [Onboarding de usuário](../product/onboarding-usuario.md))
+- RF-017 — Admin pode convidar/cadastrar um novo usuário e vincular Redator-Chefe(s) a sites (ver [Onboarding de usuário](../product/onboarding-usuario.md)) ✅ *(Fase 2 — cadastro por senha; convite por e-mail fica para depois)*
 - ...
 
 ### 64. Regras de negócio (RB)

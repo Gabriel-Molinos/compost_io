@@ -17,8 +17,9 @@
 - CRUD de usuários e sites
 - Sistema de permissões
 
-### Em progresso (branch `feature/login`)
-- 2026-08-27 — autenticação por sessão nativa do PHP: `Session`, `Csrf`, `AuthService`, `AuthController`, guard `auth` no Router, telas de login/logout. Primeiro ADMIN via `database/seeds/create_admin.php`. Ver [requisitos §64.2](docs/technical/requisitos.md#642-autenticação).
+### Em progresso
+- 2026-08-27 — autenticação por sessão nativa do PHP: `Session`, `Csrf`, `AuthService`, `AuthController`, guard `auth` no Router, telas de login/logout. Primeiro ADMIN via `database/seeds/create_admin.php`. Ver [requisitos §64.2](docs/technical/requisitos.md#642-autenticação). *(merge em `develop`)*
+- 2026-08-27 — CRUD de usuários e sites (somente ADMIN) + vínculo `user_site`; `Router` com parâmetros e guard `admin`; `Validator` e `Form` (campos acessíveis); `ErrorController` 401/403/404. Cobre RF-002, RF-003, RF-004 (backend), RF-017. *(branch `feature/users-sites`)*
 
 > Pode ser gerado manualmente ou, se o [padrão de commits](docs/technical/padroes-de-codigo.md#90-padrão-de-commits-proposta) for adotado, automatizado com ferramentas como `standard-version` ou `release-please`.
 

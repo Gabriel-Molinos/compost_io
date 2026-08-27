@@ -88,4 +88,18 @@ final class AuthService
     {
         return self::user() !== null;
     }
+
+    public static function isAdmin(): bool
+    {
+        $user = self::user();
+
+        return $user !== null && $user['role'] === 'ADMIN';
+    }
+
+    public static function id(): ?int
+    {
+        $user = self::user();
+
+        return $user !== null ? (int) $user['id'] : null;
+    }
 }

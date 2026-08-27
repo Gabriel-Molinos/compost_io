@@ -6,16 +6,23 @@ namespace App\Controllers;
 
 use App\Database\Connection;
 use App\Services\AuthService;
+use App\Services\SiteService;
 use App\View;
 
 final class HomeController
 {
     public function index(): void
     {
+        $user = AuthService::user();
+        $mySites = ($user !== null && $user['role'] !== 'ADMIN')
+            ? (new SiteService())->forUser((int) $user['id'])
+            : [];
+
         View::render('home/index', [
-            'title' => 'Início',
-            'user'  => AuthService::user(),
-            'db'    => $this->databaseStatus(),
+            'title'   => 'Início',
+            'user'    => $user,
+            'mySites' => $mySites,
+            'db'      => $this->databaseStatus(),
         ]);
     }
 

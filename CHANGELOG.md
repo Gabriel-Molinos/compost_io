@@ -29,6 +29,11 @@
 
 Cobre RF-005 e RF-015. Fase 3 (Planejamento) concluída — mergeada em `develop` via `feature/editorial-config`.
 
+## [Fase 4] - IA
+
+### Em progresso (branch `feature/ia-fase-4`)
+- 2026-08-27 — **Prompt Base** (fatia 4.1): arquivos de prompt versionados em `docs/ai/` (`base-editorial`, `planning`, `research`, `writing`, `seo`, `compliance`, `review`) + `PromptBuilder` (`src/Services/PromptBuilder.php`) que monta o prompt final em camadas — Prompt Base + Passo + Identidade do Site + Meta + Categoria + Brief (Memória Editorial fica para a Fase 6). Sem chamada a API externa. Pré-visualização por `php bin/prompt_preview.php <step> <site_id>`. Testado contra o site Gavsy (18 asserts).
+
 > Pode ser gerado manualmente ou, se o [padrão de commits](docs/technical/padroes-de-codigo.md#90-padrão-de-commits-proposta) for adotado, automatizado com ferramentas como `standard-version` ou `release-please`.
 
 ## Ver também

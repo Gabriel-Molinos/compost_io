@@ -11,6 +11,7 @@ use App\Support\Http;
 use App\Support\Session;
 use App\Support\Validator;
 use App\View;
+use PDOException;
 
 final class GoalController extends Controller
 {
@@ -37,12 +38,13 @@ final class GoalController extends Controller
     public function create(string $siteId): void
     {
         $site = $this->requireSite($siteId);
+        $categories = $this->categories->allForSite((int) $site['id']);
 
         $this->form($site, [
             'period'             => date('Y-m'),
             'total_articles'     => 0,
             'general_guidelines' => '',
-        ], [], '/sites/' . $site['id'] . '/goals', []);
+        ], [], $categories, '/sites/' . $site['id'] . '/goals', []);
     }
 
     public function store(string $siteId): void
@@ -52,21 +54,31 @@ final class GoalController extends Controller
 
         $categories = $this->categories->allForSite((int) $site['id']);
         $targets = $this->parseTargets($categories, $_POST['targets'] ?? []);
-        $errors = $this->validate($site, $_POST, $targets, $categories);
+        $action = '/sites/' . $site['id'] . '/goals';
 
+        $errors = $this->validate($site, $_POST, $targets, $categories);
         if ($errors !== []) {
             http_response_code(422);
-            $this->form($site, $_POST, $targets, '/sites/' . $site['id'] . '/goals', $errors);
+            $this->form($site, $_POST, $targets, $categories, $action, $errors);
             return;
         }
 
-        $this->goals->create(
-            (int) $site['id'],
-            trim((string) $_POST['period']),
-            (int) $_POST['total_articles'],
-            self::nullable($_POST['general_guidelines'] ?? null),
-            $targets,
-        );
+        try {
+            $this->goals->create(
+                (int) $site['id'],
+                trim((string) $_POST['period']),
+                (int) $_POST['total_articles'],
+                self::nullable($_POST['general_guidelines'] ?? null),
+                $targets,
+            );
+        } catch (PDOException $e) {
+            if (!self::isDuplicate($e)) {
+                throw $e;
+            }
+            http_response_code(422);
+            $this->form($site, $_POST, $targets, $categories, $action, ['period' => 'Já existe uma meta para este período neste site.']);
+            return;
+        }
         Session::flash('success', 'Meta criada.');
         Http::redirect('/sites/' . $site['id'] . '/goals');
     }
@@ -80,6 +92,7 @@ final class GoalController extends Controller
             $site,
             $goal,
             $this->goals->categoryTargets((int) $goal['id']),
+            $this->categories->allForSite((int) $site['id']),
             '/sites/' . $site['id'] . '/goals/' . $goal['id'],
             [],
         );
@@ -93,21 +106,31 @@ final class GoalController extends Controller
 
         $categories = $this->categories->allForSite((int) $site['id']);
         $targets = $this->parseTargets($categories, $_POST['targets'] ?? []);
-        $errors = $this->validate($site, $_POST, $targets, $categories, (int) $goal['id']);
+        $action = '/sites/' . $site['id'] . '/goals/' . $goal['id'];
 
+        $errors = $this->validate($site, $_POST, $targets, $categories, (int) $goal['id']);
         if ($errors !== []) {
             http_response_code(422);
-            $this->form($site, $_POST + ['id' => $goal['id']], $targets, '/sites/' . $site['id'] . '/goals/' . $goal['id'], $errors);
+            $this->form($site, $_POST + ['id' => $goal['id']], $targets, $categories, $action, $errors);
             return;
         }
 
-        $this->goals->update(
-            (int) $goal['id'],
-            trim((string) $_POST['period']),
-            (int) $_POST['total_articles'],
-            self::nullable($_POST['general_guidelines'] ?? null),
-            $targets,
-        );
+        try {
+            $this->goals->update(
+                (int) $goal['id'],
+                trim((string) $_POST['period']),
+                (int) $_POST['total_articles'],
+                self::nullable($_POST['general_guidelines'] ?? null),
+                $targets,
+            );
+        } catch (PDOException $e) {
+            if (!self::isDuplicate($e)) {
+                throw $e;
+            }
+            http_response_code(422);
+            $this->form($site, $_POST + ['id' => $goal['id']], $targets, $categories, $action, ['period' => 'Já existe uma meta para este período neste site.']);
+            return;
+        }
         Session::flash('success', 'Meta atualizada.');
         Http::redirect('/sites/' . $site['id'] . '/goals');
     }
@@ -194,19 +217,26 @@ final class GoalController extends Controller
      * @param array<string, mixed>       $site
      * @param array<string, mixed>       $data
      * @param array<int, int>            $targets
+     * @param list<array<string, mixed>> $categories
      * @param array<string, string>      $errors
      */
-    private function form(array $site, array $data, array $targets, string $action, array $errors): void
+    private function form(array $site, array $data, array $targets, array $categories, string $action, array $errors): void
     {
         View::render('sites/goals/form', [
             'title'      => (!empty($data['id']) ? 'Editar meta · ' : 'Nova meta · ') . $site['name'],
             'site'       => $site,
             'goal'       => $data,
             'targets'    => $targets,
-            'categories' => $this->categories->allForSite((int) $site['id']),
+            'categories' => $categories,
             'action'     => $action,
             'errors'     => $errors,
         ]);
+    }
+
+    /** Violação de UNIQUE (SQLSTATE 23000 / errno 1062). */
+    private static function isDuplicate(PDOException $e): bool
+    {
+        return $e->getCode() === '23000' && (int) ($e->errorInfo[1] ?? 0) === 1062;
     }
 
     private static function nullable(mixed $value): ?string

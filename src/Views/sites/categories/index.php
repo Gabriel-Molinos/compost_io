@@ -35,7 +35,7 @@ require __DIR__ . '/../_tabs.php';
                        class="text-cyan hover:text-cyan-light">Editar</a>
                     <form method="post"
                           action="/sites/<?= View::e($site['id']) ?>/categories/<?= View::e($category['id']) ?>/delete"
-                          onsubmit="return confirm('Remover a categoria &quot;<?= View::e($category['name']) ?>&quot;?');">
+                          onsubmit="return confirm('Remover esta categoria?');">
                         <?= \App\Support\Csrf::field() ?>
                         <button type="submit" class="text-text-muted hover:text-danger">Remover</button>
                     </form>

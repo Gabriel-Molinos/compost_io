@@ -27,7 +27,7 @@ final class GoalService
              FROM goals g
              LEFT JOIN goal_categories gc ON gc.goal_id = g.id
              WHERE g.site_id = :s
-             GROUP BY g.id, g.period, g.total_articles, g.general_guidelines
+             GROUP BY g.id
              ORDER BY g.period DESC'
         );
         $stmt->execute(['s' => $siteId]);

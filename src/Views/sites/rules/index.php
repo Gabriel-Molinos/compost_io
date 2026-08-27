@@ -13,7 +13,7 @@ require __DIR__ . '/../_tabs.php';
 
 $base = '/sites/' . $site['id'] . '/rules';
 
-$renderList = static function (array $items, string $emptyText, string $siteId) use ($base): void {
+$renderList = static function (array $items, string $emptyText) use ($base): void {
     if ($items === []) {
         echo '<p class="mt-4 text-sm text-text-secondary">' . View::e($emptyText) . '</p>';
         return;
@@ -45,7 +45,7 @@ $renderList = static function (array $items, string $emptyText, string $siteId) 
             Adicionar
         </a>
     </div>
-    <?php $renderList($grouped['INTEREST'], 'Nenhum interesse definido.', (string) $site['id']); ?>
+    <?php $renderList($grouped['INTEREST'], 'Nenhum interesse definido.'); ?>
 </section>
 
 <section class="mt-10" aria-labelledby="h-nao">
@@ -56,5 +56,5 @@ $renderList = static function (array $items, string $emptyText, string $siteId) 
             Adicionar
         </a>
     </div>
-    <?php $renderList($grouped['NON_INTEREST'], 'Nenhum não-interesse definido.', (string) $site['id']); ?>
+    <?php $renderList($grouped['NON_INTEREST'], 'Nenhum não-interesse definido.'); ?>
 </section>

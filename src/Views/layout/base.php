@@ -16,8 +16,10 @@ $flashSuccess = Session::pullFlash('success');
 $flashError = Session::pullFlash('error');
 
 $nav = [['/', 'Início']];
-if ($authUser !== null && $authUser['role'] === 'ADMIN') {
-    $nav[] = ['/users', 'Usuários'];
+if ($authUser !== null) {
+    if ($authUser['role'] === 'ADMIN') {
+        $nav[] = ['/users', 'Usuários'];
+    }
     $nav[] = ['/sites', 'Sites'];
 }
 
@@ -101,7 +103,7 @@ $navClass = static fn (string $href): string => $href === $currentPath || ($href
         </main>
 
         <footer class="mt-12 border-t border-border pt-6 text-xs text-text-muted">
-            Fase 2 — Usuários e sites · <?= View::e(date('Y')) ?>
+            Fase 3 — Planejamento · <?= View::e(date('Y')) ?>
         </footer>
     </div>
 </body>

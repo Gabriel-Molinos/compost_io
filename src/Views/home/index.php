@@ -41,17 +41,20 @@ $isAdmin = $user !== null && $user['role'] === 'ADMIN';
         <?php else: ?>
             <ul class="mt-3 divide-y divide-border rounded-lg border border-border">
                 <?php foreach ($mySites as $site): ?>
-                    <li class="flex items-center justify-between px-4 py-3">
-                        <span class="text-text-primary"><?= View::e($site['name']) ?></span>
-                        <span class="text-sm text-text-muted">
-                            <?= View::e($site['niche'] ?? '—') ?>
-                            <?php if ((int) $site['is_active'] !== 1): ?>· inativo<?php endif; ?>
-                        </span>
+                    <li>
+                        <a href="/sites/<?= View::e($site['id']) ?>"
+                           class="flex items-center justify-between px-4 py-3 hover:bg-surface">
+                            <span class="text-text-primary"><?= View::e($site['name']) ?></span>
+                            <span class="text-sm text-text-muted">
+                                <?= View::e($site['niche'] ?? '—') ?>
+                                <?php if ((int) $site['is_active'] !== 1): ?>· inativo<?php endif; ?>
+                            </span>
+                        </a>
                     </li>
                 <?php endforeach; ?>
             </ul>
             <p class="mt-3 text-sm text-text-muted">
-                A configuração editorial de cada site (categorias, metas, interesses) chega na Fase 3.
+                Abra um site para configurar categorias, interesses e metas editoriais.
             </p>
         <?php endif; ?>
     </section>

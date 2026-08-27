@@ -9,22 +9,25 @@ use App\Services\AuthService;
 use App\Support\Http;
 
 /**
- * Roteador manual (sem framework). Mapeia método + caminho exato para um
- * handler [Classe::class, 'metodo'] ou um callable.
+ * Roteador manual (sem framework). Caminho pode ter parâmetros: `/sites/{id}/edit`.
+ * O 4º/5º argumentos marcam rotas que exigem sessão / perfil ADMIN.
  * Ver docs/technical/arquitetura.md §10.
  */
 final class Router
 {
-    /** @var array<int, array{method: string, path: string, handler: callable|array, auth: bool}> */
+    /** @var array<int, array{method:string, regex:string, handler:callable|array, auth:bool, admin:bool}> */
     private array $routes = [];
 
-    public function add(string $method, string $path, callable|array $handler, bool $auth = false): void
+    public function add(string $method, string $path, callable|array $handler, bool $auth = false, bool $admin = false): void
     {
+        $regex = preg_replace('#\{([a-zA-Z_]+)\}#', '(?P<$1>[^/]+)', $this->normalize($path));
+
         $this->routes[] = [
             'method'  => strtoupper($method),
-            'path'    => $this->normalize($path),
+            'regex'   => '#^' . $regex . '$#',
             'handler' => $handler,
-            'auth'    => $auth,
+            'auth'    => $auth || $admin,
+            'admin'   => $admin,
         ];
     }
 
@@ -34,20 +37,22 @@ final class Router
         $path = $this->normalize(parse_url($uri, PHP_URL_PATH) ?: '/');
 
         foreach ($this->routes as $route) {
-            if ($route['method'] !== $method || $route['path'] !== $path) {
+            if ($route['method'] !== $method || !preg_match($route['regex'], $path, $matches)) {
                 continue;
             }
 
             if ($route['auth'] && !AuthService::check()) {
-                if ($method === 'GET') {
-                    Http::redirect('/login');
-                }
-
-                http_response_code(401);
+                $method === 'GET' ? Http::redirect('/login') : $this->abort(401);
                 return;
             }
 
-            $this->call($route['handler']);
+            if ($route['admin'] && !AuthService::isAdmin()) {
+                $this->abort(403);
+                return;
+            }
+
+            $params = array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY);
+            $this->call($route['handler'], array_values($params));
             return;
         }
 
@@ -61,14 +66,21 @@ final class Router
         return $path === '/' ? '/' : rtrim($path, '/');
     }
 
-    private function call(callable|array $handler): void
+    /** @param list<string> $params */
+    private function call(callable|array $handler, array $params): void
     {
         if (is_array($handler)) {
             [$class, $method] = $handler;
-            (new $class())->{$method}();
+            (new $class())->{$method}(...$params);
             return;
         }
 
-        $handler();
+        $handler(...$params);
+    }
+
+    private function abort(int $status): void
+    {
+        http_response_code($status);
+        (new ErrorController())->show($status);
     }
 }

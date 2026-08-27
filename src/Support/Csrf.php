@@ -37,4 +37,18 @@ final class Csrf
 
         return is_string($expected) && is_string($token) && hash_equals($expected, $token);
     }
+
+    /**
+     * Valida o token do POST; se falhar, sinaliza e volta para a página anterior.
+     * Para formulários onde re-renderizar com o estado é melhor, use check() direto.
+     */
+    public static function verify(): void
+    {
+        if (self::check($_POST['_token'] ?? null)) {
+            return;
+        }
+
+        Session::flash('error', 'Sessão expirada. Tente enviar o formulário de novo.');
+        Http::redirect($_SERVER['HTTP_REFERER'] ?? '/');
+    }
 }

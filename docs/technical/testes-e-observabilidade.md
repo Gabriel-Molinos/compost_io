@@ -1,0 +1,53 @@
+# Parte 16 — Testes `[PROPOSTA]`
+
+### 92. Estratégia de testes `[PROPOSTA]`
+
+| Tipo | Onde roda | Quando usar | Ferramenta sugerida |
+|---|---|---|---|
+| Unitário | PHP | Services e regras de negócio isoladas | PHPUnit |
+| Integração | PHP | Fluxos entre Controller → Service → PDO (ex.: criar artigo → gerar meta) | PHPUnit + banco de teste |
+| E2E | Navegador | Fluxos críticos completos (login, aprovação, publicação) | Playwright ou Cypress — continuam válidos por automatizarem o navegador, independente da tecnologia por trás da página |
+| Acessibilidade | Navegador | Views novas ou alteradas | Checagem manual de teclado + contraste ([Parte 20, seção 106](ui-ux-frontend.md#106-checklist-de-ui-antes-de-um-pr)); ferramenta automatizável (ex.: axe) opcional no futuro |
+
+### 93. Cobertura mínima esperada `[PROPOSTA — definir número junto ao time]`
+
+- Módulos com regra de negócio crítica (aprovação, permissões, integrações) devem ter teste antes de serem considerados concluídos — coerente com a [Regra de transparência (seção 59)](../ai/regras-claude-code.md#59-regra-de-transparência): "nunca considerar uma tarefa concluída se apenas foi criada a estrutura sem que o fluxo tenha sido realmente testado."
+
+---
+
+# Parte 17 — Observabilidade `[PROPOSTA]`
+
+### 94. Logging `[PROPOSTA]`
+
+- Níveis: `error`, `warn`, `info`, `debug`.
+- Nunca logar credenciais, tokens ou dados sensíveis (reforça a [seção 48, regra 5](../technical/seguranca.md#48-política-de-segurança-para-credenciais)).
+- Logs de execução de IA (pesquisa, escrita, SEO, imagem) devem ser persistidos na tabela `ai_executions` (ver [seção 87](schema.md#87-tabelas--estado-atual-migration-0001)), não só em arquivo de log.
+
+### 94.1 Monitoramento e alertas `[PROPOSTA]`
+
+> **Precisa aprovação.** Sem ferramenta paga nesta fase: falha após retry, custo de IA no limite, ou artigo `BLOCKED` viram só um indicador visível na Visão Geral da dashboard (ver [seção 33](../editorial/fluxo-editorial.md#33-centro-de-inteligência-editorial)). Alerta externo (e-mail/Slack) e métricas de sistema ficam para quando o volume justificar (Fase 9).
+
+### 95. Controle de custo de IA `[PROPOSTA]`
+
+- Registrar o custo de cada execução de IA por artigo (campo `cost` em `ai_executions`).
+- Relatório de custo por site pode compor o [Centro de Inteligência Editorial (seção 33)](../editorial/fluxo-editorial.md#33-centro-de-inteligência-editorial) no futuro.
+
+> **Decisão registrada (método):** o limite de gasto por site/mês é calculado pela fórmula `custo médio por artigo × meta de artigos/mês do site × margem de segurança`. Ao atingir o limite, o comportamento inicial é **alertar o Administrador** (não bloquear automaticamente a produção) — bloqueio automático só deve ser considerado depois de haver dados reais de custo.
+>
+> **Decisão pendente:** o **valor numérico** do limite (e da margem de segurança) ainda não pode ser definido — depende de dados reais de custo por artigo, que só existirão após os primeiros artigos produzidos na Fase 4 (IA). Reforça a [Regra de não-invenção (seção 58)](../ai/regras-claude-code.md#58-regra-de-não-invenção): não inventar um número sem base real.
+>
+> Enquanto não há dado real, começar a Fase 4 testando com poucos sites/artigos por vez (não os 60+ de uma vez) mantém o gasto de IA baixo e visível até o número do limite poder ser definido com base real.
+
+### 96. Política de retry / falha da IA `[PROPOSTA]`
+
+Diferente da [regeneração por rejeição humana (seção 29)](../editorial/fluxo-editorial.md#29-regeneração), esta trata de falhas técnicas (timeout, erro de API, resposta inválida):
+
+> **Decisão registrada:** **3 tentativas automáticas** por etapa técnica (pesquisa, escrita, SEO, imagem), com **backoff exponencial** entre elas (ex.: 30s → 2min → 10min). Usa a mesma cardinalidade da [Regeneração por rejeição humana (seção 29)](../editorial/fluxo-editorial.md#29-regeneração) só por consistência de leitura — são conceitos diferentes (falha técnica vs. rejeição humana) e podem divergir no futuro se fizer sentido.
+
+- Após esgotar as 3 tentativas, o artigo deve ir para um estado de erro visível ao Redator-Chefe (ex.: `BLOCKED` ou um novo estado `ERROR`), nunca falhar silenciosamente — reforça a [Regra de transparência (seção 59)](../ai/regras-claude-code.md#59-regra-de-transparência).
+
+## Ver também
+
+- [Diagrama — falha técnica e retry](diagrama-sequencia.md#982-sequência-de-falha-técnica--retry-proposta)
+- [Schema — tabela `ai_executions`](schema.md#87-tabelas--estado-atual-migration-0001)
+- [Segurança — política de credenciais](seguranca.md)

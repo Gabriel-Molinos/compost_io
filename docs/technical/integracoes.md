@@ -1,0 +1,261 @@
+# Parte 6 — Integrações Externas
+
+### 34. Visão geral das integrações
+
+A arquitetura terá:
+
+```
+AI Provider
+    │
+    ├── Content Generation
+    ├── Research
+    ├── SEO
+    └── Review
+
+Image Provider
+    │
+    └── Nano Banana
+```
+
+- **Texto** → Gemini API.
+- **Imagens** → Nano Banana.
+- **Desenvolvimento** → Claude Code será utilizado pelo desenvolvedor para auxiliar na implementação da plataforma. Claude **não** fará parte do runtime da plataforma.
+
+Todas as integrações externas deverão ficar isoladas. Estrutura planejada:
+
+```
+backend/
+└── src/
+    └── integrations/
+        ├── gemini/
+        ├── image-generation/
+        ├── wordpress/
+        ├── mysql/
+        └── redis/
+```
+
+Cada integração deverá possuir: configuração, cliente, serviço, tratamento de erros, tipos, testes quando aplicável. O restante da aplicação não deve precisar conhecer os detalhes internos da API externa.
+
+### 35. Gemini API
+
+Responsável por: planejamento, pesquisa, produção, SEO, revisão, análise de feedback.
+
+Documentação:
+- Docs: https://ai.google.dev/gemini-api/docs
+- Quickstart: https://ai.google.dev/gemini-api/docs/quickstart
+- Geração de texto: https://ai.google.dev/gemini-api/docs/text-generation
+- Modelos: https://ai.google.dev/gemini-api/docs/models
+- Autenticação: https://ai.google.dev/gemini-api/docs/api-key
+- Structured Outputs: https://ai.google.dev/gemini-api/docs/structured-output
+
+### 36. Geração de imagens (Nano Banana)
+
+A geração de imagens será tratada como serviço separado da geração de texto. A implementação utilizará a família Nano Banana conforme a configuração definida para o projeto.
+
+A integração deve ficar isolada em um serviço próprio — **Image Generation Service** — o que permite alterar o fornecedor/modelo sem alterar o restante da aplicação.
+
+O serviço deve **converter as imagens para WebP** antes do upload para o WordPress, e o corpo do artigo pode conter **várias imagens** (não só a destacada) — a cadência e as regras de alt text ficam no [Checklist SEO On-Page — Imagens](../editorial/seo.md#imagens).
+
+Documentação oficial: https://ai.google.dev/gemini-api/docs/image-generation
+
+### 36.1 Armazenamento das imagens geradas `[PROPOSTA]`
+
+> **Precisa aprovação — decisão arquitetural ainda não tomada.** O README original nunca definiu onde as imagens geradas pelo Nano Banana ficam guardadas antes (e depois) de o Redator-Chefe escolher uma (ver [Imagens — seção 25](../editorial/fluxo-editorial.md#25-imagens)). Proposta de valor-padrão, a validar:
+
+- Guardar localmente em `public/assets/uploads/{site}/{article_id}/`, com o nome do arquivo referenciado na tabela `images` (ver [schema — seção 87](schema.md#87-tabelas--estado-atual-migration-0001)).
+- Simples e sem dependência externa nova — coerente com a filosofia "sem dependência pesada" das ADRs 002/006, adequado para a fase inicial com poucos sites.
+- Quando o artigo é aprovado e agendado, a imagem escolhida é enviada para a **media library do WordPress do site** via REST API (ver [seção 37](#37-wordpress-rest-api)) — a cópia local pode ser mantida como histórico ou removida depois do envio confirmado.
+
+Object storage (S3 ou equivalente) fica registrado como possível revisão futura, se o volume de imagens/sites (Fase 9 — escala) tornar o disco local um gargalo — não é decisão para a primeira versão.
+
+### 37. WordPress REST API
+
+Responsável por: consultar categorias, consultar autores, enviar mídia, criar artigos, definir categorias, definir autores, agendar, verificar publicação.
+
+Documentação:
+- Handbook: https://developer.wordpress.org/rest-api/
+- Referência: https://developer.wordpress.org/rest-api/reference/
+- Posts: https://developer.wordpress.org/rest-api/reference/posts/
+- Media: https://developer.wordpress.org/rest-api/reference/media/
+- Categories: https://developer.wordpress.org/rest-api/reference/categories/
+- Users: https://developer.wordpress.org/rest-api/reference/users/
+
+### 38. MySQL (uso na integração)
+
+Banco oficial da plataforma.
+
+- Reference Manual: https://dev.mysql.com/doc/refman/8.4/en/
+- Tutorial: https://dev.mysql.com/doc/refman/8.4/en/tutorial.html
+
+### 39. Beekeeper Studio (uso na integração)
+
+Ferramenta utilizada pela equipe para administrar e consultar o MySQL. O Beekeeper **não** participa como servidor ou camada da aplicação — a aplicação se conecta diretamente ao MySQL.
+
+```
+Navegador
+    ↓
+PHP (PDO)
+    ↓
+MySQL
+    ↑
+Beekeeper Studio
+```
+
+Documentação: https://docs.beekeeperstudio.io/
+
+### 40. NotebookLM / Gemini Notebook Enterprise
+
+> **Status da integração: planejamento.** Não implementar nesta primeira etapa.
+
+A plataforma poderá utilizar o ecossistema NotebookLM como uma camada de conhecimento e pesquisa baseada em fontes.
+
+**Importante:** o NotebookLM **não** será o banco de dados da plataforma e **não** substituirá o MySQL. Também não deve ser tratado como o motor principal de geração dos artigos. Sua função será fornecer um ambiente estruturado de conhecimento para fontes e documentos utilizados durante a pesquisa editorial.
+
+**40.1 Arquitetura conceitual**
+
+```
+Site
+ ↓
+Base de conhecimento
+ ↓
+Notebook
+ ↓
+Fontes
+ ↓
+Pesquisa editorial
+ ↓
+Gemini
+ ↓
+Artigo
+```
+
+**40.2 Organização por site**
+
+Cada site poderá possuir seu próprio notebook/base de conhecimento (ex.: `Valorizei → Notebook Editorial Valorizei`, `Nizelo → Notebook Editorial Nizelo`, `Gavsy → Notebook Editorial Gavsy`), evitando mistura de fontes entre sites diferentes.
+
+**40.3 Fontes**
+
+Poderão incluir: documentos, PDFs, arquivos de texto, Markdown, CSV, URLs, conteúdo web, documentos Google, apresentações, vídeos públicos do YouTube, outros formatos suportados oficialmente. A documentação oficial do NotebookLM informa suporte a diversos tipos de fontes, incluindo documentos, PDFs, URLs, arquivos de texto, imagens e vídeos públicos do YouTube.
+
+**40.4 Possíveis fontes por site**
+
+Um notebook de um site financeiro poderá conter: Banco Central, Receita Federal, CVM, documentos de bancos, documentos de produtos, políticas, manuais, estudos, documentos internos, fontes editoriais aprovadas — permitindo que a pesquisa editorial seja feita utilizando fontes previamente selecionadas e confiáveis.
+
+**40.5 Gerenciamento programático**
+
+Caso seja utilizado o Gemini Notebook Enterprise, a plataforma poderá utilizar as APIs oficiais do Google Cloud para: criar, recuperar, listar, compartilhar e excluir notebooks; adicionar, recuperar e remover fontes. A documentação oficial apresenta métodos como `notebooks.create`, `notebooks.get`, `notebooks.listRecentlyViewed`, `notebooks.share` e APIs para gerenciamento de fontes.
+
+**40.6 Autenticação**
+
+A integração programática do Gemini Notebook Enterprise utiliza autenticação do Google Cloud e permissões IAM. Não armazenar credenciais pessoais de usuários diretamente no código. A documentação oficial mostra o uso de credenciais do Google Cloud e permissões IAM para acessar e compartilhar notebooks.
+
+**40.7 Importação de fontes** (fluxo futuro)
+
+```
+Administrador
+ ↓
+Seleciona site
+ ↓
+Seleciona notebook
+ ↓
+Adiciona fonte
+ ↓
+Sistema registra fonte
+ ↓
+Notebook recebe fonte
+```
+
+As fontes também devem possuir registro interno na plataforma para rastreabilidade.
+
+**40.8 Registro interno**
+
+Mesmo utilizando NotebookLM/Gemini Notebook, o sistema deverá manter seu próprio registro: `knowledge_sources`, com campos conceituais: id, site_id, notebook_id, source_id, nome, tipo, URL ou referência, status, data de inclusão, data de atualização, responsável. O Notebook não deve ser usado como substituto do banco MySQL da plataforma.
+
+**40.9 Isolamento por site**
+
+Nunca utilizar automaticamente fontes de um site em outro (ex.: `Valorizei → fontes financeiras`, `Nizelo → fontes de tecnologia`, `Gavsy → fontes do respectivo nicho`). A aplicação deve sempre saber: `site_id → notebook_id → source_ids`.
+
+**40.10 Papel no processo editorial**
+
+```
+META
+ ↓
+TEMA
+ ↓
+PESQUISA
+ ↓
+FONTES DO SITE
+ ↓
+NOTEBOOK
+ ↓
+CONTEXTUALIZAÇÃO
+ ↓
+GEMINI
+ ↓
+BRIEF
+ ↓
+ARTIGO
+```
+
+A geração textual continuará sendo uma responsabilidade do serviço de conteúdo/Gemini definido pela plataforma.
+
+**40.11 Importante sobre escopo**
+
+Não tornar a plataforma dependente do NotebookLM. Se a integração estiver indisponível, a produção editorial principal deve continuar funcionando através dos demais serviços. O NotebookLM deve ser uma integração desacoplada, através de uma camada **Knowledge Provider** que permita futuramente `NotebookLM`, `Outro provedor` ou `Base própria de documentos` sem alterar o restante do sistema.
+
+**40.12 Documentação oficial**
+
+- NotebookLM — Central de ajuda: https://support.google.com/gemininotebook/
+- NotebookLM — fontes: https://support.google.com/notebooklm/answer/16215270
+- Gemini Notebook Enterprise — APIs de notebooks: https://docs.cloud.google.com/gemini/enterprise/notebooklm-enterprise/docs/api-notebooks
+- Gemini Notebook Enterprise — APIs de fontes: https://docs.cloud.google.com/gemini/enterprise/notebooklm-enterprise/docs/api-notebooks-sources
+- Gemini Notebook Enterprise — gerenciamento e compartilhamento: https://docs.cloud.google.com/gemini/enterprise/notebooklm-enterprise/docs/api-notebooks
+
+**40.13 Status da integração — antes de implementar, confirmar:**
+
+- qual produto do NotebookLM será utilizado;
+- se a empresa possui Gemini Notebook Enterprise;
+- licenças disponíveis;
+- projeto Google Cloud;
+- permissões IAM;
+- região;
+- método de autenticação;
+- quais tipos de fontes serão utilizados.
+
+A integração só deverá ser implementada depois dessa validação.
+
+### 41. Abstração de provedores
+
+A plataforma deverá utilizar interfaces para serviços externos. Exemplo conceitual:
+
+```
+AIProvider
+├── generateContent()
+├── reviewContent()
+└── generateStructuredOutput()
+```
+
+Implementação atual: `GeminiProvider`. Futuramente, outro fornecedor poderá ser adicionado sem alterar os módulos editoriais. O mesmo princípio deve ser aplicado para `ImageProvider`, `WordPressProvider`, `StorageProvider`.
+
+### 42. Organização das integrações no código
+
+Ver estrutura de diretórios em [seção 34](#34-visão-geral-das-integrações). Todas as integrações devem possuir **documentação interna** em:
+
+```
+docs/
+├── integrations/
+│   ├── gemini.md
+│   ├── images.md
+│   ├── wordpress.md
+│   ├── mysql.md
+│   └── beekeeper.md
+```
+
+Cada documento deve conter: objetivo, como funciona, configuração, variáveis necessárias, endpoints utilizados, tratamento de erros, limitações, documentação oficial, exemplos sem credenciais reais.
+
+## Ver também
+
+- [Segurança — credenciais por site](seguranca.md#46-credenciais-específicas-por-site)
+- [Fluxo editorial — Imagens](../editorial/fluxo-editorial.md#25-imagens) e [Integração WordPress](../editorial/fluxo-editorial.md#31-integração-wordpress)
+- [Referências oficiais](../referencias.md) — links de documentação de cada tecnologia
+- [ADR-004 — Separação Gemini/Nano Banana](../decisions/adr-004-gemini-nano-banana.md) e [ADR-005 — WordPress REST API](../decisions/adr-005-wordpress-rest-api.md)

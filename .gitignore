@@ -1,0 +1,23 @@
+# Dependências
+/vendor/
+/node_modules/
+
+# Ambiente local
+.env
+
+# Credenciais reais (host, usuário, senha) — só devem existir localmente, nunca versionadas
+docs/technical/credenciais-privadas.md
+
+# Build do Tailwind (se gerado localmente antes de decidir versionar ou não)
+/public/assets/css/app.css
+
+# Binário do Tailwind CLI standalone (baixado localmente, ~100 MB — ver docs/technical/setup-e-operacoes.md)
+/tools/
+
+# Config local do Claude Code (pessoal)
+.claude/settings.local.json
+
+# Sistema operacional / editor
+Thumbs.db
+.DS_Store
+*.log

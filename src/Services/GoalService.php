@@ -54,7 +54,7 @@ final class GoalService
     public function categoryTargets(int $goalId): array
     {
         $stmt = Connection::get()->prepare(
-            'SELECT category_id, target_count FROM goal_categories WHERE goal_id = :g'
+            'SELECT category_id, target_count FROM goal_categories WHERE goal_id = :g ORDER BY category_id'
         );
         $stmt->execute(['g' => $goalId]);
 

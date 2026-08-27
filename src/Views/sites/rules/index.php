@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Support\Csrf;
+use App\View;
+
+/** @var array<string, mixed> $site */
+/** @var array{INTEREST: list<array<string,mixed>>, NON_INTEREST: list<array<string,mixed>>} $grouped */
+
+$activeTab = 'rules';
+require __DIR__ . '/../_tabs.php';
+
+$base = '/sites/' . $site['id'] . '/rules';
+
+$renderList = static function (array $items, string $emptyText, string $siteId) use ($base): void {
+    if ($items === []) {
+        echo '<p class="mt-4 text-sm text-text-secondary">' . View::e($emptyText) . '</p>';
+        return;
+    }
+    echo '<ul class="mt-4 divide-y divide-border rounded-lg border border-border">';
+    foreach ($items as $rule) {
+        echo '<li class="flex items-center justify-between gap-4 px-4 py-3">';
+        echo '<div><p class="text-text-primary">' . View::e($rule['description']) . '</p>';
+        echo '<p class="mt-0.5 text-xs text-text-muted">Intensidade ' . View::e($rule['intensity']) . '/5</p></div>';
+        echo '<div class="flex shrink-0 items-center gap-3 text-sm">';
+        echo '<a href="' . $base . '/' . View::e($rule['id']) . '/edit" class="text-cyan hover:text-cyan-light">Editar</a>';
+        echo '<form method="post" action="' . $base . '/' . View::e($rule['id']) . '/delete" '
+           . 'onsubmit="return confirm(\'Remover esta regra?\');">' . Csrf::field()
+           . '<button type="submit" class="text-text-muted hover:text-danger">Remover</button></form>';
+        echo '</div></li>';
+    }
+    echo '</ul>';
+};
+?>
+<p class="text-sm text-text-secondary">
+    Interesses e não-interesses guiam a IA. Cada regra tem intensidade de 1 a 5.
+</p>
+
+<section class="mt-6" aria-labelledby="h-interesses">
+    <div class="flex items-center justify-between">
+        <h2 id="h-interesses" class="text-lg font-semibold text-text-primary">Interesses</h2>
+        <a href="<?= $base ?>/new?type=INTEREST"
+           class="rounded-md bg-cyan px-3 py-1.5 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+            Adicionar
+        </a>
+    </div>
+    <?php $renderList($grouped['INTEREST'], 'Nenhum interesse definido.', (string) $site['id']); ?>
+</section>
+
+<section class="mt-10" aria-labelledby="h-nao">
+    <div class="flex items-center justify-between">
+        <h2 id="h-nao" class="text-lg font-semibold text-text-primary">Não-interesses</h2>
+        <a href="<?= $base ?>/new?type=NON_INTEREST"
+           class="rounded-md border border-border px-3 py-1.5 text-sm font-semibold text-text-primary hover:border-cyan">
+            Adicionar
+        </a>
+    </div>
+    <?php $renderList($grouped['NON_INTEREST'], 'Nenhum não-interesse definido.', (string) $site['id']); ?>
+</section>

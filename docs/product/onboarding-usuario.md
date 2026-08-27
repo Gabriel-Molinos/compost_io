@@ -28,4 +28,4 @@ O README original nunca definiu o fluxo inverso (remover acesso de um usuário).
 
 - [Onboarding de site](onboarding-site.md)
 - [Tabela de permissões](../technical/requisitos.md#641-tabela-de-permissões-por-recurso-proposta)
-- [Autenticação (proposta)](../technical/requisitos.md#642-autenticação-proposta)
+- [Autenticação](../technical/requisitos.md#642-autenticação)

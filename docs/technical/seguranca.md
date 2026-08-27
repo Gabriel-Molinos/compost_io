@@ -133,6 +133,6 @@ Antes de colocar qualquer versão em produção:
 ## Ver também
 
 - [Credenciais privadas](credenciais-privadas.md) — arquivo local, fora do Git, com os valores reais
-- [Requisitos — Autenticação (proposta)](requisitos.md#642-autenticação-proposta)
+- [Requisitos — Autenticação](requisitos.md#642-autenticação)
 - [Regras para o Claude Code](../ai/regras-claude-code.md) — o que precisa de aprovação antes de mexer em segurança
 - [Setup e operações — CI (proposta)](setup-e-operacoes.md#781-cideploy-proposta)

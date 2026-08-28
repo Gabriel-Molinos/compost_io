@@ -56,9 +56,15 @@ Branches planejadas:
 
 ### 83. Pré-requisitos
 
-- **PHP 8.1+** com as extensões `pdo_mysql`, `openssl`, `mbstring` habilitadas.
-  No Windows, editar `C:\php\php.ini` e descomentar `extension=pdo_mysql`
-  (`openssl` e `mbstring` já costumam vir ligadas). Conferir com `php -m`.
+- **PHP 8.1+** com as extensões `pdo_mysql`, `openssl`, `mbstring`, `curl` e
+  `sodium` habilitadas (`sodium` cifra as credenciais WordPress — ver Fase 7).
+  No Windows, editar `C:\php\php.ini` e descomentar `extension=pdo_mysql`,
+  `extension=curl` e `extension=sodium` (`openssl` e `mbstring` já costumam vir
+  ligadas). Conferir com `php -m`.
+  No Windows, definir também `extension_dir` com **caminho absoluto**
+  (`extension_dir = "C:\php\ext"`) — com o valor relativo padrão (`"ext"`) o
+  `php -S` iniciado de dentro da pasta do projeto não encontra as DLLs e as
+  extensões silenciosamente não carregam.
 - **Composer** (autoload PSR-4 — ver [ADR-002](../decisions/adr-002-php-pdo.md)).
 - **Tailwind CLI standalone** (binário, sem Node.js — ver [seção 5](arquitetura.md#5-stack-do-projeto--frontend)).
 - Acesso ao **MySQL** de dev (banco `redacao` na DigitalOcean — valores em [credenciais-privadas.md](credenciais-privadas.md)).

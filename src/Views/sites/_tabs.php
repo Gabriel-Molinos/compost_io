@@ -15,6 +15,7 @@ $tabs = [
     ['goals',      'Metas',       '/sites/' . $site['id'] . '/goals',      true],
     ['production', 'Produção',    '/sites/' . $site['id'] . '/production', true],
     ['config',     'Configuração', '/sites/' . $site['id'] . '/edit',      AuthService::isAdmin()],
+    ['wordpress',  'WordPress',   '/sites/' . $site['id'] . '/wordpress', AuthService::isAdmin()],
     ['ai',         'IA (teste)',  '/sites/' . $site['id'] . '/ai-playground', AuthService::isAdmin()],
 ];
 ?>

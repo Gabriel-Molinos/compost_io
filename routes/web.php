@@ -11,6 +11,7 @@ use App\Controllers\HomeController;
 use App\Controllers\ProductionController;
 use App\Controllers\SiteController;
 use App\Controllers\UserController;
+use App\Controllers\WordPressConnectionController;
 use App\Router;
 
 /**
@@ -68,6 +69,12 @@ return static function (Router $router): void {
     $router->add('GET',  '/sites/{id}/goals/{gid}/edit',  [GoalController::class, 'edit'],    auth: true);
     $router->add('POST', '/sites/{id}/goals/{gid}',       [GoalController::class, 'update'],  auth: true);
     $router->add('POST', '/sites/{id}/goals/{gid}/delete', [GoalController::class, 'destroy'], auth: true);
+
+    // Conexão WordPress do site (RF-016 — somente ADMIN)
+    $router->add('GET',  '/sites/{id}/wordpress',        [WordPressConnectionController::class, 'edit'],    admin: true);
+    $router->add('POST', '/sites/{id}/wordpress',        [WordPressConnectionController::class, 'update'],  admin: true);
+    $router->add('POST', '/sites/{id}/wordpress/test',   [WordPressConnectionController::class, 'test'],    admin: true);
+    $router->add('POST', '/sites/{id}/wordpress/delete', [WordPressConnectionController::class, 'destroy'], admin: true);
 
     // Playground de IA do site (somente ADMIN — cada execução é chamada real ao Gemini)
     $router->add('GET',  '/sites/{id}/ai-playground', [AiPlaygroundController::class, 'index'], admin: true);

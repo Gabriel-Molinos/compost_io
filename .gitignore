@@ -12,7 +12,9 @@ docs/technical/credenciais-privadas.md
 /public/assets/css/app.css
 
 # Binário do Tailwind CLI standalone (baixado localmente, ~100 MB — ver docs/technical/setup-e-operacoes.md)
-/tools/
+/tools/*
+# ...exceto o bundle de CA (Mozilla, via curl.se) usado nas chamadas HTTPS de saída — esse é versionado
+!/tools/cacert.pem
 
 # Config local do Claude Code (pessoal)
 .claude/settings.local.json

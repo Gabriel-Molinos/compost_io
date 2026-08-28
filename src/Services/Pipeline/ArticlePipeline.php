@@ -11,20 +11,25 @@ use App\Integrations\Gemini\GeminiProvider;
 use App\Queue\RetryPolicy;
 use App\Queue\RetryRunner;
 use App\Services\AiExecutionService;
+use App\Services\ArticleNoteService;
 use App\Services\ArticleService;
 use App\Services\CategoryService;
 use App\Services\PromptBuilder;
 
 /**
- * Orquestra a produção de um rascunho (fluxo-editorial §21, fatia 4.4a):
+ * Orquestra a produção de um rascunho (fluxo-editorial §21):
  *
  *   cria artigo (PLANNED)
- *     -> planning  (título, palavra-chave, ângulo; checa canibalização)
- *     -> research  (fatos + fontes -> article_sources)
- *     -> writing   (corpo -> article_versions; artigo vira IN_PROGRESS)
+ *     -> planning    (título, palavra-chave, ângulo; checa canibalização)
+ *     -> research    (fatos + fontes -> article_sources)
+ *     -> writing     (corpo -> article_versions; artigo vira IN_PROGRESS)
+ *     -> seo         (auditoria on-page)
+ *     -> compliance  (auditoria de qualidade/AdSense)
+ *     -> review      (parecer pré-humano)  -> artigo vira IN_REVIEW
  *
- * Cada passo é uma execução rastreada em `ai_executions` com retry (4.3).
- * Portões de SEO/compliance/revisão são a fatia 4.4b.
+ * Cada passo é uma execução rastreada em `ai_executions` com retry (4.3); o JSON
+ * de cada passo é gravado em `article_ai_notes`. A aprovação é sempre humana
+ * (requisitos §65.1) — as pendências de seo/compliance/review ficam nas notas.
  */
 final class ArticlePipeline
 {
@@ -34,6 +39,7 @@ final class ArticlePipeline
     private PromptBuilder $prompts;
     private ArticleService $articles;
     private AiExecutionService $executions;
+    private ArticleNoteService $notes;
     private CategoryService $categories;
     private RetryRunner $retry;
 
@@ -42,6 +48,7 @@ final class ArticlePipeline
         ?PromptBuilder $prompts = null,
         ?ArticleService $articles = null,
         ?AiExecutionService $executions = null,
+        ?ArticleNoteService $notes = null,
         ?CategoryService $categories = null,
         ?RetryRunner $retry = null,
     ) {
@@ -49,12 +56,13 @@ final class ArticlePipeline
         $this->prompts = $prompts ?? new PromptBuilder();
         $this->articles = $articles ?? new ArticleService();
         $this->executions = $executions ?? new AiExecutionService();
+        $this->notes = $notes ?? new ArticleNoteService();
         $this->categories = $categories ?? new CategoryService();
         $this->retry = $retry ?? new RetryRunner(RetryPolicy::default());
     }
 
     /**
-     * @return array{article_id:int, title:string, word_count:int, cost:float, warnings:list<string>}
+     * @return array{article_id:int, title:string, word_count:int, cost:float, recommendation:string, warnings:list<string>}
      * @throws PipelineException
      */
     public function generate(int $siteId, ?int $goalId = null, ?int $categoryId = null): array
@@ -134,29 +142,95 @@ final class ArticlePipeline
             $warnings[] = 'Pergunta em aberto (IA): ' . (string) $q;
         }
 
-        return [
-            'article_id' => $articleId,
-            'title'      => (string) ($writing['title'] ?? $plan['title'] ?? 'Sem título'),
-            'word_count' => $wordCount,
-            'cost'       => $this->executions->totalCostForArticle($articleId),
-            'warnings'   => $warnings,
+        // --- portões de qualidade (4.4b) -----------------------------------
+        $finalTitle = (string) ($writing['title'] ?? $plan['title'] ?? 'Sem título');
+        $draft = [
+            'title'           => $finalTitle,
+            'slug'            => (string) ($writing['slug'] ?? ''),
+            'meta_description' => (string) ($writing['meta_description'] ?? ''),
+            'word_count'      => $wordCount,
+            'content_html'    => $html,
         ];
+
+        // --- seo -----------------------------------------------------------
+        $seo = $this->step('seo', $articleId, $siteId, $goalId, $resolvedCategoryId, $brief, $draft);
+        foreach ((array) ($seo['issues'] ?? []) as $issue) {
+            if (is_array($issue) && ($issue['severity'] ?? '') === 'block') {
+                $warnings[] = 'SEO (bloqueio): ' . (string) ($issue['item'] ?? '') . ' — ' . (string) ($issue['fix'] ?? '');
+            }
+        }
+        if (($seo['cannibalization'] ?? 'none') === 'high') {
+            $warnings[] = 'SEO: risco alto de canibalização de palavra-chave.';
+        }
+
+        // --- compliance --------------------------------------------------
+        $compliance = $this->step('compliance', $articleId, $siteId, $goalId, $resolvedCategoryId, $brief, $draft);
+        foreach ((array) ($compliance['blocking'] ?? []) as $b) {
+            if (is_array($b)) {
+                $warnings[] = 'Compliance (bloqueio): ' . (string) ($b['rule'] ?? '') . ' — ' . (string) ($b['fix'] ?? $b['evidence'] ?? '');
+            }
+        }
+
+        // --- review (parecer pré-humano) --------------------------------
+        $reviewBrief = $brief + ['notes' => $this->auditDigest($seo, $compliance)];
+        $review = $this->step('review', $articleId, $siteId, $goalId, $resolvedCategoryId, $reviewBrief, $draft);
+        $recommendation = (string) ($review['recommendation'] ?? 'needs_fix');
+        if ($recommendation !== 'ready_for_human') {
+            $warnings[] = 'Revisão da IA: ' . $recommendation . ' — ' . (string) ($review['summary'] ?? '');
+        }
+
+        // O humano é quem aprova (requisitos §65.1) — o artigo entra na fila de revisão
+        // mesmo com pendências; elas ficam visíveis nas notas.
+        $this->articles->setStatus($articleId, 'IN_REVIEW');
+
+        return [
+            'article_id'     => $articleId,
+            'title'          => $finalTitle,
+            'word_count'     => $wordCount,
+            'cost'           => $this->executions->totalCostForArticle($articleId),
+            'recommendation' => $recommendation,
+            'warnings'       => $warnings,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $seo
+     * @param array<string, mixed> $compliance
+     */
+    private function auditDigest(array $seo, array $compliance): string
+    {
+        $lines = [];
+        $lines[] = 'SEO passa: ' . (($seo['passes'] ?? false) ? 'sim' : 'não');
+        foreach ((array) ($seo['issues'] ?? []) as $i) {
+            if (is_array($i)) {
+                $lines[] = "- SEO [{$i['severity']}] " . (string) ($i['item'] ?? '');
+            }
+        }
+        $lines[] = 'Compliance aprova: ' . (($compliance['approved'] ?? false) ? 'sim' : 'não');
+        foreach ((array) ($compliance['blocking'] ?? []) as $b) {
+            if (is_array($b)) {
+                $lines[] = '- Compliance bloqueio: ' . (string) ($b['rule'] ?? '');
+            }
+        }
+
+        return "Resultado das auditorias:\n" . implode("\n", $lines);
     }
 
     /**
      * Roda um passo: monta o prompt, chama a IA com retry, registra em ai_executions.
      *
      * @param array<string, string> $brief
+     * @param array<string, mixed>  $draft  artigo já escrito (passos de auditoria)
      * @return array<string, mixed> o JSON da resposta
      * @throws PipelineException
      */
-    private function step(string $step, int $articleId, int $siteId, ?int $goalId, ?int $categoryId, array $brief = []): array
+    private function step(string $step, int $articleId, int $siteId, ?int $goalId, ?int $categoryId, array $brief = [], array $draft = []): array
     {
         $execId = $this->executions->create($articleId, $step, self::PROVIDER);
         $this->executions->markRunning($execId);
 
         try {
-            $prompt = $this->prompts->build($step, $siteId, $goalId, $categoryId, $brief);
+            $prompt = $this->prompts->build($step, $siteId, $goalId, $categoryId, $brief, $draft);
             $result = $this->retry->run(
                 fn (): AIResult => $this->ai->generateJson($prompt, StepSchemas::{$step}()),
                 fn (int $attempt, AIException $e) => $this->executions->markRetrying($execId, $attempt, $e->getMessage()),
@@ -172,6 +246,7 @@ final class ArticlePipeline
         }
 
         $this->executions->markSuccess($execId, $result);
+        $this->notes->save($articleId, $step, $result->json);
 
         return $result->json;
     }

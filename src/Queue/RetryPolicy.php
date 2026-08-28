@@ -35,6 +35,15 @@ final class RetryPolicy
         return new self(backoffSeconds: [0, 0, 0]);
     }
 
+    /**
+     * Backoff curto, para quando o retry roda DENTRO da requisição HTTP
+     * (pipeline síncrono) — não dá para bloquear o worker por 10 min.
+     */
+    public static function inline(): self
+    {
+        return new self(backoffSeconds: [2, 5, 15]);
+    }
+
     /** Atraso antes da tentativa após `$failedAttempt` (1-based). 0 se não há mais retry. */
     public function delayAfter(int $failedAttempt): int
     {

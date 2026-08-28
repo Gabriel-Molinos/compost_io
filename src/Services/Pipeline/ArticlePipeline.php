@@ -15,6 +15,7 @@ use App\Services\ArticleNoteService;
 use App\Services\ArticleService;
 use App\Services\CategoryService;
 use App\Services\PromptBuilder;
+use Throwable;
 
 /**
  * Orquestra a produção de um rascunho (fluxo-editorial §21):
@@ -58,7 +59,9 @@ final class ArticlePipeline
         $this->executions = $executions ?? new AiExecutionService();
         $this->notes = $notes ?? new ArticleNoteService();
         $this->categories = $categories ?? new CategoryService();
-        $this->retry = $retry ?? new RetryRunner(RetryPolicy::default());
+        // O pipeline roda inline (driver de fila síncrono) — backoff curto.
+        // Um worker Redis futuro passaria RetryPolicy::default() aqui.
+        $this->retry = $retry ?? new RetryRunner(RetryPolicy::inline());
     }
 
     /**
@@ -203,7 +206,7 @@ final class ArticlePipeline
         $lines[] = 'SEO passa: ' . (($seo['passes'] ?? false) ? 'sim' : 'não');
         foreach ((array) ($seo['issues'] ?? []) as $i) {
             if (is_array($i)) {
-                $lines[] = "- SEO [{$i['severity']}] " . (string) ($i['item'] ?? '');
+                $lines[] = '- SEO [' . (string) ($i['severity'] ?? '?') . '] ' . (string) ($i['item'] ?? '');
             }
         }
         $lines[] = 'Compliance aprova: ' . (($compliance['approved'] ?? false) ? 'sim' : 'não');
@@ -235,7 +238,7 @@ final class ArticlePipeline
                 fn (): AIResult => $this->ai->generateJson($prompt, StepSchemas::{$step}()),
                 fn (int $attempt, AIException $e) => $this->executions->markRetrying($execId, $attempt, $e->getMessage()),
             );
-        } catch (AIException $e) {
+        } catch (Throwable $e) {
             $this->executions->markFailed($execId, $e->getMessage());
             throw new PipelineException("Passo {$step} falhou: {$e->getMessage()}", $articleId, $step, $e);
         }

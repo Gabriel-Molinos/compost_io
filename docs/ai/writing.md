@@ -16,6 +16,8 @@ validada (que vêm no brief).
    deve corresponder a uma fonte da pesquisa.
 4. **Links:** 3 a 5 internos, 1 a 2 externos (nova aba, `rel="noopener"`). Não
    ancore link na própria palavra-chave. Cite o último artigo publicado do site.
+   - **Toda fonte citada no texto vira link externo** `<a href="URL" target="_blank" rel="noopener">` para a URL exata que veio na pesquisa — nunca cite "segundo a APA" sem o link.
+   - Se você não tem a URL de um artigo interno para linkar, **não invente** e não deixe `href="#"`: escreva a frase sem o link e liste em `open_questions` que falta um link interno ali.
 5. **Humanize:** sem abertura genérica, sem repetição de fórmula, sem encher
    linguiça. Se faltou informação, diga no texto — não invente.
 

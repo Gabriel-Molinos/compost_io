@@ -35,6 +35,12 @@ $isEdit = !empty($site['id']);
     </div>
 
     <?= Form::text('target_audience', 'Público', $site, $errors) ?>
+
+    <?= Form::textarea('editorial_identity', 'Identidade editorial', $site, $errors, rows: 4) ?>
+    <p class="-mt-3 text-xs text-text-muted">
+        Voz e estilo do site em texto livre — orienta a IA na produção (ex.: “explica como para um amigo, usa exemplos reais, evita jargão”).
+    </p>
+
     <?= Form::text('wordpress_url', 'URL do WordPress', $site, $errors, type: 'url') ?>
     <?= Form::checkbox('is_active', 'Site ativo', $site, default: true) ?>
 

@@ -131,9 +131,10 @@ final class SiteController extends Controller
             'wordpress_url' => ['max:255'],
             'niche'         => ['max:191'],
             'tone'          => ['max:100'],
+            'editorial_identity' => ['max:5000'],
         ], [
             'name' => 'Nome', 'language' => 'Idioma', 'wordpress_url' => 'URL do WordPress',
-            'niche' => 'Nicho', 'tone' => 'Tom',
+            'niche' => 'Nicho', 'tone' => 'Tom', 'editorial_identity' => 'Identidade editorial',
         ]))->errors();
     }
 }

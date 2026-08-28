@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Database\Connection;
+use App\Support\HtmlSanitizer;
 
 /**
  * Artigos e seus dados diretos (versões de corpo, fontes). A máquina de estados
@@ -40,6 +41,17 @@ final class ArticleService
         $stmt->execute(['id' => $id, 's' => $siteId]);
 
         return $stmt->fetch() ?: null;
+    }
+
+    /** Artigos criados no site nas últimas 24h (guarda de custo de IA — requisitos §95). */
+    public function countCreatedLast24h(int $siteId): int
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT COUNT(*) FROM articles WHERE site_id = :s AND created_at >= (NOW() - INTERVAL 1 DAY)'
+        );
+        $stmt->execute(['s' => $siteId]);
+
+        return (int) $stmt->fetchColumn();
     }
 
     public function create(int $siteId, ?int $goalId): int
@@ -109,7 +121,7 @@ final class ArticleService
         $pdo = Connection::get();
         $pdo->prepare(
             'INSERT INTO article_versions (article_id, content, word_count) VALUES (:a, :c, :w)'
-        )->execute(['a' => $articleId, 'c' => $contentHtml, 'w' => $wordCount]);
+        )->execute(['a' => $articleId, 'c' => HtmlSanitizer::clean($contentHtml), 'w' => $wordCount]);
 
         return (int) $pdo->lastInsertId();
     }

@@ -82,15 +82,16 @@ $compliance = $notes['compliance'] ?? null;
         <p class="mt-2 text-sm text-text-primary">
             <strong><?= View::e($review['recommendation'] ?? '?') ?></strong> — <?= View::e($review['summary'] ?? '') ?>
         </p>
-        <?php if (!empty($review['concerns'])): ?>
+        <?php if (!empty($review['concerns']) && is_array($review['concerns'])): ?>
             <ul class="mt-2 list-disc pl-5 text-sm text-text-secondary">
                 <?php foreach ($review['concerns'] as $c): ?>
+                    <?php if (!is_array($c)) { continue; } ?>
                     <li><?php if (!empty($c['area'])): ?><span class="text-text-muted">[<?= View::e($c['area']) ?>]</span> <?php endif; ?><?= View::e($c['note'] ?? '') ?></li>
                 <?php endforeach; ?>
             </ul>
         <?php endif; ?>
-        <?php if (!empty($review['assumptions_made'])): ?>
-            <p class="mt-2 text-xs text-text-muted">Suposições da IA: <?= View::e(implode(' · ', $review['assumptions_made'])) ?></p>
+        <?php if (!empty($review['assumptions_made']) && is_array($review['assumptions_made'])): ?>
+            <p class="mt-2 text-xs text-text-muted">Suposições da IA: <?= View::e(implode(' · ', array_map('strval', $review['assumptions_made']))) ?></p>
         <?php endif; ?>
     </section>
 <?php endif; ?>
@@ -110,13 +111,16 @@ $gate = static function (string $label, ?array $note, bool $ok, array $items) : 
 };
 $seoItems = [];
 foreach ((array) ($seo['issues'] ?? []) as $i) {
+    if (!is_array($i)) { continue; }
     $seoItems[] = '[' . ($i['severity'] ?? '?') . '] ' . ($i['item'] ?? '') . (empty($i['fix']) ? '' : ' → ' . $i['fix']);
 }
 $compItems = [];
 foreach ((array) ($compliance['blocking'] ?? []) as $b) {
+    if (!is_array($b)) { continue; }
     $compItems[] = ($b['rule'] ?? '') . (empty($b['fix']) ? '' : ' → ' . $b['fix']);
 }
 foreach ((array) ($compliance['warnings'] ?? []) as $w) {
+    if (!is_array($w)) { continue; }
     $compItems[] = '(aviso) ' . ($w['rule'] ?? '') . (empty($w['note']) ? '' : ': ' . $w['note']);
 }
 ?>

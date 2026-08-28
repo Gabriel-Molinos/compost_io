@@ -23,6 +23,9 @@ use Throwable;
  */
 final class ProductionController extends Controller
 {
+    /** Teto diário de gerações por site enquanto não há limite de custo (§95). */
+    private const DAILY_LIMIT = 15;
+
     private ArticleService $articles;
     private AiExecutionService $executions;
 
@@ -50,12 +53,26 @@ final class ProductionController extends Controller
         $site = $this->requireSite($siteId);
         Csrf::verify();
 
-        $goalId = ($_POST['goal_id'] ?? '') !== '' ? (int) $_POST['goal_id'] : null;
-        $categoryId = ($_POST['category_id'] ?? '') !== '' ? (int) $_POST['category_id'] : null;
+        // Guarda de custo enquanto não há limite por site/mês (requisitos §95).
+        if ($this->articles->countCreatedLast24h((int) $site['id']) >= self::DAILY_LIMIT) {
+            Session::flash('error', 'Limite de ' . self::DAILY_LIMIT . ' gerações por dia neste site atingido. Tente amanhã.');
+            Http::redirect('/sites/' . $site['id'] . '/production');
+            return;
+        }
 
-        // O pipeline síncrono faz 3 chamadas ao gemini-2.5-pro — pode passar de 1 min.
-        set_time_limit(600);
-        @ini_set('max_execution_time', '600');
+        // goal_id / category_id precisam ser deste site (POST pode vir forjado ou defasado).
+        $goalId = null;
+        if (($_POST['goal_id'] ?? '') !== '' && (new GoalService())->find((int) $site['id'], (int) $_POST['goal_id']) !== null) {
+            $goalId = (int) $_POST['goal_id'];
+        }
+        $categoryId = null;
+        if (($_POST['category_id'] ?? '') !== '' && (new CategoryService())->find((int) $site['id'], (int) $_POST['category_id']) !== null) {
+            $categoryId = (int) $_POST['category_id'];
+        }
+
+        // O pipeline síncrono faz 6 chamadas ao gemini-2.5-pro — pode passar de 2 min.
+        set_time_limit(900);
+        @ini_set('max_execution_time', '900');
 
         try {
             $result = (new ArticlePipeline())->generate((int) $site['id'], $goalId, $categoryId);

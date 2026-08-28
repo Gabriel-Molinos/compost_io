@@ -111,6 +111,11 @@ final class PromptBuilder
             . '- Público-alvo: ' . $this->val($site['target_audience'] ?? null) . "\n"
             . '- Tom de voz: ' . $this->val($site['tone'] ?? null) . "\n";
 
+        $identity = trim((string) ($site['editorial_identity'] ?? ''));
+        if ($identity !== '') {
+            $out .= "\n## Identidade editorial\n" . $identity . "\n";
+        }
+
         $out .= "\n## Interesses (valorizar) — intensidade 1 a 5\n" . $this->ruleList($grouped['INTEREST']);
         $out .= "\n## Não-interesses (evitar) — intensidade 1 a 5\n" . $this->ruleList($grouped['NON_INTEREST']);
 

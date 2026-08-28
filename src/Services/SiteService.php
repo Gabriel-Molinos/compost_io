@@ -55,8 +55,8 @@ final class SiteService
     {
         $pdo = Connection::get();
         $stmt = $pdo->prepare(
-            'INSERT INTO sites (name, niche, language, target_audience, tone, wordpress_url, is_active)
-             VALUES (:name, :niche, :language, :audience, :tone, :url, :active)'
+            'INSERT INTO sites (name, niche, language, target_audience, tone, editorial_identity, wordpress_url, is_active)
+             VALUES (:name, :niche, :language, :audience, :tone, :identity, :url, :active)'
         );
         $stmt->execute($this->params($data));
 
@@ -68,7 +68,8 @@ final class SiteService
     {
         $stmt = Connection::get()->prepare(
             'UPDATE sites SET name = :name, niche = :niche, language = :language,
-                target_audience = :audience, tone = :tone, wordpress_url = :url, is_active = :active
+                target_audience = :audience, tone = :tone, editorial_identity = :identity,
+                wordpress_url = :url, is_active = :active
              WHERE id = :id'
         );
         $stmt->execute($this->params($data) + ['id' => $id]);
@@ -86,6 +87,7 @@ final class SiteService
             'language' => trim((string) ($data['language'] ?? 'pt-BR')) ?: 'pt-BR',
             'audience' => self::nullable($data['target_audience'] ?? null),
             'tone'     => self::nullable($data['tone'] ?? null),
+            'identity' => self::nullable($data['editorial_identity'] ?? null),
             'url'      => self::nullable($data['wordpress_url'] ?? null),
             'active'   => !empty($data['is_active']) ? 1 : 0,
         ];

@@ -89,6 +89,11 @@ knowledge_sources                 -- registro interno das fontes NotebookLM (int
 
 Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mantém a tabela de controle **`schema_migrations`** (`filename`, `applied_at`) — não é do modelo de domínio, só registra quais migrations já rodaram.
 
+**Migrations posteriores à 0001** (Fase 4):
+- `0002` — `ai_executions.step`: +`planning`, +`compliance` no ENUM.
+- `0003` — nova tabela **`article_ai_notes`** (`article_id`, `step`, `payload` JSON): parecer de cada passo da IA (planning…review).
+- `0004` — `sites.editorial_identity` (TEXT): descrição de voz/estilo do site para o `PromptBuilder`.
+
 ### 87.1 Autenticação — sem tabela
 
 O login (RF-001) usa **sessão nativa do PHP** ([requisitos §64.2](requisitos.md#642-autenticação)) — não há tabela de sessão nem de token. `users.password_hash` guarda o hash (`password_hash()`).

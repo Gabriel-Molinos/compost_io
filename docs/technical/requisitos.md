@@ -7,7 +7,7 @@
 - RF-003 — Admin pode atribuir site ✅ *(Fase 2 — vínculo `user_site` na tela de usuário)*
 - RF-004 — Redator só vê sites permitidos — backend/permissão pronto *(Fase 2)*; telas do Redator-Chefe vêm nas próximas fases
 - RF-005 — Redator pode criar meta ✅ *(Fase 3 — meta por período com total, diretrizes gerais e distribuição por categoria)*
-- RF-006 — IA pode gerar pauta
+- RF-006 — IA pode gerar pauta ✅ *(Fase 4.4a — passo `planning` do `ArticlePipeline`: título, palavra-chave, ângulo e checagem de canibalização)*
 
 `[PROPOSTA — itens abaixo adicionados nesta reorganização, formalizando como RF fluxos já descritos em outras partes da documentação (não são funcionalidade nova)]`
 

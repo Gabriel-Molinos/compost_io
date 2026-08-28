@@ -8,6 +8,7 @@ use App\Controllers\CategoryController;
 use App\Controllers\EditorialRuleController;
 use App\Controllers\GoalController;
 use App\Controllers\HomeController;
+use App\Controllers\ProductionController;
 use App\Controllers\SiteController;
 use App\Controllers\UserController;
 use App\Router;
@@ -71,4 +72,10 @@ return static function (Router $router): void {
     // Playground de IA do site (somente ADMIN — cada execução é chamada real ao Gemini)
     $router->add('GET',  '/sites/{id}/ai-playground', [AiPlaygroundController::class, 'index'], admin: true);
     $router->add('POST', '/sites/{id}/ai-playground', [AiPlaygroundController::class, 'run'],   admin: true);
+
+    // Produção de artigos pela IA
+    $router->add('GET',  '/sites/{id}/production',              [ProductionController::class, 'index'],    auth: true);
+    $router->add('POST', '/sites/{id}/production/generate',     [ProductionController::class, 'generate'], auth: true);
+    $router->add('GET',  '/sites/{id}/production/{aid}',        [ProductionController::class, 'show'],     auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/delete', [ProductionController::class, 'destroy'],  auth: true);
 };

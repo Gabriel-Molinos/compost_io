@@ -65,6 +65,7 @@ $statusLabels = [
                     </a>
                     <p class="mt-0.5 text-xs text-text-muted">
                         <?= View::e($statusLabels[$a['status']] ?? $a['status']) ?>
+                        <?php if ((int) ($a['attempt_number'] ?? 1) > 1): ?> · tentativa <?= View::e($a['attempt_number']) ?><?php endif; ?>
                         <?php if (!empty($a['category_name'])): ?> · <?= View::e($a['category_name']) ?><?php endif; ?>
                         <?php if (!empty($a['word_count'])): ?> · <?= View::e($a['word_count']) ?> palavras<?php endif; ?>
                         · custo ~US$ <?= number_format((float) $a['ai_cost'], 4) ?>

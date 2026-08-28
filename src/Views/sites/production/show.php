@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Services\ArticleReviewService;
+use App\Support\Csrf;
+use App\Support\Labels;
 use App\View;
 
 /** @var array<string,mixed> $site */
@@ -11,6 +14,8 @@ use App\View;
 /** @var list<array<string,mixed>> $executions */
 /** @var float $totalCost */
 /** @var array<string,array<string,mixed>> $notes */
+/** @var list<array<string,mixed>> $images */
+/** @var list<array<string,mixed>> $feedback */
 
 $activeTab = 'production';
 require __DIR__ . '/../_tabs.php';
@@ -27,12 +32,104 @@ require __DIR__ . '/../_tabs.php';
 <a href="/sites/<?= View::e($site['id']) ?>/production" class="text-sm text-text-secondary hover:text-text-primary">← Produção</a>
 <h2 class="mt-2 text-xl font-bold text-text-primary"><?= View::e($article['title'] ?: 'Rascunho #' . $article['id']) ?></h2>
 <p class="mt-1 text-sm text-text-muted">
-    Status: <?= View::e($article['status']) ?>
+    Status: <strong class="text-text-secondary"><?= View::e(Labels::articleStatus($article['status'])) ?></strong>
+    <?php if ((int) ($article['attempt_number'] ?? 1) > 1): ?> · tentativa <?= View::e($article['attempt_number']) ?><?php endif; ?>
     <?php if (!empty($article['focus_keyword'])): ?> · palavra-chave: <em><?= View::e($article['focus_keyword']) ?></em><?php endif; ?>
     · custo total ~US$ <?= number_format($totalCost, 4) ?>
 </p>
 <?php if (!empty($article['meta_description'])): ?>
     <p class="mt-2 text-sm text-text-secondary"><strong>Meta descrição:</strong> <?= View::e($article['meta_description']) ?></p>
+<?php endif; ?>
+
+<?php if ($article['status'] === 'IN_REVIEW'): ?>
+    <section class="mt-5 rounded-lg border border-border bg-surface p-4">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Revisão</h3>
+        <p class="mt-1 text-sm text-text-secondary">Aprovar libera o agendamento. Rejeitar registra o motivo e permite regenerar.</p>
+        <div class="mt-3 flex flex-wrap items-start gap-6">
+            <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/approve">
+                <?= Csrf::field() ?>
+                <button type="submit" class="rounded-md bg-success/90 px-4 py-2 text-sm font-semibold text-[#04210F] hover:bg-success">
+                    Aprovar
+                </button>
+            </form>
+            <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/reject"
+                  class="flex flex-1 flex-col gap-2 sm:min-w-[20rem]"
+                  onsubmit="return this.justification.value.trim() !== '' || (alert('Escreva a justificativa.'), false);">
+                <?= Csrf::field() ?>
+                <label class="text-sm">
+                    <span class="block font-medium text-text-secondary">Motivo da rejeição</span>
+                    <select name="reason" required
+                            class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+                        <?php foreach (ArticleReviewService::REJECT_REASONS as $value => $label): ?>
+                            <option value="<?= View::e($value) ?>"><?= View::e($label) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label class="text-sm">
+                    <span class="block font-medium text-text-secondary">Justificativa</span>
+                    <textarea name="justification" rows="3" required
+                              class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none"
+                              placeholder="O que está errado e o que a regeneração precisa corrigir."></textarea>
+                </label>
+                <button type="submit" class="self-start rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
+                    Rejeitar
+                </button>
+            </form>
+        </div>
+    </section>
+<?php endif; ?>
+
+<?php
+$attempt = (int) ($article['attempt_number'] ?? 1);
+$maxAttempts = 3;
+?>
+<?php if ($article['status'] === 'REVISION_REQUESTED'): ?>
+    <section class="mt-5 rounded-lg border border-border bg-surface p-4">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Regeneração</h3>
+        <p class="mt-1 text-sm text-text-secondary">
+            Tentativa <?= $attempt ?> de <?= $maxAttempts ?>.
+            <?php if ($attempt >= $maxAttempts): ?>
+                Esta é a última — se a próxima for rejeitada, o artigo fica <strong>bloqueado</strong> para decisão sua.
+            <?php else: ?>
+                A IA recebe o motivo da rejeição e refaz o artigo (pesquisa, texto, SEO, imagens). Leva alguns minutos e tem custo.
+            <?php endif; ?>
+        </p>
+        <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/regenerate"
+              class="mt-3"
+              onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Regenerando… (pode levar alguns minutos)';">
+            <?= Csrf::field() ?>
+            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                Regenerar artigo
+            </button>
+        </form>
+    </section>
+<?php elseif ($article['status'] === 'BLOCKED'): ?>
+    <section class="mt-5 rounded-lg border border-danger/40 bg-danger/10 p-4">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-danger">Bloqueado</h3>
+        <p class="mt-1 text-sm text-text-secondary">
+            O limite de <?= $maxAttempts ?> tentativas nesta linhagem foi atingido sem aprovação. Decida o próximo passo — descartar, ou revisar a meta/diretrizes do site antes de tentar um novo tema.
+        </p>
+    </section>
+<?php endif; ?>
+
+<?php if (!empty($feedback)): ?>
+    <section class="mt-5 rounded-lg border border-border bg-surface p-4">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Feedback de rejeição (<?= count($feedback) ?>)</h3>
+        <ul class="mt-2 space-y-3 text-sm">
+            <?php foreach ($feedback as $f): ?>
+                <li class="border-l-2 border-danger/50 pl-3">
+                    <p class="font-medium text-text-primary">
+                        <?php if (!empty($f['attempt_number'])): ?><span class="text-xs font-normal text-text-muted">tentativa <?= View::e($f['attempt_number']) ?> · </span><?php endif; ?>
+                        <?= View::e(ArticleReviewService::REJECT_REASONS[$f['reason']] ?? $f['reason']) ?>
+                        <span class="text-xs font-normal text-text-muted">
+                            · <?= View::e($f['created_at']) ?><?php if (!empty($f['author'])): ?> · <?= View::e($f['author']) ?><?php endif; ?>
+                        </span>
+                    </p>
+                    <p class="mt-1 text-text-secondary"><?= nl2br(View::e($f['justification'])) ?></p>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </section>
 <?php endif; ?>
 
 <section class="mt-6">
@@ -68,6 +165,69 @@ require __DIR__ . '/../_tabs.php';
                 </li>
             <?php endforeach; ?>
         </ul>
+    </section>
+<?php endif; ?>
+
+<?php if (!empty($images)): ?>
+    <?php
+    $featured = array_values(array_filter($images, static fn ($i) => $i['role'] === 'FEATURED'));
+    $body = array_values(array_filter($images, static fn ($i) => $i['role'] === 'BODY'));
+    $base = '/sites/' . View::e($site['id']) . '/production/' . View::e($article['id']);
+    $deleteForm = static function (array $img) use ($base): void {
+        echo '<form method="post" action="' . $base . '/images/' . View::e($img['id']) . '/delete"'
+            . ' onsubmit="return confirm(\'Remover esta imagem?\');" class="mt-2 text-right">';
+        echo Csrf::field();
+        echo '<button type="submit" class="text-xs text-text-muted hover:text-danger">Remover</button>';
+        echo '</form>';
+    };
+    ?>
+    <section id="imagens" class="mt-6">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+            Imagens (<?= count($images) ?>)
+        </h3>
+
+        <?php if ($featured !== []): ?>
+            <p class="mt-3 text-sm font-medium text-text-primary">Imagem destacada — <?= count($featured) ?> opção(ões)</p>
+            <p class="text-xs text-text-muted">A escolha é do Redator-Chefe. Marque uma e salve.</p>
+            <form method="post" action="<?= $base ?>/images/select" class="mt-2">
+                <?= Csrf::field() ?>
+                <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <?php foreach ($featured as $i): $sel = (int) $i['selected'] === 1; ?>
+                        <label class="block cursor-pointer rounded-lg border <?= $sel ? 'border-success' : 'border-border' ?> bg-surface p-2 focus-within:border-cyan">
+                            <img src="<?= View::e($i['url']) ?>" alt="<?= View::e($i['alt_text'] ?? '') ?>" loading="lazy" class="w-full rounded" />
+                            <span class="mt-2 flex items-center gap-2 text-xs text-text-secondary">
+                                <input type="radio" name="image_id" value="<?= View::e($i['id']) ?>" <?= $sel ? 'checked' : '' ?>
+                                       class="accent-success" />
+                                <?= $sel ? '<span class="font-semibold text-success">✓ escolhida</span>' : 'usar esta' ?>
+                                <span class="text-text-muted">· <?= View::e($i['format'] ?? '') ?></span>
+                            </span>
+                            <?php if (!empty($i['alt_text'])): ?>
+                                <span class="mt-1 block text-xs text-text-muted">alt: <?= View::e($i['alt_text']) ?></span>
+                            <?php endif; ?>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+                <button type="submit" class="mt-3 rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                    Salvar imagem destacada
+                </button>
+            </form>
+        <?php endif; ?>
+
+        <?php if ($body !== []): ?>
+            <p class="mt-5 text-sm font-medium text-text-primary">Imagens do corpo — <?= count($body) ?></p>
+            <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <?php foreach ($body as $i): ?>
+                    <figure class="rounded-lg border border-border bg-surface p-2">
+                        <img src="<?= View::e($i['url']) ?>" alt="<?= View::e($i['alt_text'] ?? '') ?>" loading="lazy" class="w-full rounded" />
+                        <figcaption class="mt-2 text-xs text-text-muted"><?= View::e($i['format'] ?? '') ?></figcaption>
+                        <?php if (!empty($i['alt_text'])): ?>
+                            <p class="mt-1 text-xs text-text-secondary">alt: <?= View::e($i['alt_text']) ?></p>
+                        <?php endif; ?>
+                        <?php $deleteForm($i); ?>
+                    </figure>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </section>
 <?php endif; ?>
 

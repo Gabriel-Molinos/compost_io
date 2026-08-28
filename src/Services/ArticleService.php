@@ -19,6 +19,7 @@ final class ArticleService
     {
         $stmt = Connection::get()->prepare(
             "SELECT a.id, a.title, a.status, a.focus_keyword, a.category_id, a.created_at,
+                    a.attempt_number, a.lineage_id,
                     c.name AS category_name,
                     COALESCE((SELECT SUM(cost) FROM ai_executions e WHERE e.article_id = a.id), 0) AS ai_cost,
                     (SELECT MAX(word_count) FROM article_versions v WHERE v.article_id = a.id) AS word_count
@@ -43,6 +44,39 @@ final class ArticleService
         return $stmt->fetch() ?: null;
     }
 
+    /**
+     * Últimos artigos já aprovados do site (memória editorial — fatia 6.3):
+     * a IA usa para não repetir tema/ângulo e evitar canibalização.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function recentApprovedForSite(int $siteId, int $limit = 10): array
+    {
+        $limit = max(1, min(50, $limit));
+        $stmt = Connection::get()->prepare(
+            "SELECT title, focus_keyword
+             FROM articles
+             WHERE site_id = :s AND deleted_at IS NULL
+               AND status IN ('APPROVED','SCHEDULED','PUBLISHED')
+             ORDER BY id DESC
+             LIMIT {$limit}"
+        );
+        $stmt->execute(['s' => $siteId]);
+
+        return $stmt->fetchAll();
+    }
+
+    /** @return array<string, mixed>|null artigo por id, sem escopo de site (uso interno de serviços) */
+    public function findById(int $id): ?array
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT * FROM articles WHERE id = :id AND deleted_at IS NULL LIMIT 1'
+        );
+        $stmt->execute(['id' => $id]);
+
+        return $stmt->fetch() ?: null;
+    }
+
     /** Artigos criados no site nas últimas 24h (guarda de custo de IA — requisitos §95). */
     public function countCreatedLast24h(int $siteId): int
     {
@@ -63,6 +97,26 @@ final class ArticleService
         )->execute(['s' => $siteId, 'g' => $goalId]);
 
         return (int) $pdo->lastInsertId();
+    }
+
+    /** Nova tentativa da mesma linhagem (regeneração — fluxo-editorial §29). */
+    public function createAttempt(int $siteId, ?int $goalId, int $lineageId, int $attemptNumber): int
+    {
+        $pdo = Connection::get();
+        $pdo->prepare(
+            "INSERT INTO articles (site_id, goal_id, status, lineage_id, attempt_number)
+             VALUES (:s, :g, 'PLANNED', :l, :n)"
+        )->execute(['s' => $siteId, 'g' => $goalId, 'l' => $lineageId, 'n' => $attemptNumber]);
+
+        return (int) $pdo->lastInsertId();
+    }
+
+    /** Fixa o lineage_id (só se ainda estiver nulo) — o 1º artigo aponta para si mesmo. */
+    public function setLineage(int $id, int $lineageId): void
+    {
+        Connection::get()->prepare(
+            'UPDATE articles SET lineage_id = :l WHERE id = :id AND lineage_id IS NULL'
+        )->execute(['l' => $lineageId, 'id' => $id]);
     }
 
     public function applyPlan(int $id, string $title, string $focusKeyword, ?int $categoryId): void

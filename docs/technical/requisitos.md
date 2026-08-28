@@ -11,10 +11,10 @@
 
 `[PROPOSTA — itens abaixo adicionados nesta reorganização, formalizando como RF fluxos já descritos em outras partes da documentação (não são funcionalidade nova)]`
 
-- RF-007 — Redator-Chefe pode revisar um artigo em `IN_REVIEW` (ver [Revisão humana](../editorial/fluxo-editorial.md#27-revisão-humana-estados-do-artigo))
-- RF-008 — Redator-Chefe pode aprovar um artigo, com o artigo passando a `APPROVED`
-- RF-009 — Redator-Chefe pode rejeitar um artigo, informando motivo e justificativa (ver [Feedback](../editorial/fluxo-editorial.md#28-feedback))
-- RF-010 — Sistema pode regenerar um artigo rejeitado, respeitando o limite de tentativas por linhagem (ver [Regeneração](../editorial/fluxo-editorial.md#29-regeneração))
+- RF-007 — Redator-Chefe pode revisar um artigo em `IN_REVIEW` (ver [Revisão humana](../editorial/fluxo-editorial.md#27-revisão-humana-estados-do-artigo)) ✅ *(Fase 6.1)*
+- RF-008 — Redator-Chefe pode aprovar um artigo, com o artigo passando a `APPROVED` ✅ *(Fase 6.1 — `ArticleReviewService::approve`)*
+- RF-009 — Redator-Chefe pode rejeitar um artigo, informando motivo e justificativa (ver [Feedback](../editorial/fluxo-editorial.md#28-feedback)) ✅ *(Fase 6.1 — `feedback` + `REVISION_REQUESTED`)*
+- RF-010 — Sistema pode regenerar um artigo rejeitado, respeitando o limite de tentativas por linhagem (ver [Regeneração](../editorial/fluxo-editorial.md#29-regeneração)) ✅ *(Fase 6.2 — `ArticlePipeline::regenerate`, 3 tentativas/linhagem → `BLOCKED`)*
 - RF-011 — Redator-Chefe pode agendar um artigo aprovado (imagem, categoria, autor, data, horário — ver [Agendamento](../editorial/fluxo-editorial.md#30-agendamento))
 - RF-012 — Sistema pode publicar um artigo agendado no WordPress do site correspondente (ver [Integração WordPress](../editorial/fluxo-editorial.md#31-integração-wordpress))
 - RF-013 — Redator-Chefe pode visualizar relatórios (mensal, o que melhorou/não melhorou, aprendizados — ver [Relatórios](../editorial/fluxo-editorial.md#32-relatórios))

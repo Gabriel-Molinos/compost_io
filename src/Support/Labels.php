@@ -15,4 +15,20 @@ final class Labels
             default         => $role,
         };
     }
+
+    public static function articleStatus(string $status): string
+    {
+        return match ($status) {
+            'PLANNED'            => 'Planejado',
+            'IN_PROGRESS'        => 'Em produção',
+            'IN_REVIEW'          => 'Em revisão',
+            'REVISION_REQUESTED' => 'Revisão pedida',
+            'APPROVED'           => 'Aprovado',
+            'SCHEDULED'          => 'Agendado',
+            'PUBLISHED'          => 'Publicado',
+            'DISCARDED'          => 'Descartado',
+            'BLOCKED'            => 'Bloqueado',
+            default             => $status,
+        };
+    }
 }

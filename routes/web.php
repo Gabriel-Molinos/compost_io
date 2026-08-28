@@ -78,4 +78,9 @@ return static function (Router $router): void {
     $router->add('POST', '/sites/{id}/production/generate',     [ProductionController::class, 'generate'], auth: true);
     $router->add('GET',  '/sites/{id}/production/{aid}',        [ProductionController::class, 'show'],     auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/delete', [ProductionController::class, 'destroy'],  auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/approve', [ProductionController::class, 'approve'], auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/reject',  [ProductionController::class, 'reject'],  auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/regenerate', [ProductionController::class, 'regenerate'], auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/images/select',      [ProductionController::class, 'selectImage'], auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/images/{iid}/delete', [ProductionController::class, 'deleteImage'], auth: true);
 };

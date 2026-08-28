@@ -139,6 +139,33 @@ final class StepSchemas
     }
 
     /** @return array<string, mixed> */
+    public static function image(): array
+    {
+        return [
+            'type'       => 'object',
+            'properties' => [
+                'style_notes' => ['type' => 'string'],
+                'images'      => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'role'         => ['type' => 'string', 'enum' => ['FEATURED', 'BODY']],
+                            'prompt'       => ['type' => 'string'],
+                            'alt_text'     => ['type' => 'string'],
+                            'aspect_ratio' => ['type' => 'string', 'enum' => ['1:1', '3:2', '2:3', '4:3', '3:4', '16:9', '9:16']],
+                            'placement'    => ['type' => 'string'],
+                        ],
+                        'required' => ['role', 'prompt', 'alt_text', 'aspect_ratio'],
+                    ],
+                ],
+                'notes' => ['type' => 'array', 'items' => ['type' => 'string']],
+            ],
+            'required' => ['images'],
+        ];
+    }
+
+    /** @return array<string, mixed> */
     public static function review(): array
     {
         return [

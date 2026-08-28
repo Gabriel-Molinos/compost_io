@@ -1,0 +1,95 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Database\Connection;
+use App\Integrations\AIResult;
+use App\Integrations\Gemini\GeminiPricing;
+
+/**
+ * Ciclo de vida de uma execução técnica da IA na tabela `ai_executions`
+ * (schema §87; retry §96; custo §95).
+ *
+ *   create()  -> QUEUED
+ *   markRunning()   -> RUNNING
+ *   markRetrying()  -> RETRYING (com retry_count)
+ *   markSuccess()   -> SUCCESS  (cost + finished_at)
+ *   markFailed()    -> FAILED   (error_message + finished_at)
+ */
+final class AiExecutionService
+{
+    public const STEPS = ['planning', 'research', 'writing', 'seo', 'compliance', 'image', 'review'];
+
+    public function create(int $articleId, string $step, string $provider, ?string $queueJobId = null): int
+    {
+        $pdo = Connection::get();
+        $pdo->prepare(
+            "INSERT INTO ai_executions (article_id, step, provider, status, queue_job_id, queued_at)
+             VALUES (:a, :s, :p, 'QUEUED', :j, NOW())"
+        )->execute(['a' => $articleId, 's' => $step, 'p' => $provider, 'j' => $queueJobId]);
+
+        return (int) $pdo->lastInsertId();
+    }
+
+    public function markRunning(int $id): void
+    {
+        Connection::get()->prepare(
+            "UPDATE ai_executions SET status = 'RUNNING', started_at = COALESCE(started_at, NOW())
+             WHERE id = :id"
+        )->execute(['id' => $id]);
+    }
+
+    public function markRetrying(int $id, int $attempt, string $error): void
+    {
+        Connection::get()->prepare(
+            "UPDATE ai_executions
+             SET status = 'RETRYING', retry_count = :n, error_message = :e
+             WHERE id = :id"
+        )->execute(['n' => $attempt, 'e' => self::trim($error), 'id' => $id]);
+    }
+
+    public function markSuccess(int $id, AIResult $result): void
+    {
+        Connection::get()->prepare(
+            "UPDATE ai_executions
+             SET status = 'SUCCESS', cost = :c, error_message = NULL, finished_at = NOW()
+             WHERE id = :id"
+        )->execute(['c' => GeminiPricing::estimate($result), 'id' => $id]);
+    }
+
+    public function markFailed(int $id, string $error): void
+    {
+        Connection::get()->prepare(
+            "UPDATE ai_executions
+             SET status = 'FAILED', error_message = :e, finished_at = NOW()
+             WHERE id = :id"
+        )->execute(['e' => self::trim($error), 'id' => $id]);
+    }
+
+    /** @return array<string, mixed>|null */
+    public function find(int $id): ?array
+    {
+        $stmt = Connection::get()->prepare('SELECT * FROM ai_executions WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+
+        return $stmt->fetch() ?: null;
+    }
+
+    /** Custo total de IA já registrado para um artigo (USD). */
+    public function totalCostForArticle(int $articleId): float
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT COALESCE(SUM(cost), 0) FROM ai_executions WHERE article_id = :a'
+        );
+        $stmt->execute(['a' => $articleId]);
+
+        return (float) $stmt->fetchColumn();
+    }
+
+    private static function trim(string $error): string
+    {
+        return mb_substr($error, 0, 2000);
+    }
+}

@@ -1,0 +1,32 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Queue;
+
+/**
+ * Driver de fila síncrono: executa o job na hora do `push`, na mesma requisição.
+ * É o padrão em desenvolvimento e enquanto não há Redis (ADR-006). O restante
+ * do código enfileira jobs sem saber que, hoje, eles rodam inline.
+ */
+final class SyncQueueDriver implements QueueDriver
+{
+    /** @var callable(Job): void */
+    private $handler;
+
+    /** @param callable(Job): void $handler executa um job (lança em caso de falha definitiva) */
+    public function __construct(callable $handler)
+    {
+        $this->handler = $handler;
+    }
+
+    public function push(Job $job): void
+    {
+        ($this->handler)($job->id === '' ? $job->withId('sync-' . bin2hex(random_bytes(6))) : $job);
+    }
+
+    public function name(): string
+    {
+        return 'sync';
+    }
+}

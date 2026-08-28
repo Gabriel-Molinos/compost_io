@@ -186,22 +186,22 @@ Gemini
 - **Meta** define o que precisa ser produzido naquele período.
 - **Brief** define o que aquele artigo específico precisa fazer.
 
-### 23. Estrutura futura de prompts
+### 23. Estrutura de prompts
 
 ```
 docs/
 └── ai/
-    ├── base-editorial.md
-    ├── research.md
-    ├── planning.md
-    ├── writing.md
-    ├── seo.md
-    ├── compliance.md
-    ├── image.md
-    └── review.md
+    ├── base-editorial.md   ✅ Fase 4.1
+    ├── planning.md         ✅ Fase 4.1
+    ├── research.md         ✅ Fase 4.1
+    ├── writing.md          ✅ Fase 4.1
+    ├── seo.md              ✅ Fase 4.1
+    ├── compliance.md       ✅ Fase 4.1
+    ├── review.md           ✅ Fase 4.1
+    └── image.md            (Fase 5 — imagens)
 ```
 
-As regras específicas dos sites **não** devem virar 60 arquivos duplicados — essas informações serão armazenadas como dados relacionados a cada site.
+As regras específicas dos sites **não** viram 60 arquivos duplicados — ficam como dados relacionados a cada site e são injetadas em tempo de montagem pelo `PromptBuilder` (`src/Services/PromptBuilder.php`), que combina Prompt Base + Passo + Identidade do Site + Meta + Categoria + Brief + Memória Editorial (§22).
 
 ### 24. Produção do artigo
 

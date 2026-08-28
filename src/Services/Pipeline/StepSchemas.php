@@ -75,4 +75,92 @@ final class StepSchemas
             'required' => ['title', 'slug', 'meta_description', 'content_html'],
         ];
     }
+
+    /** @return array<string, mixed> */
+    public static function seo(): array
+    {
+        return [
+            'type'       => 'object',
+            'properties' => [
+                'passes' => ['type' => 'boolean'],
+                'issues' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'item'     => ['type' => 'string'],
+                            'severity' => ['type' => 'string', 'enum' => ['block', 'warn']],
+                            'fix'      => ['type' => 'string'],
+                        ],
+                        'required' => ['item', 'severity'],
+                    ],
+                ],
+                'revised_meta_description' => ['type' => 'string'],
+                'revised_slug'            => ['type' => 'string'],
+                'cannibalization'         => ['type' => 'string', 'enum' => ['none', 'possible', 'high']],
+            ],
+            'required' => ['passes'],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function compliance(): array
+    {
+        return [
+            'type'       => 'object',
+            'properties' => [
+                'approved'  => ['type' => 'boolean'],
+                'blocking'  => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'rule'     => ['type' => 'string'],
+                            'evidence' => ['type' => 'string'],
+                            'fix'      => ['type' => 'string'],
+                        ],
+                        'required' => ['rule'],
+                    ],
+                ],
+                'warnings' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'rule' => ['type' => 'string'],
+                            'note' => ['type' => 'string'],
+                        ],
+                        'required' => ['rule'],
+                    ],
+                ],
+            ],
+            'required' => ['approved'],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public static function review(): array
+    {
+        return [
+            'type'       => 'object',
+            'properties' => [
+                'recommendation' => ['type' => 'string', 'enum' => ['ready_for_human', 'needs_fix', 'discard']],
+                'summary'        => ['type' => 'string'],
+                'strengths'      => ['type' => 'array', 'items' => ['type' => 'string']],
+                'concerns'       => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'area' => ['type' => 'string'],
+                            'note' => ['type' => 'string'],
+                        ],
+                        'required' => ['note'],
+                    ],
+                ],
+                'assumptions_made' => ['type' => 'array', 'items' => ['type' => 'string']],
+            ],
+            'required' => ['recommendation', 'summary'],
+        ];
+    }
 }

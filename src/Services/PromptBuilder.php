@@ -40,6 +40,8 @@ final class PromptBuilder
 
     /**
      * @param array{title?:string,focus_keyword?:string,angle?:string,notes?:string} $brief
+     * @param array{title?:string,slug?:string,meta_description?:string,content_html?:string,word_count?:int} $draft
+     *        artigo já escrito — usado pelos passos de auditoria (seo/compliance/review)
      */
     public function build(
         string $step,
@@ -47,6 +49,7 @@ final class PromptBuilder
         ?int $goalId = null,
         ?int $categoryId = null,
         array $brief = [],
+        array $draft = [],
     ): string {
         if (!in_array($step, self::STEPS, true)) {
             throw new InvalidArgumentException("Passo inválido: {$step}.");
@@ -70,6 +73,7 @@ final class PromptBuilder
             $layers[] = $this->categoryLayer($siteId, $categoryId);
         }
         $layers[] = $this->briefLayer($brief);
+        $layers[] = $this->draftLayer($draft);
         $layers[] = $this->memoryLayer();
 
         $layers = array_values(array_filter($layers, static fn (string $l): bool => trim($l) !== ''));
@@ -188,6 +192,27 @@ final class PromptBuilder
         }
 
         return "# BRIEF DO ARTIGO\n\n" . implode("\n", $lines);
+    }
+
+    /** @param array<string, mixed> $draft */
+    private function draftLayer(array $draft): string
+    {
+        $html = trim((string) ($draft['content_html'] ?? ''));
+        if ($html === '') {
+            return '';
+        }
+
+        $meta = [];
+        foreach (['title' => 'Título', 'slug' => 'Slug', 'meta_description' => 'Meta descrição', 'word_count' => 'Palavras'] as $k => $label) {
+            $v = trim((string) ($draft[$k] ?? ''));
+            if ($v !== '') {
+                $meta[] = "- {$label}: {$v}";
+            }
+        }
+
+        return "# ARTIGO PRODUZIDO (para auditar)\n\n"
+            . ($meta !== [] ? implode("\n", $meta) . "\n\n" : '')
+            . "Corpo (HTML):\n\n" . $html;
     }
 
     /** Memória editorial — Fase 6. Vazio por enquanto (a camada é omitida). */

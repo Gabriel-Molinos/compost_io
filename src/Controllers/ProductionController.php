@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Services\AiExecutionService;
+use App\Services\ArticleNoteService;
 use App\Services\ArticleService;
 use App\Services\CategoryService;
 use App\Services\GoalService;
@@ -69,8 +70,10 @@ final class ProductionController extends Controller
             return;
         }
 
-        $msg = 'Rascunho gerado: "' . $result['title'] . '" · ' . $result['word_count']
-            . ' palavras · custo ~US$ ' . number_format($result['cost'], 4);
+        $recLabels = ['ready_for_human' => 'pronto p/ revisão', 'needs_fix' => 'precisa de ajustes', 'discard' => 'IA sugere descartar'];
+        $msg = 'Rascunho em revisão: "' . $result['title'] . '" · ' . $result['word_count']
+            . ' palavras · custo ~US$ ' . number_format($result['cost'], 4)
+            . ' · parecer IA: ' . ($recLabels[$result['recommendation']] ?? $result['recommendation']);
         if ($result['warnings'] !== []) {
             $msg .= ' · ' . count($result['warnings']) . ' aviso(s)';
         }
@@ -91,6 +94,7 @@ final class ProductionController extends Controller
             'sources'    => $this->articles->sources((int) $article['id']),
             'executions' => $this->executions->forArticle((int) $article['id']),
             'totalCost'  => $this->executions->totalCostForArticle((int) $article['id']),
+            'notes'      => (new ArticleNoteService())->forArticle((int) $article['id']),
         ]);
     }
 

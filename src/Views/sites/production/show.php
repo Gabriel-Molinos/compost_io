@@ -10,6 +10,7 @@ use App\View;
 /** @var list<array<string,mixed>> $sources */
 /** @var list<array<string,mixed>> $executions */
 /** @var float $totalCost */
+/** @var array<string,array<string,mixed>> $notes */
 
 $activeTab = 'production';
 require __DIR__ . '/../_tabs.php';
@@ -67,6 +68,62 @@ require __DIR__ . '/../_tabs.php';
                 </li>
             <?php endforeach; ?>
         </ul>
+    </section>
+<?php endif; ?>
+
+<?php
+$review = $notes['review'] ?? null;
+$seo = $notes['seo'] ?? null;
+$compliance = $notes['compliance'] ?? null;
+?>
+<?php if ($review !== null): ?>
+    <section class="mt-6 rounded-lg border border-border bg-surface p-4">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Parecer da IA (pré-revisão humana)</h3>
+        <p class="mt-2 text-sm text-text-primary">
+            <strong><?= View::e($review['recommendation'] ?? '?') ?></strong> — <?= View::e($review['summary'] ?? '') ?>
+        </p>
+        <?php if (!empty($review['concerns'])): ?>
+            <ul class="mt-2 list-disc pl-5 text-sm text-text-secondary">
+                <?php foreach ($review['concerns'] as $c): ?>
+                    <li><?php if (!empty($c['area'])): ?><span class="text-text-muted">[<?= View::e($c['area']) ?>]</span> <?php endif; ?><?= View::e($c['note'] ?? '') ?></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+        <?php if (!empty($review['assumptions_made'])): ?>
+            <p class="mt-2 text-xs text-text-muted">Suposições da IA: <?= View::e(implode(' · ', $review['assumptions_made'])) ?></p>
+        <?php endif; ?>
+    </section>
+<?php endif; ?>
+
+<?php
+$gate = static function (string $label, ?array $note, bool $ok, array $items) : void {
+    if ($note === null) { return; }
+    echo '<div class="rounded-lg border border-border bg-surface p-4">';
+    echo '<p class="text-sm"><span class="font-semibold text-text-primary">' . View::e($label) . '</span> — '
+        . ($ok ? '<span class="text-success">ok</span>' : '<span class="text-danger">com pendências</span>') . '</p>';
+    if ($items !== []) {
+        echo '<ul class="mt-2 list-disc pl-5 text-sm text-text-secondary">';
+        foreach ($items as $it) { echo '<li>' . View::e($it) . '</li>'; }
+        echo '</ul>';
+    }
+    echo '</div>';
+};
+$seoItems = [];
+foreach ((array) ($seo['issues'] ?? []) as $i) {
+    $seoItems[] = '[' . ($i['severity'] ?? '?') . '] ' . ($i['item'] ?? '') . (empty($i['fix']) ? '' : ' → ' . $i['fix']);
+}
+$compItems = [];
+foreach ((array) ($compliance['blocking'] ?? []) as $b) {
+    $compItems[] = ($b['rule'] ?? '') . (empty($b['fix']) ? '' : ' → ' . $b['fix']);
+}
+foreach ((array) ($compliance['warnings'] ?? []) as $w) {
+    $compItems[] = '(aviso) ' . ($w['rule'] ?? '') . (empty($w['note']) ? '' : ': ' . $w['note']);
+}
+?>
+<?php if ($seo !== null || $compliance !== null): ?>
+    <section class="mt-4 grid gap-3 sm:grid-cols-2">
+        <?php $gate('SEO', $seo, (bool) ($seo['passes'] ?? false), $seoItems); ?>
+        <?php $gate('Compliance', $compliance, (bool) ($compliance['approved'] ?? false), $compItems); ?>
     </section>
 <?php endif; ?>
 

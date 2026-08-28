@@ -13,6 +13,7 @@ $tabs = [
     ['categories', 'Categorias',  '/sites/' . $site['id'] . '/categories', true],
     ['rules',      'Interesses',  '/sites/' . $site['id'] . '/rules',      true],
     ['goals',      'Metas',       '/sites/' . $site['id'] . '/goals',      true],
+    ['production', 'Produção',    '/sites/' . $site['id'] . '/production', true],
     ['config',     'Configuração', '/sites/' . $site['id'] . '/edit',      AuthService::isAdmin()],
     ['ai',         'IA (teste)',  '/sites/' . $site['id'] . '/ai-playground', AuthService::isAdmin()],
 ];

@@ -77,6 +77,18 @@ final class AiExecutionService
         return $stmt->fetch() ?: null;
     }
 
+    /** @return list<array<string, mixed>> execuções do artigo, na ordem em que rodaram */
+    public function forArticle(int $articleId): array
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT id, step, provider, status, cost, retry_count, error_message, started_at, finished_at
+             FROM ai_executions WHERE article_id = :a ORDER BY id'
+        );
+        $stmt->execute(['a' => $articleId]);
+
+        return $stmt->fetchAll();
+    }
+
     /** Custo total de IA já registrado para um artigo (USD). */
     public function totalCostForArticle(int $articleId): float
     {

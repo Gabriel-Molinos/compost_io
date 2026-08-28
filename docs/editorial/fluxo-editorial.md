@@ -239,6 +239,8 @@ Nano Banana
 Redator escolhe
 ```
 
+Implementado na Fase 5 — detalhes técnicos em [docs/integrations/images.md](../integrations/images.md). O brief visual é o passo `image` (`docs/ai/image.md`); as opções ficam em `images` (`selected = 0`) e o Redator-Chefe escolhe a destacada na página do artigo.
+
 ### 26. Processamento assíncrono
 
 A IA pode levar horas para finalizar uma produção. Portanto, o sistema **não** deverá depender de uma requisição HTTP aberta durante todo o processo.
@@ -304,6 +306,12 @@ Um artigo rejeitado pode ser regenerado. Cada tentativa deve ser registrada.
 
 - Limite planejado: **3 tentativas por linhagem**.
 - Após duas linhagens completas sem aprovação: `BLOQUEADO` — o redator precisa tomar uma decisão.
+
+> **Implementado (Fase 6.2):** cada tentativa é uma nova linha em `articles` com o
+> mesmo `lineage_id` e `attempt_number + 1`; o feedback de todas as tentativas
+> entra no prompt da regeneração. A 4ª tentativa não roda — o artigo vira
+> `BLOCKED`. O conceito de "múltiplas linhagens por slot" foi adiado (ver
+> [schema §87.2](../technical/schema.md#872-pendências-de-modelagem-proposta)).
 
 ### 30. Agendamento
 

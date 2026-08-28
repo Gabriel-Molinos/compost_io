@@ -21,13 +21,16 @@ use RuntimeException;
 final class PromptBuilder
 {
     /** Passos com arquivo de prompt dedicado em docs/ai/. */
-    public const STEPS = ['planning', 'research', 'writing', 'seo', 'compliance', 'review'];
+    public const STEPS = ['planning', 'research', 'writing', 'seo', 'compliance', 'review', 'image'];
 
     private string $promptsDir;
     private SiteService $sites;
     private EditorialRuleService $rules;
     private CategoryService $categories;
     private GoalService $goals;
+
+    /** Texto de "memória editorial" injetado pelo pipeline (regeneração — Fase 6, feedback da linhagem). */
+    private ?string $editorialContext = null;
 
     public function __construct(?string $promptsDir = null)
     {
@@ -220,10 +223,21 @@ final class PromptBuilder
             . "Corpo (HTML):\n\n" . $html;
     }
 
-    /** Memória editorial — Fase 6. Vazio por enquanto (a camada é omitida). */
+    /**
+     * Memória editorial (Fase 6): contexto aprendido do histórico do site —
+     * hoje, o feedback das tentativas anteriores da linhagem na regeneração.
+     * Injetado pelo `ArticlePipeline` via `setEditorialContext()`.
+     */
+    public function setEditorialContext(?string $text): void
+    {
+        $this->editorialContext = ($text !== null && trim($text) !== '') ? trim($text) : null;
+    }
+
     private function memoryLayer(): string
     {
-        return '';
+        return $this->editorialContext === null
+            ? ''
+            : "# MEMÓRIA EDITORIAL\n\n" . $this->editorialContext;
     }
 
     private function val(mixed $value): string

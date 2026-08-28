@@ -69,7 +69,7 @@ feedback                          -- motivo + justificativa de rejeição (fluxo
   id, article_id, reason (VARCHAR — lista em evolução), justification, created_by?, timestamps
 
 images                            -- opções do Nano Banana + escolha do redator
-  id, article_id, url, role (FEATURED | BODY), selected, prompt?, format?, timestamps
+  id, article_id, url, role (FEATURED | BODY), alt_text?, selected, prompt?, format?, timestamps
 
 schedules                         -- agendamento de publicação
   id, article_id, author_id?, image_id?, scheduled_date (DATETIME),
@@ -89,10 +89,11 @@ knowledge_sources                 -- registro interno das fontes NotebookLM (int
 
 Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mantém a tabela de controle **`schema_migrations`** (`filename`, `applied_at`) — não é do modelo de domínio, só registra quais migrations já rodaram.
 
-**Migrations posteriores à 0001** (Fase 4):
+**Migrations posteriores à 0001** (Fases 4–5):
 - `0002` — `ai_executions.step`: +`planning`, +`compliance` no ENUM.
 - `0003` — nova tabela **`article_ai_notes`** (`article_id`, `step`, `payload` JSON): parecer de cada passo da IA (planning…review).
 - `0004` — `sites.editorial_identity` (TEXT): descrição de voz/estilo do site para o `PromptBuilder`.
+- `0005` — `images.alt_text` (VARCHAR 500); `article_ai_notes.step`: +`image` no ENUM. Fase 5.3.
 
 ### 87.1 Autenticação — sem tabela
 
@@ -102,8 +103,8 @@ O login (RF-001) usa **sessão nativa do PHP** ([requisitos §64.2](requisitos.m
 
 Não entraram na migration 0001 — dependem de decisão do responsável:
 
-- **`article_lineages` / `content_slots`** — hoje `articles.lineage_id` é só uma coluna agrupadora (sem FK). A [Regeneração (seção 29)](../editorial/fluxo-editorial.md#29-regeneração) — "3 tentativas por linhagem", "2 linhagens completas → `BLOCKED`" — sugere modelar Slot → Linhagem → Artigo. É decisão de design.
-- **`editorial_memory`** — "memória editorial = preferências aprendidas do histórico" ([glossário](../glossario.md); roadmap Fase 6). Sem formato definido.
+- **`article_lineages` / `content_slots`** — a Fase 6.2 usa `articles.lineage_id` de forma **auto-referente** (o 1º artigo da cadeia aponta para si; regeneração cria nova linha com o mesmo `lineage_id` e `attempt_number + 1`). Cobre "3 tentativas por linhagem → `BLOCKED`". O conceito de **múltiplas linhagens por slot** ("2 linhagens completas → `BLOCKED`") foi adiado — se for necessário, aí sim modelar Slot → Linhagem → Artigo.
+- **`editorial_memory`** — a Fase 6.3 **não** criou tabela: a "memória editorial" é derivada em tempo de geração do próprio histórico (`feedback` recente do site + artigos já aprovados), injetada no prompt via `PromptBuilder::memoryLayer()`. Uma tabela de "lições curadas/resumidas pela IA" continua possível para a Fase 8 (Inteligência Editorial).
 - **`site_ai_budgets`** — limite de custo de IA por site/mês ([seção 95](testes-e-observabilidade.md#95-controle-de-custo-de-ia-proposta)). O método de cálculo existe; o valor numérico é decisão pendente.
 - **`articles.status = 'ERROR'`** — possível novo estado para falha técnica ([seção 96](testes-e-observabilidade.md#96-política-de-retry--falha-da-ia-proposta)). Seria um `ALTER TABLE` futuro sob a [seção 55](../ai/regras-claude-code.md#55-banco-de-dados--regras-específicas-de-alteração).
 

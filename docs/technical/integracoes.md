@@ -50,21 +50,21 @@ Documentação:
 
 ### 36. Geração de imagens (Nano Banana)
 
-A geração de imagens será tratada como serviço separado da geração de texto. A implementação utilizará a família Nano Banana conforme a configuração definida para o projeto.
+A geração de imagens é um serviço separado da geração de texto. Implementação atual (Fase 5): modelo **Nano Banana Pro** (`gemini-3-pro-image-preview`), endpoint de Interações do Gemini 3.
 
-A integração deve ficar isolada em um serviço próprio — **Image Generation Service** — o que permite alterar o fornecedor/modelo sem alterar o restante da aplicação.
+A integração fica isolada em `src/Integrations/Image/` (interface `ImageProvider`, implementação `NanoBanana\NanoBananaProvider`) — trocar de fornecedor/modelo não afeta o restante. Detalhes técnicos: [docs/integrations/images.md](../integrations/images.md).
 
-O serviço deve **converter as imagens para WebP** antes do upload para o WordPress, e o corpo do artigo pode conter **várias imagens** (não só a destacada) — a cadência e as regras de alt text ficam no [Checklist SEO On-Page — Imagens](../editorial/seo.md#imagens).
+O serviço **converte as imagens para WebP** antes do upload para o WordPress (`App\Support\ImageConverter`, extensão `gd`), e o corpo do artigo pode conter **várias imagens** (não só a destacada) — a cadência e as regras de alt text ficam no [Checklist SEO On-Page — Imagens](../editorial/seo.md#imagens).
 
 Documentação oficial: https://ai.google.dev/gemini-api/docs/image-generation
 
-### 36.1 Armazenamento das imagens geradas `[PROPOSTA]`
+### 36.1 Armazenamento das imagens geradas
 
-> **Precisa aprovação — decisão arquitetural ainda não tomada.** O README original nunca definiu onde as imagens geradas pelo Nano Banana ficam guardadas antes (e depois) de o Redator-Chefe escolher uma (ver [Imagens — seção 25](../editorial/fluxo-editorial.md#25-imagens)). Proposta de valor-padrão, a validar:
+> **Decisão tomada (Fase 5.3), aprovada pelo responsável.**
 
-- Guardar localmente em `public/assets/uploads/{site}/{article_id}/`, com o nome do arquivo referenciado na tabela `images` (ver [schema — seção 87](schema.md#87-tabelas--estado-atual-migration-0001)).
+- As imagens geradas ficam em `public/assets/uploads/{site_id}/{article_id}/` (`App\Support\ImageStorage`), com o caminho web referenciado em `images.url` (ver [schema — seção 87](schema.md#87-tabelas--estado-atual-migration-0001)). O diretório é `gitignored`.
 - Simples e sem dependência externa nova — coerente com a filosofia "sem dependência pesada" das ADRs 002/006, adequado para a fase inicial com poucos sites.
-- Quando o artigo é aprovado e agendado, a imagem escolhida é enviada para a **media library do WordPress do site** via REST API (ver [seção 37](#37-wordpress-rest-api)) — a cópia local pode ser mantida como histórico ou removida depois do envio confirmado.
+- Quando o artigo é aprovado e agendado, a imagem escolhida (`images.selected = 1`) é enviada para a **media library do WordPress do site** via REST API (ver [seção 37](#37-wordpress-rest-api)) — Fase 7. A cópia local pode ser mantida como histórico ou removida depois do envio confirmado.
 
 Object storage (S3 ou equivalente) fica registrado como possível revisão futura, se o volume de imagens/sites (Fase 9 — escala) tornar o disco local um gargalo — não é decisão para a primeira versão.
 

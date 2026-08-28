@@ -59,6 +59,16 @@ final class AiExecutionService
         )->execute(['c' => GeminiPricing::estimate($result), 'id' => $id]);
     }
 
+    /** Sucesso com custo já calculado por quem chama (ex.: imagem — custo por imagem, não por token). */
+    public function markSuccessCost(int $id, float $cost): void
+    {
+        Connection::get()->prepare(
+            "UPDATE ai_executions
+             SET status = 'SUCCESS', cost = :c, error_message = NULL, finished_at = NOW()
+             WHERE id = :id"
+        )->execute(['c' => round($cost, 6), 'id' => $id]);
+    }
+
     public function markFailed(int $id, string $error): void
     {
         Connection::get()->prepare(

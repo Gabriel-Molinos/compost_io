@@ -11,6 +11,9 @@ docs/technical/credenciais-privadas.md
 # Build do Tailwind (se gerado localmente antes de decidir versionar ou não)
 /public/assets/css/app.css
 
+# Imagens geradas pela IA e gravadas localmente (integracoes.md §36.1)
+/public/assets/uploads/
+
 # Binário do Tailwind CLI standalone (baixado localmente, ~100 MB — ver docs/technical/setup-e-operacoes.md)
 /tools/*
 # ...exceto o bundle de CA (Mozilla, via curl.se) usado nas chamadas HTTPS de saída — esse é versionado

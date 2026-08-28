@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Controllers\AiPlaygroundController;
 use App\Controllers\AuthController;
 use App\Controllers\CategoryController;
 use App\Controllers\EditorialRuleController;
@@ -66,4 +67,8 @@ return static function (Router $router): void {
     $router->add('GET',  '/sites/{id}/goals/{gid}/edit',  [GoalController::class, 'edit'],    auth: true);
     $router->add('POST', '/sites/{id}/goals/{gid}',       [GoalController::class, 'update'],  auth: true);
     $router->add('POST', '/sites/{id}/goals/{gid}/delete', [GoalController::class, 'destroy'], auth: true);
+
+    // Playground de IA do site (somente ADMIN — cada execução é chamada real ao Gemini)
+    $router->add('GET',  '/sites/{id}/ai-playground', [AiPlaygroundController::class, 'index'], admin: true);
+    $router->add('POST', '/sites/{id}/ai-playground', [AiPlaygroundController::class, 'run'],   admin: true);
 };

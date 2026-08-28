@@ -33,6 +33,7 @@ Cobre RF-005 e RF-015. Fase 3 (Planejamento) concluída — mergeada em `develop
 
 ### Em progresso (branch `feature/ia-fase-4`)
 - 2026-08-27 — **Prompt Base** (fatia 4.1): arquivos de prompt versionados em `docs/ai/` (`base-editorial`, `planning`, `research`, `writing`, `seo`, `compliance`, `review`) + `PromptBuilder` (`src/Services/PromptBuilder.php`) que monta o prompt final em camadas — Prompt Base + Passo + Identidade do Site + Meta + Categoria + Brief (Memória Editorial fica para a Fase 6). Sem chamada a API externa. Pré-visualização por `php bin/prompt_preview.php <step> <site_id>`. Testado contra o site Gavsy (18 asserts).
+- 2026-08-28 — **Integração Gemini** (fatia 4.2): `src/Integrations/` — interface `AIProvider` + `AIResult`, e `Gemini/` (`GeminiConfig`, `GeminiClient` cURL, `GeminiProvider`, `GeminiException`). Saída estruturada via `responseSchema`, contagem de tokens (inclui `thoughtsTokenCount` do modelo *thinking*). Bundle de CA versionado (`tools/cacert.pem`, `App\Support\CaBundle`) para HTTPS de saída. `.env`: `GEMINI_API_KEY`, `GEMINI_MODEL` (`gemini-2.5-pro`). Doc em `docs/integrations/gemini.md`. Testado com chamada real: `php bin/gemini_smoke.php`.
 
 > Pode ser gerado manualmente ou, se o [padrão de commits](docs/technical/padroes-de-codigo.md#90-padrão-de-commits-proposta) for adotado, automatizado com ferramentas como `standard-version` ou `release-please`.
 

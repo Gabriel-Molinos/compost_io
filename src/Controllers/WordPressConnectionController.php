@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Integrations\WordPress\WordPressClient;
-use App\Integrations\WordPress\WordPressConfig;
 use App\Integrations\WordPress\WordPressException;
 use App\Services\WordPressConnectionService;
 use App\Support\Csrf;
@@ -74,21 +72,12 @@ final class WordPressConnectionController extends Controller
         $site = $this->requireSite($siteId);
         Csrf::verify();
 
-        $state = $this->connections->forSite((int) $site['id']);
-        $password = $this->connections->appPassword((int) $site['id']);
-
-        if ($state['url'] === null || $state['username'] === null || $password === null) {
-            Session::flash('error', 'Configure a URL, o usuário e a Application Password antes de testar.');
-            Http::redirect('/sites/' . $site['id'] . '/wordpress');
-        }
-
         try {
-            $client = new WordPressClient(new WordPressConfig($state['url'], $state['username'], $password));
-            $me = $client->verifyConnection();
+            $me = $this->connections->client((int) $site['id'])->verifyConnection();
             $this->connections->markVerified((int) $site['id'], true);
             Session::flash('success', sprintf(
                 'Conexão OK — autenticado como “%s” (WordPress user #%s).',
-                (string) ($me['name'] ?? $state['username']),
+                (string) ($me['name'] ?? '?'),
                 (string) ($me['id'] ?? '?'),
             ));
         } catch (WordPressException $e) {

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Database\Connection;
+use App\Integrations\WordPress\WordPressClient;
+use App\Integrations\WordPress\WordPressConfig;
+use App\Integrations\WordPress\WordPressException;
 use App\Support\Crypto;
 
 /**
@@ -92,6 +95,23 @@ final class WordPressConnectionService
         $blob = $stmt->fetchColumn();
 
         return $blob === false ? null : Crypto::decrypt((string) $blob);
+    }
+
+    /**
+     * Cliente REST pronto para o site, montado da conexão gravada.
+     *
+     * @throws WordPressException se URL/usuário/senha não estiverem configurados
+     */
+    public function client(int $siteId): WordPressClient
+    {
+        $state = $this->forSite($siteId);
+        $password = $this->appPassword($siteId);
+
+        if ($state['url'] === null || $state['username'] === null || $password === null) {
+            throw new WordPressException('Conexão WordPress do site não está configurada.');
+        }
+
+        return new WordPressClient(new WordPressConfig($state['url'], $state['username'], $password));
     }
 
     public function markVerified(int $siteId, bool $ok): void

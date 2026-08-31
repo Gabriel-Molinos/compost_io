@@ -16,6 +16,7 @@ $tabs = [
     ['production', 'Produção',    '/sites/' . $site['id'] . '/production', true],
     ['calendar',   'Calendário',  '/sites/' . $site['id'] . '/calendar',   true],
     ['reports',    'Relatórios',  '/sites/' . $site['id'] . '/reports',    true],
+    ['intelligence', 'Inteligência', '/sites/' . $site['id'] . '/intelligence', true],
     ['config',     'Configuração', '/sites/' . $site['id'] . '/edit',      AuthService::isAdmin()],
     ['wordpress',  'WordPress',   '/sites/' . $site['id'] . '/wordpress', AuthService::isAdmin()],
     ['ai',         'IA (teste)',  '/sites/' . $site['id'] . '/ai-playground', AuthService::isAdmin()],

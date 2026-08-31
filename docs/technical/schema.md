@@ -83,6 +83,10 @@ ai_executions                     -- cada etapa técnica (fila Redis + custo + r
 knowledge_sources                 -- registro interno das fontes NotebookLM (integração FUTURA, §40)
   id, site_id, notebook_id?, source_id?, name, type?, reference_url?, status, added_by?,
   added_at, updated_at
+
+editorial_insights                -- [+] Centro de Inteligência Editorial (RF-014, §33) — análise narrativa por site
+  id, site_id, content (JSON — as 6 respostas da §33), model, cost (DECIMAL),
+  prompt_tokens, output_tokens, generated_by?, created_at
 ```
 
 `?` = coluna nullable.
@@ -96,6 +100,8 @@ Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mant
 - `0005` — `images.alt_text` (VARCHAR 500); `article_ai_notes.step`: +`image` no ENUM. Fase 5.3.
 - `0006` — `categories.wordpress_category_id` (BIGINT UNSIGNED, nullable) + `UNIQUE (site_id, wordpress_category_id)`: id da categoria no WordPress do site. Fase 7.3.
 - `0007` — `schedules.wp_media_ids` (VARCHAR 500, JSON): ids de mídia criados no WordPress por este agendamento, para limpar ao atualizar/retirar. Fase 7.5.
+- `0008` — `articles.review_started_at` / `reviewed_at` (TIMESTAMP nullable): janelas do "tempo médio de revisão" do relatório mensal. Fase 8.1.
+- `0009` — nova tabela **`editorial_insights`**: histórico das análises do Centro de Inteligência Editorial por site (uma chamada paga ao Gemini por geração). Fase 8.3.
 
 ### 87.1 Autenticação — sem tabela
 

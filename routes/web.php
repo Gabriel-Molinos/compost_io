@@ -9,6 +9,7 @@ use App\Controllers\CategoryController;
 use App\Controllers\EditorialRuleController;
 use App\Controllers\GoalController;
 use App\Controllers\HomeController;
+use App\Controllers\IntelligenceController;
 use App\Controllers\ProductionController;
 use App\Controllers\ReportController;
 use App\Controllers\ScheduleController;
@@ -90,6 +91,10 @@ return static function (Router $router): void {
 
     // Relatórios do site (RF-013)
     $router->add('GET', '/sites/{id}/reports', [ReportController::class, 'index'], auth: true);
+
+    // Centro de Inteligência Editorial do site (RF-014 — geração sob demanda, chamada paga)
+    $router->add('GET',  '/sites/{id}/intelligence',          [IntelligenceController::class, 'index'],    auth: true);
+    $router->add('POST', '/sites/{id}/intelligence/generate', [IntelligenceController::class, 'generate'], auth: true);
 
     // Produção de artigos pela IA
     $router->add('GET',  '/sites/{id}/production',              [ProductionController::class, 'index'],    auth: true);

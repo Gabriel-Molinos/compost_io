@@ -367,6 +367,8 @@ Essa área não deve competir com a operação diária.
 - **Operação** fica em: Visão Geral, Produção, Planejamento, Calendário.
 - **Análise** fica em: Relatórios, Inteligência Editorial.
 
+> **Implementado na Fase 8.3.** Aba **Inteligência** por site. `IntelligenceService` junta os números dos últimos 3 meses (`ReportService`) + as justificativas de rejeição recentes e pede ao Gemini uma resposta narrativa às seis perguntas acima (JSON com schema; instrução de sistema proíbe inventar dado — §58). Geração **sob demanda** (botão), com teto de 10/dia por site; o resultado fica salvo em `editorial_insights` até regenerar. Custo típico ~US$ 0,02.
+
 ## Ver também
 
 - [Requisitos e modelagem](../technical/requisitos.md) — RF, permissões, máquina de estados

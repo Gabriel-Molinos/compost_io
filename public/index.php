@@ -11,6 +11,8 @@ require $root . '/vendor/autoload.php';
 
 Env::load($root . '/.env');
 
+date_default_timezone_set(Env::get('APP_TIMEZONE') ?: 'America/Sao_Paulo');
+
 error_reporting(E_ALL);
 ini_set('display_errors', Env::get('APP_ENV') === 'development' ? '1' : '0');
 

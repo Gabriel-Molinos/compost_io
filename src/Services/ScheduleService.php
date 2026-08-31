@@ -45,8 +45,9 @@ final class ScheduleService
     }
 
     /**
-     * Último agendamento do artigo, em qualquer status (para mostrar o post já
-     * publicado).
+     * Agendamento a exibir para um artigo já publicado: prioriza a linha que
+     * tem um post no WordPress (pode haver linhas canceladas mais recentes de
+     * tentativas anteriores).
      *
      * @return array<string, mixed>|null
      */
@@ -57,7 +58,8 @@ final class ScheduleService
              FROM schedules s
              LEFT JOIN site_authors a ON a.id = s.author_id
              WHERE s.article_id = :a
-             ORDER BY s.id DESC LIMIT 1'
+             ORDER BY (s.wordpress_post_id IS NOT NULL) DESC, s.id DESC
+             LIMIT 1'
         );
         $stmt->execute(['a' => $articleId]);
 

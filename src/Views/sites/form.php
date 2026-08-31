@@ -11,11 +11,23 @@ use App\View;
 /** @var array<string, string> $errors */
 
 $isEdit = !empty($site['id']);
-?>
-<div class="flex items-center gap-3">
-    <a href="/sites" class="text-sm text-text-secondary hover:text-text-primary">← Sites</a>
-</div>
-<h1 class="mt-2 text-2xl font-bold text-text-primary"><?= $isEdit ? 'Editar site' : 'Novo site' ?></h1>
+$backHref = $isEdit ? '/sites/' . $site['id'] : '/sites';
+
+if ($isEdit) {
+    $activeTab = 'config';
+    require __DIR__ . '/_tabs.php';
+} else {
+    ?>
+    <div class="flex items-center gap-3">
+        <a href="/sites" class="text-sm text-text-secondary hover:text-text-primary">← Sites</a>
+    </div>
+    <h1 class="mt-2 text-2xl font-bold text-text-primary">Novo site</h1>
+    <?php
+}
+
+if ($isEdit): ?>
+    <h2 class="text-lg font-semibold text-text-primary">Configuração do site</h2>
+<?php endif; ?>
 
 <?php if ($errors !== []): ?>
     <p role="alert" class="mt-4 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
@@ -49,7 +61,7 @@ $isEdit = !empty($site['id']);
                 class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-light">
             <?= $isEdit ? 'Salvar' : 'Criar site' ?>
         </button>
-        <a href="/sites" class="rounded-md border border-border px-4 py-2 text-text-secondary hover:text-text-primary">
+        <a href="<?= View::e($backHref) ?>" class="rounded-md border border-border px-4 py-2 text-text-secondary hover:text-text-primary">
             Cancelar
         </a>
     </div>

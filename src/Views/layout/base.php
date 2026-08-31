@@ -103,7 +103,7 @@ $navClass = static fn (string $href): string => $href === $currentPath || ($href
         </main>
 
         <footer class="mt-12 border-t border-border pt-6 text-xs text-text-muted">
-            Fase 3 — Planejamento · <?= View::e(date('Y')) ?>
+            COMPOST · <?= View::e(date('Y')) ?>
         </footer>
     </div>
 </body>

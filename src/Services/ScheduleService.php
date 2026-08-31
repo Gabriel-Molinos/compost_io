@@ -66,6 +66,30 @@ final class ScheduleService
         return $stmt->fetch() ?: null;
     }
 
+    /**
+     * Agendamentos do site num intervalo de datas (calendário mensal — 7.6).
+     * Ignora os cancelados.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function betweenForSite(int $siteId, string $startDate, string $endDate): array
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT s.id, s.scheduled_date, s.status, s.wordpress_post_id,
+                    a.id AS article_id, a.title, a.status AS article_status,
+                    au.name AS author_name
+             FROM schedules s
+             JOIN articles a ON a.id = s.article_id AND a.site_id = :s AND a.deleted_at IS NULL
+             LEFT JOIN site_authors au ON au.id = s.author_id
+             WHERE s.status <> 'CANCELED'
+               AND s.scheduled_date >= :start AND s.scheduled_date < :end
+             ORDER BY s.scheduled_date, a.title"
+        );
+        $stmt->execute(['s' => $siteId, 'start' => $startDate, 'end' => $endDate]);
+
+        return $stmt->fetchAll();
+    }
+
     /** @return list<array<string, mixed>> autores ativos do site */
     public function authorsForSite(int $siteId): array
     {

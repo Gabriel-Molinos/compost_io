@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Controllers\AiPlaygroundController;
 use App\Controllers\AuthController;
+use App\Controllers\CalendarController;
 use App\Controllers\CategoryController;
 use App\Controllers\EditorialRuleController;
 use App\Controllers\GoalController;
@@ -82,6 +83,9 @@ return static function (Router $router): void {
     // Playground de IA do site (somente ADMIN — cada execução é chamada real ao Gemini)
     $router->add('GET',  '/sites/{id}/ai-playground', [AiPlaygroundController::class, 'index'], admin: true);
     $router->add('POST', '/sites/{id}/ai-playground', [AiPlaygroundController::class, 'run'],   admin: true);
+
+    // Calendário editorial (agendamentos do site)
+    $router->add('GET', '/sites/{id}/calendar', [CalendarController::class, 'index'], auth: true);
 
     // Produção de artigos pela IA
     $router->add('GET',  '/sites/{id}/production',              [ProductionController::class, 'index'],    auth: true);

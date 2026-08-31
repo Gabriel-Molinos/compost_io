@@ -16,6 +16,8 @@ use App\View;
 /** @var array<string,array<string,mixed>> $notes */
 /** @var list<array<string,mixed>> $images */
 /** @var list<array<string,mixed>> $feedback */
+/** @var array<string,mixed>|null $schedule */
+/** @var list<array<string,mixed>> $authors */
 
 $activeTab = 'production';
 require __DIR__ . '/../_tabs.php';
@@ -73,6 +75,109 @@ require __DIR__ . '/../_tabs.php';
                 </label>
                 <button type="submit" class="self-start rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
                     Rejeitar
+                </button>
+            </form>
+        </div>
+    </section>
+<?php endif; ?>
+
+<?php
+$featuredSelected = null;
+foreach ($images as $img) {
+    if ($img['role'] === 'FEATURED' && (int) $img['selected'] === 1) {
+        $featuredSelected = $img;
+        break;
+    }
+}
+$scheduleBase = '/sites/' . View::e($site['id']) . '/production/' . View::e($article['id']);
+$nowLocal = date('Y-m-d\TH:i');
+
+$authorOptions = static function (array $authors, int $selectedId): string {
+    $html = '';
+    foreach ($authors as $a) {
+        $sel = (int) $a['id'] === $selectedId ? ' selected' : '';
+        $html .= '<option value="' . View::e($a['id']) . '"' . $sel . '>' . View::e($a['name']) . '</option>';
+    }
+    return $html;
+};
+?>
+
+<?php if ($article['status'] === 'APPROVED'): ?>
+    <section id="agendar" class="mt-5 rounded-lg border border-border bg-surface p-4">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Agendar publicação</h3>
+        <?php if ($authors === []): ?>
+            <p class="mt-1 text-sm text-text-secondary">
+                Nenhum autor disponível. Sincronize os autores em
+                <a href="/sites/<?= View::e($site['id']) ?>/wordpress" class="text-cyan hover:text-cyan-light">WordPress</a>.
+            </p>
+        <?php elseif ($featuredSelected === null): ?>
+            <p class="mt-1 text-sm text-text-secondary">
+                Escolha a <a href="#imagens" class="text-cyan hover:text-cyan-light">imagem destacada</a> antes de agendar.
+            </p>
+        <?php else: ?>
+            <p class="mt-1 text-sm text-text-secondary">Define autor, data/hora e usa a imagem destacada já escolhida. O envio ao WordPress é um passo à parte.</p>
+            <form method="post" action="<?= $scheduleBase ?>/schedule" class="mt-3 grid gap-4 sm:max-w-md">
+                <?= Csrf::field() ?>
+                <input type="hidden" name="image_id" value="<?= View::e($featuredSelected['id']) ?>">
+                <label class="text-sm">
+                    <span class="block font-medium text-text-secondary">Autor</span>
+                    <select name="author_id" required
+                            class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+                        <?= $authorOptions($authors, 0) ?>
+                    </select>
+                </label>
+                <label class="text-sm">
+                    <span class="block font-medium text-text-secondary">Data e hora da publicação</span>
+                    <input type="datetime-local" name="scheduled_date" required min="<?= $nowLocal ?>"
+                           class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+                </label>
+                <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                    Agendar
+                </button>
+            </form>
+        <?php endif; ?>
+    </section>
+<?php elseif ($article['status'] === 'SCHEDULED' && $schedule !== null): ?>
+    <?php $imageIdForForm = $featuredSelected['id'] ?? $schedule['image_id']; ?>
+    <section id="agendar" class="mt-5 rounded-lg border border-cyan/40 bg-surface p-4">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Agendado</h3>
+        <p class="mt-1 text-sm text-text-primary">
+            <strong><?= View::e(date('d/m/Y H:i', strtotime((string) $schedule['scheduled_date']))) ?></strong>
+            · autor: <?= View::e($schedule['author_name'] ?? '—') ?>
+        </p>
+        <?php if (!empty($schedule['image_url'])): ?>
+            <img src="<?= View::e($schedule['image_url']) ?>" alt="" class="mt-2 w-40 rounded border border-border">
+        <?php endif; ?>
+
+        <div class="mt-4 flex flex-wrap items-start gap-6">
+            <details class="text-sm">
+                <summary class="cursor-pointer font-medium text-cyan hover:text-cyan-light">Reagendar</summary>
+                <form method="post" action="<?= $scheduleBase ?>/schedule/update" class="mt-3 grid gap-4 sm:max-w-md">
+                    <?= Csrf::field() ?>
+                    <input type="hidden" name="image_id" value="<?= View::e($imageIdForForm) ?>">
+                    <label class="text-sm">
+                        <span class="block font-medium text-text-secondary">Autor</span>
+                        <select name="author_id" required
+                                class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+                            <?= $authorOptions($authors, (int) $schedule['author_id']) ?>
+                        </select>
+                    </label>
+                    <label class="text-sm">
+                        <span class="block font-medium text-text-secondary">Data e hora</span>
+                        <input type="datetime-local" name="scheduled_date" required min="<?= $nowLocal ?>"
+                               value="<?= View::e(date('Y-m-d\TH:i', strtotime((string) $schedule['scheduled_date']))) ?>"
+                               class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+                    </label>
+                    <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                        Salvar
+                    </button>
+                </form>
+            </details>
+            <form method="post" action="<?= $scheduleBase ?>/schedule/cancel"
+                  onsubmit="return confirm('Cancelar o agendamento? O artigo volta para aprovado.');">
+                <?= Csrf::field() ?>
+                <button type="submit" class="rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
+                    Cancelar agendamento
                 </button>
             </form>
         </div>

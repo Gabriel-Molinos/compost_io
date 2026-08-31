@@ -9,6 +9,7 @@ use App\Controllers\EditorialRuleController;
 use App\Controllers\GoalController;
 use App\Controllers\HomeController;
 use App\Controllers\ProductionController;
+use App\Controllers\ScheduleController;
 use App\Controllers\SiteController;
 use App\Controllers\UserController;
 use App\Controllers\WordPressConnectionController;
@@ -92,4 +93,9 @@ return static function (Router $router): void {
     $router->add('POST', '/sites/{id}/production/{aid}/regenerate', [ProductionController::class, 'regenerate'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/images/select',      [ProductionController::class, 'selectImage'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/images/{iid}/delete', [ProductionController::class, 'deleteImage'], auth: true);
+
+    // Agendamento de publicação (RF-011)
+    $router->add('POST', '/sites/{id}/production/{aid}/schedule',        [ScheduleController::class, 'store'],   auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/schedule/update', [ScheduleController::class, 'update'],  auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/schedule/cancel', [ScheduleController::class, 'destroy'], auth: true);
 };

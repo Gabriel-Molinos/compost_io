@@ -1,0 +1,181 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Database\Connection;
+use DateTimeImmutable;
+use Exception;
+use RuntimeException;
+
+/**
+ * Agendamento de publicação (RF-011, fluxo-editorial §30). Um artigo `APPROVED`
+ * recebe autor + data/hora + imagem destacada e vai para `SCHEDULED`, com uma
+ * linha `PENDING` em `schedules`. O envio ao WordPress é a fatia 7.5.
+ *
+ *   APPROVED --agendar--> SCHEDULED        (schedules: PENDING)
+ *   SCHEDULED --reagendar--> SCHEDULED     (atualiza a linha PENDING)
+ *   SCHEDULED --cancelar--> APPROVED       (schedules: CANCELED)
+ */
+final class ScheduleService
+{
+    public function __construct(private readonly ArticleService $articles = new ArticleService())
+    {
+    }
+
+    /**
+     * Agendamento vigente (PENDING) do artigo, com nome do autor e imagem.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function activeForArticle(int $articleId): ?array
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT s.*, a.name AS author_name, i.url AS image_url
+             FROM schedules s
+             LEFT JOIN site_authors a ON a.id = s.author_id
+             LEFT JOIN images i ON i.id = s.image_id
+             WHERE s.article_id = :a AND s.status = 'PENDING'
+             ORDER BY s.id DESC LIMIT 1"
+        );
+        $stmt->execute(['a' => $articleId]);
+
+        return $stmt->fetch() ?: null;
+    }
+
+    /** @return list<array<string, mixed>> autores ativos do site */
+    public function authorsForSite(int $siteId): array
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT id, name, wordpress_author_id FROM site_authors
+             WHERE site_id = :s AND is_active = 1 ORDER BY name'
+        );
+        $stmt->execute(['s' => $siteId]);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Cria o agendamento. Valida artigo/autor/imagem/data.
+     *
+     * @throws RuntimeException entrada inválida
+     */
+    public function schedule(int $articleId, int $siteId, int $authorId, string $dateTimeLocal, int $imageId): void
+    {
+        $article = $this->articles->find($siteId, $articleId);
+        if ($article === null) {
+            throw new RuntimeException('Artigo não encontrado.');
+        }
+        if ($article['status'] !== 'APPROVED') {
+            throw new RuntimeException('Só é possível agendar um artigo aprovado (status atual: ' . $article['status'] . ').');
+        }
+
+        $when = $this->parseFutureDate($dateTimeLocal);
+        $this->assertAuthor($authorId, $siteId);
+        $this->assertFeaturedImage($imageId, $articleId);
+
+        $pdo = Connection::get();
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare(
+                "INSERT INTO schedules (article_id, author_id, image_id, scheduled_date, status)
+                 VALUES (:a, :au, :img, :d, 'PENDING')"
+            )->execute(['a' => $articleId, 'au' => $authorId, 'img' => $imageId, 'd' => $when]);
+
+            $this->articles->setStatus($articleId, 'SCHEDULED');
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Atualiza o agendamento vigente (artigo continua SCHEDULED).
+     *
+     * @throws RuntimeException entrada inválida
+     */
+    public function reschedule(int $articleId, int $siteId, int $authorId, string $dateTimeLocal, int $imageId): void
+    {
+        $schedule = $this->activeForArticle($articleId);
+        if ($schedule === null) {
+            throw new RuntimeException('Não há agendamento pendente para este artigo.');
+        }
+
+        $when = $this->parseFutureDate($dateTimeLocal);
+        $this->assertAuthor($authorId, $siteId);
+        $this->assertFeaturedImage($imageId, $articleId);
+
+        Connection::get()->prepare(
+            'UPDATE schedules SET author_id = :au, image_id = :img, scheduled_date = :d
+             WHERE id = :id'
+        )->execute(['au' => $authorId, 'img' => $imageId, 'd' => $when, 'id' => (int) $schedule['id']]);
+    }
+
+    /** Cancela o agendamento vigente e devolve o artigo para APPROVED. */
+    public function cancel(int $articleId, int $siteId): void
+    {
+        $article = $this->articles->find($siteId, $articleId);
+        if ($article === null || $article['status'] !== 'SCHEDULED') {
+            throw new RuntimeException('O artigo não está agendado.');
+        }
+
+        $pdo = Connection::get();
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare(
+                "UPDATE schedules SET status = 'CANCELED' WHERE article_id = :a AND status = 'PENDING'"
+            )->execute(['a' => $articleId]);
+
+            $this->articles->setStatus($articleId, 'APPROVED');
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    private function parseFutureDate(string $dateTimeLocal): string
+    {
+        $value = trim($dateTimeLocal);
+        if ($value === '') {
+            throw new RuntimeException('Informe a data e a hora da publicação.');
+        }
+
+        try {
+            $when = new DateTimeImmutable(str_replace('T', ' ', $value));
+        } catch (Exception) {
+            throw new RuntimeException('Data/hora inválida.');
+        }
+
+        if ($when < new DateTimeImmutable('now')) {
+            throw new RuntimeException('A data de publicação precisa estar no futuro.');
+        }
+
+        return $when->format('Y-m-d H:i:00');
+    }
+
+    private function assertAuthor(int $authorId, int $siteId): void
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT 1 FROM site_authors WHERE id = :id AND site_id = :s AND is_active = 1 LIMIT 1'
+        );
+        $stmt->execute(['id' => $authorId, 's' => $siteId]);
+        if ($stmt->fetchColumn() === false) {
+            throw new RuntimeException('Selecione um autor válido do site.');
+        }
+    }
+
+    private function assertFeaturedImage(int $imageId, int $articleId): void
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT 1 FROM images
+             WHERE id = :id AND article_id = :a AND role = 'FEATURED' AND selected = 1 LIMIT 1"
+        );
+        $stmt->execute(['id' => $imageId, 'a' => $articleId]);
+        if ($stmt->fetchColumn() === false) {
+            throw new RuntimeException('Escolha a imagem destacada antes de agendar.');
+        }
+    }
+}

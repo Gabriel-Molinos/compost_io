@@ -13,6 +13,7 @@ use App\Services\CategoryService;
 use App\Services\FeedbackService;
 use App\Services\GoalService;
 use App\Services\ImageService;
+use App\Services\ScheduleService;
 use App\Services\Pipeline\ArticlePipeline;
 use App\Support\ImageStorage;
 use App\Services\Pipeline\PipelineException;
@@ -112,6 +113,8 @@ final class ProductionController extends Controller
         $site = $this->requireSite($siteId);
         $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
 
+        $schedules = new ScheduleService();
+
         View::render('sites/production/show', [
             'title'      => ($article['title'] ?: 'Rascunho #' . $article['id']) . ' · ' . $site['name'],
             'site'       => $site,
@@ -122,6 +125,8 @@ final class ProductionController extends Controller
             'totalCost'  => $this->executions->totalCostForArticle((int) $article['id']),
             'notes'      => (new ArticleNoteService())->forArticle((int) $article['id']),
             'images'     => (new ImageService())->forArticle((int) $article['id']),
+            'schedule'   => $schedules->activeForArticle((int) $article['id']),
+            'authors'    => $schedules->authorsForSite((int) $site['id']),
             'feedback'   => (new FeedbackService())->forContext(
                 (int) $article['id'],
                 $article['lineage_id'] !== null ? (int) $article['lineage_id'] : null,

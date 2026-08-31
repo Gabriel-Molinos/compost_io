@@ -15,8 +15,8 @@
 - RF-008 — Redator-Chefe pode aprovar um artigo, com o artigo passando a `APPROVED` ✅ *(Fase 6.1 — `ArticleReviewService::approve`)*
 - RF-009 — Redator-Chefe pode rejeitar um artigo, informando motivo e justificativa (ver [Feedback](../editorial/fluxo-editorial.md#28-feedback)) ✅ *(Fase 6.1 — `feedback` + `REVISION_REQUESTED`)*
 - RF-010 — Sistema pode regenerar um artigo rejeitado, respeitando o limite de tentativas por linhagem (ver [Regeneração](../editorial/fluxo-editorial.md#29-regeneração)) ✅ *(Fase 6.2 — `ArticlePipeline::regenerate`, 3 tentativas/linhagem → `BLOCKED`)*
-- RF-011 — Redator-Chefe pode agendar um artigo aprovado (imagem, categoria, autor, data, horário — ver [Agendamento](../editorial/fluxo-editorial.md#30-agendamento))
-- RF-012 — Sistema pode publicar um artigo agendado no WordPress do site correspondente (ver [Integração WordPress](../editorial/fluxo-editorial.md#31-integração-wordpress))
+- RF-011 — Redator-Chefe pode agendar um artigo aprovado (imagem, categoria, autor, data, horário — ver [Agendamento](../editorial/fluxo-editorial.md#30-agendamento)) ✅ *(Fase 7.4 — seção "Agendar publicação" na tela do artigo; `schedules` PENDING; imagem destacada obrigatória)*
+- RF-012 — Sistema pode publicar um artigo agendado no WordPress do site correspondente (ver [Integração WordPress](../editorial/fluxo-editorial.md#31-integração-wordpress)) ✅ *(Fase 7.5 — botão manual; post `future`/`publish`, imagem destacada + corpo em WebP, categoria/autor/slug; atualizar e retirar)*
 - RF-013 — Redator-Chefe pode visualizar relatórios (mensal, o que melhorou/não melhorou, aprendizados — ver [Relatórios](../editorial/fluxo-editorial.md#32-relatórios))
 - RF-014 — Redator-Chefe pode visualizar o Centro de Inteligência Editorial do site (ver [seção 33](../editorial/fluxo-editorial.md#33-centro-de-inteligência-editorial))
 - RF-015 — Redator-Chefe pode configurar categorias, interesses e não-interesses do site (ver [seções 15, 18, 19](../editorial/fluxo-editorial.md#15-estrutura-editorial-de-cada-site)) ✅ *(Fase 3 — categorias, interesses/não-interesses e metas)*

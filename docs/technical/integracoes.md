@@ -72,6 +72,8 @@ Object storage (S3 ou equivalente) fica registrado como possível revisão futur
 
 Responsável por: consultar categorias, consultar autores, enviar mídia, criar artigos, definir categorias, definir autores, agendar, verificar publicação.
 
+> **Implementado na Fase 7.** `src/Integrations/WordPress/` (`WordPressClient` + `Config`/`Exception`, `InternalLinkResolver`, `BodyImageInjector`); credencial por site cifrada com libsodium (`site_wordpress_connections`, `App\Support\Crypto`). Autenticação por Application Password (Basic). Post criado como `future` (`date_gmt`) ou `publish`. Ver [CHANGELOG — Fase 7](../../CHANGELOG.md).
+
 Documentação:
 - Handbook: https://developer.wordpress.org/rest-api/
 - Referência: https://developer.wordpress.org/rest-api/reference/

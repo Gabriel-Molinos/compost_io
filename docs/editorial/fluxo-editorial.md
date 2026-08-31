@@ -317,6 +317,8 @@ Um artigo rejeitado pode ser regenerado. Cada tentativa deve ser registrada.
 
 Depois da aprovação, o redator escolhe: imagem, categoria, autor, data, horário. Depois a plataforma envia ao WordPress.
 
+> **Implementado na Fase 7.4.** `APPROVED → SCHEDULED` (`ScheduleService`), linha `PENDING` em `schedules`. A imagem destacada precisa estar escolhida. Dá para reagendar e cancelar (volta a `APPROVED`). Calendário mensal por site na aba **Calendário** (7.6).
+
 ### 31. Integração WordPress
 
 A publicação será feita por meio da **WordPress REST API**. A API do WordPress permite consultar e modificar recursos como posts, categorias, mídia e usuários por HTTP/JSON; entre os endpoints padrão estão `/wp/v2/posts`, `/wp/v2/categories`, `/wp/v2/media` e `/wp/v2/users`.
@@ -334,6 +336,8 @@ A integração deverá conseguir:
 - verificar publicação.
 
 Cada site terá sua própria conexão.
+
+> **Implementado na Fase 7.5.** `SCHEDULED → PUBLISHED` (`WordPressPublishService`). Post como `future` (o WordPress publica na data) ou `publish` se a data já passou. Sobe a imagem destacada e as de corpo (WebP, distribuídas entre as seções), define categoria/autor/slug/excerpt, resolve links internos. "Atualizar no WordPress" e "Retirar do WordPress" (post → lixeira). Envio por **botão manual** — worker automático na data é pendência futura.
 
 ### 32. Relatórios
 

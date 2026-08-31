@@ -89,11 +89,13 @@ knowledge_sources                 -- registro interno das fontes NotebookLM (int
 
 Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mantém a tabela de controle **`schema_migrations`** (`filename`, `applied_at`) — não é do modelo de domínio, só registra quais migrations já rodaram.
 
-**Migrations posteriores à 0001** (Fases 4–5):
+**Migrations posteriores à 0001** (Fases 4–7):
 - `0002` — `ai_executions.step`: +`planning`, +`compliance` no ENUM.
 - `0003` — nova tabela **`article_ai_notes`** (`article_id`, `step`, `payload` JSON): parecer de cada passo da IA (planning…review).
 - `0004` — `sites.editorial_identity` (TEXT): descrição de voz/estilo do site para o `PromptBuilder`.
 - `0005` — `images.alt_text` (VARCHAR 500); `article_ai_notes.step`: +`image` no ENUM. Fase 5.3.
+- `0006` — `categories.wordpress_category_id` (BIGINT UNSIGNED, nullable) + `UNIQUE (site_id, wordpress_category_id)`: id da categoria no WordPress do site. Fase 7.3.
+- `0007` — `schedules.wp_media_ids` (VARCHAR 500, JSON): ids de mídia criados no WordPress por este agendamento, para limpar ao atualizar/retirar. Fase 7.5.
 
 ### 87.1 Autenticação — sem tabela
 

@@ -38,7 +38,9 @@ Cada integração deverá possuir: configuração, cliente, serviço, tratamento
 
 ### 35. Gemini API
 
-Responsável por: planejamento, pesquisa, produção, SEO, revisão, análise de feedback.
+Responsável por: planejamento, pesquisa, produção, SEO, revisão, análise de feedback e a análise narrativa do Centro de Inteligência Editorial (§33).
+
+> **Implementado nas Fases 4 e 8.3.** `src/Integrations/Gemini/` (`GeminiClient`/`Config`/`Provider`/`Exception`) por trás da interface `AIProvider`. Pipeline de produção usa `generateJson` com `responseSchema` por passo; o Centro de Inteligência (`IntelligenceService`) usa o mesmo provider para as seis respostas da §33. Custo por chamada em `GeminiPricing`.
 
 Documentação:
 - Docs: https://ai.google.dev/gemini-api/docs

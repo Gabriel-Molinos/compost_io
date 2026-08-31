@@ -10,6 +10,7 @@ use App\Controllers\EditorialRuleController;
 use App\Controllers\GoalController;
 use App\Controllers\HomeController;
 use App\Controllers\ProductionController;
+use App\Controllers\ReportController;
 use App\Controllers\ScheduleController;
 use App\Controllers\SiteController;
 use App\Controllers\UserController;
@@ -86,6 +87,9 @@ return static function (Router $router): void {
 
     // Calendário editorial (agendamentos do site)
     $router->add('GET', '/sites/{id}/calendar', [CalendarController::class, 'index'], auth: true);
+
+    // Relatórios do site (RF-013)
+    $router->add('GET', '/sites/{id}/reports', [ReportController::class, 'index'], auth: true);
 
     // Produção de artigos pela IA
     $router->add('GET',  '/sites/{id}/production',              [ProductionController::class, 'index'],    auth: true);

@@ -148,7 +148,14 @@ final class ArticleService
 
     public function setStatus(int $id, string $status): void
     {
-        Connection::get()->prepare('UPDATE articles SET status = :st WHERE id = :id')
+        // Carimba a janela de revisão humana para o relatório mensal (Fase 8, §32).
+        $extra = match ($status) {
+            'IN_REVIEW'                        => ', review_started_at = COALESCE(review_started_at, NOW())',
+            'APPROVED', 'REVISION_REQUESTED'   => ', reviewed_at = NOW()',
+            default                            => '',
+        };
+
+        Connection::get()->prepare("UPDATE articles SET status = :st{$extra} WHERE id = :id")
             ->execute(['st' => $status, 'id' => $id]);
     }
 

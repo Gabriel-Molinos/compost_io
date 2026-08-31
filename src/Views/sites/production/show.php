@@ -209,6 +209,27 @@ $authorOptions = static function (array $authors, int $selectedId): string {
             <a href="<?= View::e($postUrl) ?>" target="_blank" rel="noopener"
                class="mt-1 inline-block text-sm text-cyan hover:text-cyan-light">Abrir no WordPress →</a>
         <?php endif; ?>
+
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+            <form method="post" action="<?= $scheduleBase ?>/schedule/republish"
+                  onsubmit="return confirm('Reenviar título, corpo e imagens deste artigo para o post no WordPress? Isso sobrescreve edições feitas direto lá.');">
+                <?= Csrf::field() ?>
+                <button type="submit" class="rounded-md border border-cyan px-4 py-2 text-sm font-semibold text-cyan hover:bg-cyan/10">
+                    Atualizar no WordPress
+                </button>
+            </form>
+            <form method="post" action="<?= $scheduleBase ?>/schedule/retract"
+                  onsubmit="return confirm('Retirar o post do WordPress (vai para a lixeira lá) e voltar o artigo para aprovado?');">
+                <?= Csrf::field() ?>
+                <button type="submit" class="rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
+                    Retirar do WordPress
+                </button>
+            </form>
+        </div>
+        <p class="mt-2 text-xs text-text-muted">
+            Para ajustar o texto: regenere o artigo aqui (ele volta pelo fluxo de revisão) ou edite direto no WordPress.
+            "Atualizar" reenvia a versão daqui.
+        </p>
     </section>
 <?php endif; ?>
 

@@ -98,5 +98,7 @@ return static function (Router $router): void {
     $router->add('POST', '/sites/{id}/production/{aid}/schedule',        [ScheduleController::class, 'store'],   auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/schedule/update', [ScheduleController::class, 'update'],  auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/schedule/cancel', [ScheduleController::class, 'destroy'], auth: true);
-    $router->add('POST', '/sites/{id}/production/{aid}/schedule/publish', [ScheduleController::class, 'publish'], auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/schedule/publish',   [ScheduleController::class, 'publish'],   auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/schedule/republish', [ScheduleController::class, 'republish'], auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/schedule/retract',   [ScheduleController::class, 'retract'],   auth: true);
 };

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Integrations\WordPress\WordPressException;
 use App\Services\ArticleService;
 use App\Services\ScheduleService;
 use App\Services\WordPressPublishService;
@@ -54,25 +53,41 @@ final class ScheduleController extends Controller
 
     public function publish(string $siteId, string $articleId): void
     {
-        $site = $this->requireSite($siteId);
-        Csrf::verify();
-        $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
-
-        try {
-            $r = (new WordPressPublishService())->publish((int) $article['id'], (int) $site['id']);
+        $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
+            $r = (new WordPressPublishService())->publish($aid, $sid);
             $label = $r['status'] === 'future' ? 'agendado no WordPress' : 'publicado';
-            $msg = sprintf('Artigo %s — post #%d no WordPress.', $label, $r['post_id']);
-            if ($r['links_rewritten'] > 0 || $r['links_unwrapped'] > 0) {
-                $msg .= sprintf(' Links internos: %d resolvido(s), %d removido(s).', $r['links_rewritten'], $r['links_unwrapped']);
-            }
-            Session::flash('success', $msg);
-        } catch (WordPressException $e) {
-            Session::flash('error', 'Falha ao enviar ao WordPress: ' . $e->getMessage());
-        } catch (Throwable $e) {
-            Session::flash('error', $e->getMessage());
+            Session::flash('success', 'Artigo ' . $label . ' — post #' . $r['post_id'] . ' no WordPress.' . self::extras($r));
+        });
+    }
+
+    public function republish(string $siteId, string $articleId): void
+    {
+        $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
+            $r = (new WordPressPublishService())->update($aid, $sid);
+            Session::flash('success', 'Post #' . $r['post_id'] . ' atualizado no WordPress.' . self::extras($r));
+        });
+    }
+
+    public function retract(string $siteId, string $articleId): void
+    {
+        $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
+            (new WordPressPublishService())->retract($aid, $sid);
+            Session::flash('success', 'Post retirado do WordPress (foi para a lixeira lá). O artigo voltou para aprovado.');
+        });
+    }
+
+    /** @param array{links_rewritten:int, links_unwrapped:int, body_images:int} $r */
+    private static function extras(array $r): string
+    {
+        $bits = [];
+        if ($r['body_images'] > 0) {
+            $bits[] = $r['body_images'] . ' imagem(ns) de corpo';
+        }
+        if ($r['links_rewritten'] > 0 || $r['links_unwrapped'] > 0) {
+            $bits[] = sprintf('links internos: %d resolvido(s), %d removido(s)', $r['links_rewritten'], $r['links_unwrapped']);
         }
 
-        Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id'] . '#agendar');
+        return $bits === [] ? '' : ' (' . implode(' · ', $bits) . ')';
     }
 
     /** @param callable(int, int): void $action */

@@ -20,14 +20,21 @@ final class ReportController extends Controller
 
         $period = $this->period($_GET['month'] ?? null);
         $current = new DateTimeImmutable($period . '-01');
+        $prevPeriod = $current->modify('-1 month')->format('Y-m');
+
+        $service = new ReportService();
+        $report = $service->monthly((int) $site['id'], $period);
+        $previous = $service->monthly((int) $site['id'], $prevPeriod);
 
         View::render('sites/reports/index', [
-            'title'     => 'Relatórios · ' . $site['name'],
-            'site'      => $site,
-            'report'    => (new ReportService())->monthly((int) $site['id'], $period),
-            'monthName' => $this->monthLabel($current),
-            'prevMonth' => $current->modify('-1 month')->format('Y-m'),
-            'nextMonth' => $current->modify('+1 month')->format('Y-m'),
+            'title'      => 'Relatórios · ' . $site['name'],
+            'site'       => $site,
+            'report'     => $report,
+            'comparison' => $service->compare($report, $previous),
+            'prevMonthName' => $this->monthLabel($current->modify('-1 month')),
+            'monthName'  => $this->monthLabel($current),
+            'prevMonth'  => $prevPeriod,
+            'nextMonth'  => $current->modify('+1 month')->format('Y-m'),
         ]);
     }
 

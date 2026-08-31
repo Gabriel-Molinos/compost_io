@@ -7,7 +7,9 @@ use App\View;
 
 /** @var array<string,mixed> $site */
 /** @var array<string,mixed> $report */
+/** @var array<string,mixed> $comparison */
 /** @var string $monthName */
+/** @var string $prevMonthName */
 /** @var string $prevMonth */
 /** @var string $nextMonth */
 
@@ -50,6 +52,67 @@ $n = static fn ($v): string => $v === null ? '—' : (string) $v;
     $card('Custo de IA', 'US$ ' . number_format((float) $report['ai_cost'], 2));
     ?>
 </dl>
+
+<section class="mt-8">
+    <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        Comparado com <?= View::e($prevMonthName) ?>
+    </h3>
+    <?php if (!$comparison['had_data']): ?>
+        <p class="mt-2 text-sm text-text-secondary">Sem dados no mês anterior — nada para comparar.</p>
+    <?php else: ?>
+        <?php
+        // fmt: formata o delta; $goodDown = true quando cair é melhoria (custo, rejeições, tempo).
+        $row = static function (string $label, ?array $d, string $unit = '', bool $goodDown = false) {
+            echo '<li class="flex items-center justify-between border-b border-border py-1.5 text-sm">';
+            echo '<span class="text-text-primary">' . View::e($label) . '</span>';
+            if ($d === null) {
+                echo '<span class="font-mono text-text-muted">—</span></li>';
+                return;
+            }
+            $v = round($d['value'], 2);
+            if ($v == 0.0) {
+                echo '<span class="font-mono text-text-muted">sem mudança</span></li>';
+                return;
+            }
+            $improved = $goodDown ? $v < 0 : $v > 0;
+            $color = $improved ? 'text-success' : 'text-warning';
+            $sign = $v > 0 ? '+' : '';
+            $num = rtrim(rtrim(number_format($v, 2, '.', ''), '0'), '.');
+            echo '<span class="font-mono ' . $color . '">' . $sign . $num . $unit
+                . ' <span class="text-text-muted">(' . rtrim(rtrim(number_format($d['from'], 2, '.', ''), '0'), '.')
+                . ' → ' . rtrim(rtrim(number_format($d['to'], 2, '.', ''), '0'), '.') . ')</span></span></li>';
+        };
+        ?>
+        <ul class="mt-3 space-y-1">
+            <?php
+            $row('Produzidos', $comparison['produced']);
+            $row('Aprovados', $comparison['approved']);
+            $row('Rejeitados', $comparison['rejected'], '', true);
+            $row('Publicados', $comparison['published']);
+            $row('Taxa de aprovação', $comparison['approval_rate'], ' p.p.');
+            $row('Tempo médio de revisão', $comparison['avg_review_hours'], ' h', true);
+            $row('Custo de IA', $comparison['ai_cost'], ' US$', true);
+            ?>
+        </ul>
+        <?php
+        $movedReasons = array_filter($comparison['reject_reasons'], static fn ($r) => $r['delta'] !== 0);
+        ?>
+        <?php if ($movedReasons !== []): ?>
+            <h4 class="mt-4 text-xs font-semibold uppercase tracking-wide text-text-muted">Motivos de rejeição que mudaram</h4>
+            <ul class="mt-2 space-y-1 text-sm">
+                <?php foreach ($movedReasons as $r): ?>
+                    <li class="flex items-center justify-between border-b border-border py-1.5">
+                        <span class="text-text-primary"><?= View::e(ArticleReviewService::REJECT_REASONS[$r['reason']] ?? $r['reason']) ?></span>
+                        <span class="font-mono <?= $r['delta'] < 0 ? 'text-success' : 'text-warning' ?>">
+                            <?= $r['delta'] > 0 ? '+' : '' ?><?= (int) $r['delta'] ?>
+                            <span class="text-text-muted">(<?= (int) $r['from'] ?> → <?= (int) $r['to'] ?>)</span>
+                        </span>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+    <?php endif; ?>
+</section>
 
 <section class="mt-8">
     <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Por categoria (meta × realizado)</h3>

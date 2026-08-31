@@ -125,6 +125,65 @@ final class ReportService
         ];
     }
 
+    /**
+     * Comparação com o mês anterior (RF-013, fluxo-editorial §32) — "o que
+     * melhorou / não melhorou". Só deltas dos números que `monthly()` já
+     * calculou; nenhuma consulta nova.
+     *
+     * @param array<string, mixed> $current  saída de monthly() do mês exibido
+     * @param array<string, mixed> $previous saída de monthly() do mês anterior
+     * @return array<string, mixed>
+     */
+    public function compare(array $current, array $previous): array
+    {
+        $hadData = $previous['produced'] > 0
+            || $previous['approved'] > 0
+            || $previous['rejected'] > 0
+            || $previous['ai_cost'] > 0;
+
+        $delta = static function (mixed $now, mixed $before): ?array {
+            if ($now === null || $before === null) {
+                return null;
+            }
+
+            return ['value' => (float) $now - (float) $before, 'from' => (float) $before, 'to' => (float) $now];
+        };
+
+        $reasonMap = static function (array $rows): array {
+            $map = [];
+            foreach ($rows as $r) {
+                $map[$r['reason']] = (int) $r['total'];
+            }
+
+            return $map;
+        };
+        $now = $reasonMap($current['reject_reasons']);
+        $before = $reasonMap($previous['reject_reasons']);
+        $reasons = [];
+        foreach (array_keys($now + $before) as $key) {
+            $reasons[] = [
+                'reason' => $key,
+                'from'   => $before[$key] ?? 0,
+                'to'     => $now[$key] ?? 0,
+                'delta'  => ($now[$key] ?? 0) - ($before[$key] ?? 0),
+            ];
+        }
+        usort($reasons, static fn ($a, $b) => abs($b['delta']) <=> abs($a['delta']));
+
+        return [
+            'period'        => $previous['period'],
+            'had_data'      => $hadData,
+            'produced'      => $delta($current['produced'], $previous['produced']),
+            'approved'      => $delta($current['approved'], $previous['approved']),
+            'rejected'      => $delta($current['rejected'], $previous['rejected']),
+            'published'     => $delta($current['published'], $previous['published']),
+            'approval_rate' => $delta($current['approval_rate'], $previous['approval_rate']),
+            'avg_review_hours' => $delta($current['avg_review_hours'], $previous['avg_review_hours']),
+            'ai_cost'       => $delta($current['ai_cost'], $previous['ai_cost']),
+            'reject_reasons' => $reasons,
+        ];
+    }
+
     /** @param array<string, mixed> $params */
     private function count(\PDO $pdo, string $sql, array $params): int
     {

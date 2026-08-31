@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Database\Connection;
+use App\Integrations\WordPress\InternalLinkResolver;
 use App\Integrations\WordPress\WordPressException;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -27,7 +28,7 @@ final class WordPressPublishService
     }
 
     /**
-     * @return array{post_id:int, link:string, status:string}
+     * @return array{post_id:int, link:string, status:string, links_rewritten:int, links_unwrapped:int}
      * @throws RuntimeException|WordPressException
      */
     public function publish(int $articleId, int $siteId): array
@@ -50,6 +51,11 @@ final class WordPressPublishService
 
         $client = $this->connections->client($siteId);
 
+        // Links internos "chutados" pela IA: resolve contra o WP, remove os sem par
+        $linkResult = (new InternalLinkResolver($client, (string) ($this->connections->forSite($siteId)['url'] ?? '')))
+            ->resolve((string) $version['content']);
+        $content = $linkResult['html'];
+
         // Imagem destacada -> media library
         $image = $this->image((int) $schedule['image_id'], $articleId);
         $media = $client->uploadMedia($image['bytes'], $image['filename'], $image['mime']);
@@ -62,7 +68,7 @@ final class WordPressPublishService
 
         $payload = [
             'title'   => (string) ($article['title'] ?? ''),
-            'content' => (string) $version['content'],
+            'content' => $content,
             'status'  => $isFuture ? 'future' : 'publish',
             'date_gmt' => $gmt,
             'excerpt' => (string) ($article['meta_description'] ?? ''),
@@ -114,9 +120,11 @@ final class WordPressPublishService
         }
 
         return [
-            'post_id' => $postId,
-            'link'    => (string) ($post['link'] ?? ''),
-            'status'  => (string) ($post['status'] ?? $payload['status']),
+            'post_id'         => $postId,
+            'link'            => (string) ($post['link'] ?? ''),
+            'status'          => (string) ($post['status'] ?? $payload['status']),
+            'links_rewritten' => $linkResult['rewritten'],
+            'links_unwrapped' => $linkResult['unwrapped'],
         ];
     }
 

@@ -125,6 +125,28 @@ final class WordPressClient
         return $this->requestList('GET', 'wp/v2/users', $query + ['context' => 'edit']);
     }
 
+    /**
+     * Primeiro post ou página com aquele slug (qualquer status), ou null.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function findContentBySlug(string $slug): ?array
+    {
+        foreach (['wp/v2/posts', 'wp/v2/pages'] as $type) {
+            $rows = $this->requestList('GET', $type, [
+                'slug'     => $slug,
+                'status'   => 'publish,future,draft,pending,private',
+                '_fields'  => 'id,link,status,slug',
+                'per_page' => 1,
+            ]);
+            if ($rows !== []) {
+                return $rows[0];
+            }
+        }
+
+        return null;
+    }
+
     // --- Núcleo HTTP ----------------------------------------------------
 
     /**

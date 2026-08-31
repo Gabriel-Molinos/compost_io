@@ -61,7 +61,11 @@ final class ScheduleController extends Controller
         try {
             $r = (new WordPressPublishService())->publish((int) $article['id'], (int) $site['id']);
             $label = $r['status'] === 'future' ? 'agendado no WordPress' : 'publicado';
-            Session::flash('success', sprintf('Artigo %s — post #%d no WordPress.', $label, $r['post_id']));
+            $msg = sprintf('Artigo %s — post #%d no WordPress.', $label, $r['post_id']);
+            if ($r['links_rewritten'] > 0 || $r['links_unwrapped'] > 0) {
+                $msg .= sprintf(' Links internos: %d resolvido(s), %d removido(s).', $r['links_rewritten'], $r['links_unwrapped']);
+            }
+            Session::flash('success', $msg);
         } catch (WordPressException $e) {
             Session::flash('error', 'Falha ao enviar ao WordPress: ' . $e->getMessage());
         } catch (Throwable $e) {

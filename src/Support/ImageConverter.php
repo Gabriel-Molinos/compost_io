@@ -54,44 +54,52 @@ final class ImageConverter
     }
 
     /**
-     * Reduz a imagem para no máximo `$maxWidth` de largura e re-codifica em JPEG.
-     * Usada antes de enviar ao WordPress (fotos de 3–4 MB estouravam o tempo de
-     * requisição). Devolve os bytes originais se `gd` não existir ou a imagem já
-     * for pequena o bastante.
+     * Prepara a imagem para envio ao WordPress: reduz para no máximo `$maxWidth`
+     * de largura e re-codifica em **WebP** (bem menor que JPEG — seo.md#imagens).
+     * Cai para JPEG se `imagewebp` não existir, e devolve os bytes originais se
+     * `gd` não existir.
+     *
+     * @return array{bytes:string, ext:string, mime:string}
      */
-    public static function downscaleJpeg(string $bytes, int $maxWidth = 1600, int $quality = 82): string
+    public static function forWeb(string $bytes, int $maxWidth = 1600, int $quality = 82): array
     {
-        if (!function_exists('imagecreatefromstring') || !function_exists('imagejpeg')) {
-            return $bytes;
+        if (!function_exists('imagecreatefromstring')) {
+            return ['bytes' => $bytes, 'ext' => '', 'mime' => ''];
         }
 
         $src = @imagecreatefromstring($bytes);
         if ($src === false) {
-            return $bytes;
+            return ['bytes' => $bytes, 'ext' => '', 'mime' => ''];
         }
 
         $w = imagesx($src);
         $h = imagesy($src);
-
-        if ($w <= $maxWidth && strlen($bytes) <= 1_200_000) {
-            imagedestroy($src);
-            return $bytes;
-        }
 
         $scale = $w > $maxWidth ? $maxWidth / $w : 1.0;
         $nw = max(1, (int) round($w * $scale));
         $nh = max(1, (int) round($h * $scale));
 
         $dst = imagecreatetruecolor($nw, $nh);
+        imagealphablending($dst, false);
+        imagesavealpha($dst, true);
         imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
 
+        $q = max(40, min(95, $quality));
+        $webp = function_exists('imagewebp');
+
         ob_start();
-        $ok = imagejpeg($dst, null, max(40, min(95, $quality)));
+        $ok = $webp ? imagewebp($dst, null, $q) : imagejpeg($dst, null, $q);
         $out = (string) ob_get_clean();
 
         imagedestroy($src);
         imagedestroy($dst);
 
-        return ($ok && $out !== '') ? $out : $bytes;
+        if (!$ok || $out === '') {
+            return ['bytes' => $bytes, 'ext' => '', 'mime' => ''];
+        }
+
+        return $webp
+            ? ['bytes' => $out, 'ext' => 'webp', 'mime' => 'image/webp']
+            : ['bytes' => $out, 'ext' => 'jpg', 'mime' => 'image/jpeg'];
     }
 }

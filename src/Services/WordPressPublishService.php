@@ -350,16 +350,20 @@ final class WordPressPublishService
             throw new RuntimeException('Arquivo da imagem não está no disco: ' . $row['url']);
         }
 
-        // Fotos de 3–4 MB estouravam o tempo da requisição no upload. Reduz antes.
-        $reduced = ImageConverter::downscaleJpeg($bytes);
-        if ($reduced !== $bytes) {
+        // Reduz e converte para WebP antes do upload (menor + seo.md#imagens).
+        // Fotos de 3–4 MB também estouravam o tempo da requisição.
+        $web = ImageConverter::forWeb($bytes);
+        $name = pathinfo((string) $row['url'], PATHINFO_FILENAME);
+
+        if ($web['ext'] !== '') {
             return [
-                'bytes'    => $reduced,
-                'filename' => pathinfo((string) $row['url'], PATHINFO_FILENAME) . '.jpg',
-                'mime'     => 'image/jpeg',
+                'bytes'    => $web['bytes'],
+                'filename' => $name . '.' . $web['ext'],
+                'mime'     => $web['mime'],
             ];
         }
 
+        // Sem gd: envia o arquivo original.
         $ext = strtolower((string) ($row['format'] ?: pathinfo((string) $row['url'], PATHINFO_EXTENSION) ?: 'jpg'));
         $mime = match ($ext) {
             'png'         => 'image/png',

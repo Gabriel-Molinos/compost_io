@@ -141,7 +141,8 @@ final class WordPressPublishService
         try {
             $client->deletePost((int) $schedule['wordpress_post_id']); // lixeira (recuperável)
         } catch (WordPressException $e) {
-            if ($e->httpStatus !== 404) {
+            // 404 = post já sumiu; 410 = já estava na lixeira. Nos dois casos o alvo já não está no ar.
+            if ($e->httpStatus !== 404 && $e->httpStatus !== 410) {
                 throw $e;
             }
         }

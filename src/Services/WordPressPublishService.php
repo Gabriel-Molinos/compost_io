@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Database\Connection;
+use App\Support\ImageConverter;
 use App\Integrations\WordPress\BodyImageInjector;
 use App\Integrations\WordPress\InternalLinkResolver;
 use App\Integrations\WordPress\WordPressClient;
@@ -347,6 +348,16 @@ final class WordPressPublishService
         $bytes = @file_get_contents($path);
         if ($bytes === false) {
             throw new RuntimeException('Arquivo da imagem não está no disco: ' . $row['url']);
+        }
+
+        // Fotos de 3–4 MB estouravam o tempo da requisição no upload. Reduz antes.
+        $reduced = ImageConverter::downscaleJpeg($bytes);
+        if ($reduced !== $bytes) {
+            return [
+                'bytes'    => $reduced,
+                'filename' => pathinfo((string) $row['url'], PATHINFO_FILENAME) . '.jpg',
+                'mime'     => 'image/jpeg',
+            ];
         }
 
         $ext = strtolower((string) ($row['format'] ?: pathinfo((string) $row['url'], PATHINFO_EXTENSION) ?: 'jpg'));

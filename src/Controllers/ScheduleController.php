@@ -53,6 +53,7 @@ final class ScheduleController extends Controller
 
     public function publish(string $siteId, string $articleId): void
     {
+        $this->raiseLimit();
         $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
             $r = (new WordPressPublishService())->publish($aid, $sid);
             $label = $r['status'] === 'future' ? 'agendado no WordPress' : 'publicado';
@@ -62,6 +63,7 @@ final class ScheduleController extends Controller
 
     public function republish(string $siteId, string $articleId): void
     {
+        $this->raiseLimit();
         $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
             $r = (new WordPressPublishService())->update($aid, $sid);
             Session::flash('success', 'Post #' . $r['post_id'] . ' atualizado no WordPress.' . self::extras($r));
@@ -70,6 +72,7 @@ final class ScheduleController extends Controller
 
     public function retract(string $siteId, string $articleId): void
     {
+        $this->raiseLimit();
         $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
             (new WordPressPublishService())->retract($aid, $sid);
             Session::flash('success', 'Post retirado do WordPress (foi para a lixeira lá). O artigo voltou para aprovado.');
@@ -104,6 +107,13 @@ final class ScheduleController extends Controller
         }
 
         Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id'] . '#agendar');
+    }
+
+    /** Upload de várias imagens ao WordPress numa requisição só pode passar de 30 s. */
+    private function raiseLimit(): void
+    {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
     }
 
     private function authorId(): int

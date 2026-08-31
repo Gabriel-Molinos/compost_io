@@ -17,7 +17,7 @@ final class WordPressConfig
         string $baseUrl,
         public readonly string $username,
         public readonly string $appPassword,
-        public readonly int $timeoutSeconds = 20,
+        public readonly int $timeoutSeconds = 45,
     ) {
         $this->baseUrl = rtrim(trim($baseUrl), '/');
     }

@@ -52,4 +52,46 @@ final class ImageConverter
 
         return $out;
     }
+
+    /**
+     * Reduz a imagem para no máximo `$maxWidth` de largura e re-codifica em JPEG.
+     * Usada antes de enviar ao WordPress (fotos de 3–4 MB estouravam o tempo de
+     * requisição). Devolve os bytes originais se `gd` não existir ou a imagem já
+     * for pequena o bastante.
+     */
+    public static function downscaleJpeg(string $bytes, int $maxWidth = 1600, int $quality = 82): string
+    {
+        if (!function_exists('imagecreatefromstring') || !function_exists('imagejpeg')) {
+            return $bytes;
+        }
+
+        $src = @imagecreatefromstring($bytes);
+        if ($src === false) {
+            return $bytes;
+        }
+
+        $w = imagesx($src);
+        $h = imagesy($src);
+
+        if ($w <= $maxWidth && strlen($bytes) <= 1_200_000) {
+            imagedestroy($src);
+            return $bytes;
+        }
+
+        $scale = $w > $maxWidth ? $maxWidth / $w : 1.0;
+        $nw = max(1, (int) round($w * $scale));
+        $nh = max(1, (int) round($h * $scale));
+
+        $dst = imagecreatetruecolor($nw, $nh);
+        imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+
+        ob_start();
+        $ok = imagejpeg($dst, null, max(40, min(95, $quality)));
+        $out = (string) ob_get_clean();
+
+        imagedestroy($src);
+        imagedestroy($dst);
+
+        return ($ok && $out !== '') ? $out : $bytes;
+    }
 }

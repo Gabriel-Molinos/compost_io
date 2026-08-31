@@ -48,6 +48,15 @@ final class BodyImageInjector
             }
         }
 
+        // Qualquer <img> que já venha no corpo também recebe width:100% (não quebrar layout).
+        foreach ($doc->getElementsByTagName('img') as $existing) {
+            if ($existing instanceof DOMElement && $existing->getAttribute('style') === '') {
+                $existing->setAttribute('style', 'width:100%;height:auto;display:block');
+                $existing->removeAttribute('width');
+                $existing->removeAttribute('height');
+            }
+        }
+
         $count = count($images);
         // Posições candidatas: antes de cada h2 exceto o primeiro (não colar no topo).
         $candidates = array_slice($headings, 1);
@@ -88,9 +97,15 @@ final class BodyImageInjector
     private static function figure(DOMDocument $doc, string $src, string $alt): DOMElement
     {
         $figure = $doc->createElement('figure');
+        $figure->setAttribute('class', 'wp-block-image size-large');
+        $figure->setAttribute('style', 'margin:1.5rem 0;max-width:100%');
+
         $img = $doc->createElement('img');
         $img->setAttribute('src', $src);
         $img->setAttribute('alt', $alt);
+        $img->setAttribute('loading', 'lazy');
+        // width:100% para a imagem não estourar o layout do tema (pedido do usuário).
+        $img->setAttribute('style', 'width:100%;height:auto;display:block');
         $figure->appendChild($img);
 
         if (trim($alt) !== '') {

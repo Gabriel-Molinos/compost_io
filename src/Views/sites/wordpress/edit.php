@@ -9,6 +9,7 @@ use App\View;
 /** @var array<string, mixed> $site */
 /** @var array{url:?string, username:?string, status:string, last_verified_at:?string, configured:bool} $connection */
 /** @var array<string, string> $errors */
+/** @var array{authors_active:int, authors_inactive:int, categories_total:int, categories_linked:int}|null $syncCounts */
 
 $activeTab = 'wordpress';
 require __DIR__ . '/../_tabs.php';
@@ -82,4 +83,50 @@ $formData = [
     <p class="mt-2 text-xs text-text-muted">
         O teste faz uma chamada real (<code>GET /wp-json/wp/v2/users/me</code>) com a credencial salva.
     </p>
+
+    <div class="mt-8 border-t border-border pt-6">
+        <h3 class="text-base font-semibold text-text-primary">Autores e categorias</h3>
+        <p class="mt-1 text-sm text-text-secondary">
+            Na primeira conexão bem-sucedida, as categorias do WordPress são importadas
+            automaticamente (casadas por nome com as que já existirem). Depois disso você
+            gerencia as categorias na aba <a href="/sites/<?= View::e($site['id']) ?>/categories"
+            class="text-cyan hover:text-cyan-light">Categorias</a> — excluir e adicionar é manual.
+            Os autores são um espelho do WordPress; ressincronize quando mudarem lá.
+        </p>
+
+        <?php if ($syncCounts !== null): ?>
+            <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+                <div class="rounded-lg border border-border bg-surface p-3">
+                    <dt class="text-xs uppercase tracking-wide text-text-muted">Autores</dt>
+                    <dd class="mt-1 text-text-primary">
+                        <?= View::e($syncCounts['authors_active']) ?> ativo(s)<?php
+                        if ($syncCounts['authors_inactive'] > 0): ?>,
+                        <span class="text-text-muted"><?= View::e($syncCounts['authors_inactive']) ?> inativo(s)</span>
+                        <?php endif; ?>
+                    </dd>
+                </div>
+                <div class="rounded-lg border border-border bg-surface p-3">
+                    <dt class="text-xs uppercase tracking-wide text-text-muted">Categorias vinculadas ao WP</dt>
+                    <dd class="mt-1 text-text-primary">
+                        <?= View::e($syncCounts['categories_linked']) ?> de <?= View::e($syncCounts['categories_total']) ?>
+                    </dd>
+                </div>
+            </dl>
+        <?php endif; ?>
+
+        <div class="mt-4 flex flex-wrap gap-3">
+            <form method="post" action="/sites/<?= View::e($site['id']) ?>/wordpress/sync-authors">
+                <?= Csrf::field() ?>
+                <button type="submit" class="rounded-md border border-border px-4 py-2 text-sm font-semibold text-text-primary hover:border-cyan">
+                    Sincronizar autores
+                </button>
+            </form>
+            <form method="post" action="/sites/<?= View::e($site['id']) ?>/wordpress/sync-categories">
+                <?= Csrf::field() ?>
+                <button type="submit" class="rounded-md border border-border px-4 py-2 text-sm font-semibold text-text-primary hover:border-cyan">
+                    Sincronizar categorias agora
+                </button>
+            </form>
+        </div>
+    </div>
 <?php endif; ?>

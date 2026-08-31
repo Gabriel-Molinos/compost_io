@@ -73,8 +73,10 @@ return static function (Router $router): void {
     // Conexão WordPress do site (RF-016 — somente ADMIN)
     $router->add('GET',  '/sites/{id}/wordpress',        [WordPressConnectionController::class, 'edit'],    admin: true);
     $router->add('POST', '/sites/{id}/wordpress',        [WordPressConnectionController::class, 'update'],  admin: true);
-    $router->add('POST', '/sites/{id}/wordpress/test',   [WordPressConnectionController::class, 'test'],    admin: true);
-    $router->add('POST', '/sites/{id}/wordpress/delete', [WordPressConnectionController::class, 'destroy'], admin: true);
+    $router->add('POST', '/sites/{id}/wordpress/test',            [WordPressConnectionController::class, 'test'],           admin: true);
+    $router->add('POST', '/sites/{id}/wordpress/delete',          [WordPressConnectionController::class, 'destroy'],        admin: true);
+    $router->add('POST', '/sites/{id}/wordpress/sync-authors',    [WordPressConnectionController::class, 'syncAuthors'],    admin: true);
+    $router->add('POST', '/sites/{id}/wordpress/sync-categories', [WordPressConnectionController::class, 'syncCategories'], admin: true);
 
     // Playground de IA do site (somente ADMIN — cada execução é chamada real ao Gemini)
     $router->add('GET',  '/sites/{id}/ai-playground', [AiPlaygroundController::class, 'index'], admin: true);

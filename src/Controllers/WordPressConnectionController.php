@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Integrations\WordPress\WordPressException;
 use App\Services\WordPressConnectionService;
+use App\Services\WordPressSyncService;
 use App\Support\Csrf;
 use App\Support\Http;
 use App\Support\Session;
@@ -19,10 +20,12 @@ use App\View;
 final class WordPressConnectionController extends Controller
 {
     private WordPressConnectionService $connections;
+    private WordPressSyncService $sync;
 
     public function __construct()
     {
         $this->connections = new WordPressConnectionService();
+        $this->sync = new WordPressSyncService($this->connections);
     }
 
     public function edit(string $siteId): void
@@ -64,6 +67,7 @@ final class WordPressConnectionController extends Controller
         );
 
         Session::flash('success', 'Conexão WordPress salva.');
+        $this->autoImportOnFirstConnection((int) $site['id']);
         Http::redirect('/sites/' . $site['id'] . '/wordpress');
     }
 
@@ -80,6 +84,7 @@ final class WordPressConnectionController extends Controller
                 (string) ($me['name'] ?? '?'),
                 (string) ($me['id'] ?? '?'),
             ));
+            $this->autoImportOnFirstConnection((int) $site['id']);
         } catch (WordPressException $e) {
             $this->connections->markVerified((int) $site['id'], false);
             Session::flash('error', 'Falha no teste: ' . $e->getMessage());
@@ -96,6 +101,71 @@ final class WordPressConnectionController extends Controller
         $this->connections->delete((int) $site['id']);
         Session::flash('success', 'Credencial WordPress removida.');
         Http::redirect('/sites/' . $site['id'] . '/wordpress');
+    }
+
+    public function syncAuthors(string $siteId): void
+    {
+        $site = $this->requireSite($siteId);
+        Csrf::verify();
+
+        try {
+            $r = $this->sync->syncAuthors((int) $site['id']);
+            Session::flash('success', sprintf(
+                'Autores sincronizados: %d no WordPress (%d novos, %d reativados, %d renomeados, %d desativados).',
+                $r['total'], $r['added'], $r['reactivated'], $r['updated'], $r['deactivated'],
+            ));
+        } catch (WordPressException $e) {
+            Session::flash('error', 'Falha ao sincronizar autores: ' . $e->getMessage());
+        }
+
+        Http::redirect('/sites/' . $site['id'] . '/wordpress');
+    }
+
+    public function syncCategories(string $siteId): void
+    {
+        $site = $this->requireSite($siteId);
+        Csrf::verify();
+
+        try {
+            Session::flash('success', $this->categorySyncSummary($this->sync->syncCategories((int) $site['id'])));
+        } catch (WordPressException $e) {
+            Session::flash('error', 'Falha ao sincronizar categorias: ' . $e->getMessage());
+        }
+
+        Http::redirect('/sites/' . $site['id'] . '/wordpress');
+    }
+
+    /** @param array{linked:int, already:int, imported:int, unmatched_local:list<string>} $r */
+    private function categorySyncSummary(array $r): string
+    {
+        $msg = sprintf(
+            'Categorias: %d importada(s) do WordPress, %d vinculada(s) por nome, %d já estavam.',
+            $r['imported'], $r['linked'], $r['already'],
+        );
+        if ($r['unmatched_local'] !== []) {
+            $msg .= ' Locais sem par no WordPress (mantidas): ' . implode(', ', $r['unmatched_local']) . '.';
+        }
+
+        return $msg;
+    }
+
+    /**
+     * Na primeira conexão bem-sucedida (nenhuma categoria vinculada ainda),
+     * puxa autores e categorias do WordPress automaticamente. Best-effort.
+     */
+    private function autoImportOnFirstConnection(int $siteId): void
+    {
+        if ($this->sync->counts($siteId)['categories_linked'] > 0) {
+            return;
+        }
+
+        try {
+            $cats = $this->sync->syncCategories($siteId);
+            $this->sync->syncAuthors($siteId);
+            Session::flash('success', trim((string) Session::pullFlash('success') . ' ' . $this->categorySyncSummary($cats)));
+        } catch (WordPressException) {
+            // conexão salva mas ainda não validou — o import acontece no "Testar conexão"
+        }
     }
 
     /** @param array<string,mixed> $data @return array<string,string> */
@@ -133,6 +203,7 @@ final class WordPressConnectionController extends Controller
             'site'       => $site,
             'connection' => $connection,
             'errors'     => $errors,
+            'syncCounts' => $connection['configured'] ? $this->sync->counts((int) $site['id']) : null,
         ]);
     }
 }

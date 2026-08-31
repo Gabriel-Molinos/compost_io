@@ -44,6 +44,26 @@ final class ScheduleService
         return $stmt->fetch() ?: null;
     }
 
+    /**
+     * Último agendamento do artigo, em qualquer status (para mostrar o post já
+     * publicado).
+     *
+     * @return array<string, mixed>|null
+     */
+    public function latestForArticle(int $articleId): ?array
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT s.*, a.name AS author_name
+             FROM schedules s
+             LEFT JOIN site_authors a ON a.id = s.author_id
+             WHERE s.article_id = :a
+             ORDER BY s.id DESC LIMIT 1'
+        );
+        $stmt->execute(['a' => $articleId]);
+
+        return $stmt->fetch() ?: null;
+    }
+
     /** @return list<array<string, mixed>> autores ativos do site */
     public function authorsForSite(int $siteId): array
     {

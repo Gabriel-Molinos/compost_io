@@ -17,6 +17,7 @@ use App\View;
 /** @var list<array<string,mixed>> $images */
 /** @var list<array<string,mixed>> $feedback */
 /** @var array<string,mixed>|null $schedule */
+/** @var array<string,mixed>|null $lastSchedule */
 /** @var list<array<string,mixed>> $authors */
 
 $activeTab = 'production';
@@ -149,6 +150,19 @@ $authorOptions = static function (array $authors, int $selectedId): string {
             <img src="<?= View::e($schedule['image_url']) ?>" alt="" class="mt-2 w-40 rounded border border-border">
         <?php endif; ?>
 
+        <?php $whenTs = strtotime((string) $schedule['scheduled_date']); ?>
+        <form method="post" action="<?= $scheduleBase ?>/schedule/publish" class="mt-4"
+              onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Enviando…';">
+            <?= Csrf::field() ?>
+            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                <?= $whenTs > time() ? 'Enviar ao WordPress (agenda para a data)' : 'Publicar no WordPress agora' ?>
+            </button>
+            <p class="mt-1 text-xs text-text-muted">
+                Cria o post <?= $whenTs > time() ? 'como agendado (o WordPress publica sozinho na data)' : 'já publicado' ?>,
+                sobe a imagem destacada e define a categoria. Imagens do corpo não entram por ora.
+            </p>
+        </form>
+
         <div class="mt-4 flex flex-wrap items-start gap-6">
             <details class="text-sm">
                 <summary class="cursor-pointer font-medium text-cyan hover:text-cyan-light">Reagendar</summary>
@@ -181,6 +195,20 @@ $authorOptions = static function (array $authors, int $selectedId): string {
                 </button>
             </form>
         </div>
+    </section>
+<?php elseif ($article['status'] === 'PUBLISHED' && $lastSchedule !== null && !empty($lastSchedule['wordpress_post_id'])): ?>
+    <?php $postUrl = rtrim((string) ($site['wordpress_url'] ?? ''), '/') . '/?p=' . (int) $lastSchedule['wordpress_post_id']; ?>
+    <section id="agendar" class="mt-5 rounded-lg border border-success/40 bg-surface p-4">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Publicado</h3>
+        <p class="mt-1 text-sm text-text-primary">
+            Post #<?= View::e($lastSchedule['wordpress_post_id']) ?> no WordPress
+            <?php if (!empty($lastSchedule['author_name'])): ?> · autor: <?= View::e($lastSchedule['author_name']) ?><?php endif; ?>
+            · data: <?= View::e(date('d/m/Y H:i', strtotime((string) $lastSchedule['scheduled_date']))) ?>
+        </p>
+        <?php if (!empty($site['wordpress_url'])): ?>
+            <a href="<?= View::e($postUrl) ?>" target="_blank" rel="noopener"
+               class="mt-1 inline-block text-sm text-cyan hover:text-cyan-light">Abrir no WordPress →</a>
+        <?php endif; ?>
     </section>
 <?php endif; ?>
 

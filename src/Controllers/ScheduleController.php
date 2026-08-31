@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Integrations\WordPress\WordPressException;
 use App\Services\ArticleService;
 use App\Services\ScheduleService;
+use App\Services\WordPressPublishService;
 use App\Support\Csrf;
 use App\Support\Http;
 use App\Support\Session;
@@ -48,6 +50,25 @@ final class ScheduleController extends Controller
             $this->schedules->cancel($aid, $sid);
             Session::flash('success', 'Agendamento cancelado. O artigo voltou para aprovado.');
         });
+    }
+
+    public function publish(string $siteId, string $articleId): void
+    {
+        $site = $this->requireSite($siteId);
+        Csrf::verify();
+        $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
+
+        try {
+            $r = (new WordPressPublishService())->publish((int) $article['id'], (int) $site['id']);
+            $label = $r['status'] === 'future' ? 'agendado no WordPress' : 'publicado';
+            Session::flash('success', sprintf('Artigo %s — post #%d no WordPress.', $label, $r['post_id']));
+        } catch (WordPressException $e) {
+            Session::flash('error', 'Falha ao enviar ao WordPress: ' . $e->getMessage());
+        } catch (Throwable $e) {
+            Session::flash('error', $e->getMessage());
+        }
+
+        Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id'] . '#agendar');
     }
 
     /** @param callable(int, int): void $action */

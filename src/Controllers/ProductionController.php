@@ -126,6 +126,7 @@ final class ProductionController extends Controller
             'notes'      => (new ArticleNoteService())->forArticle((int) $article['id']),
             'images'     => (new ImageService())->forArticle((int) $article['id']),
             'schedule'   => $schedules->activeForArticle((int) $article['id']),
+            'lastSchedule' => $schedules->latestForArticle((int) $article['id']),
             'authors'    => $schedules->authorsForSite((int) $site['id']),
             'feedback'   => (new FeedbackService())->forContext(
                 (int) $article['id'],

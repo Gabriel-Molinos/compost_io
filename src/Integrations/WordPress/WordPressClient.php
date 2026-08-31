@@ -92,6 +92,17 @@ final class WordPressClient
         ]);
     }
 
+    /**
+     * Remove um item de mídia. `force` é obrigatório no WordPress para mídia
+     * (não vai para a lixeira).
+     *
+     * @return array<string, mixed>
+     */
+    public function deleteMedia(int $mediaId): array
+    {
+        return $this->request('DELETE', 'wp/v2/media/' . $mediaId, query: ['force' => 'true']);
+    }
+
     // --- Taxonomias / autores (insumo da 7.3) ----------------------------
 
     /**

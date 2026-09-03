@@ -89,6 +89,50 @@ final class ArticleService
     }
 
     /**
+     * Roda `$create()` só se o limite diário do site ainda não foi atingido —
+     * checagem + criação sob um `GET_LOCK` do MySQL escopado por site, pra
+     * fechar a race condition de `countCreatedLast24h()`: sem o lock, duas
+     * requisições concorrentes podiam ler o mesmo count (ex.: 14) antes de
+     * qualquer uma criar a linha, e as duas passavam do limite de 15 (Fase 9,
+     * item registrado em testes-e-observabilidade.md §97). O lock é por site
+     * (`site_id` na chave) — sites diferentes não se bloqueiam entre si, e
+     * dura só o instante do check+create (não a geração inteira via IA).
+     *
+     * @template T
+     * @param callable(): T $create
+     * @return T
+     * @throws DailyLimitExceededException se o limite já foi atingido, ou se
+     *         não foi possível obter o lock a tempo (outra requisição do
+     *         mesmo site travada) — melhor errar visível do que travar a
+     *         requisição do usuário.
+     */
+    public function createWithDailyLimit(int $siteId, int $limit, callable $create): mixed
+    {
+        $pdo = Connection::get();
+        $lockKey = "articles:daily_limit:{$siteId}";
+
+        $stmt = $pdo->prepare('SELECT GET_LOCK(:key, :timeout)');
+        $stmt->execute(['key' => $lockKey, 'timeout' => 5]);
+        if ((int) $stmt->fetchColumn() !== 1) {
+            throw new DailyLimitExceededException(
+                'Não foi possível confirmar o limite diário agora (outra geração deste site em andamento) — tente de novo em instantes.'
+            );
+        }
+
+        try {
+            if ($this->countCreatedLast24h($siteId) >= $limit) {
+                throw new DailyLimitExceededException(
+                    "Limite de {$limit} gerações por dia neste site atingido. Tente amanhã."
+                );
+            }
+
+            return $create();
+        } finally {
+            $pdo->prepare('SELECT RELEASE_LOCK(:key)')->execute(['key' => $lockKey]);
+        }
+    }
+
+    /**
      * Quantos artigos do site precisam de atenção humana agora (fluxo-editorial
      * §33 / testes-e-observabilidade §94.1): `BLOCKED` (linhagem esgotou as
      * tentativas de regeneração) e `ERROR` (falha técnica definitiva do

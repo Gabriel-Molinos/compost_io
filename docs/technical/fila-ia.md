@@ -90,6 +90,3 @@ review, cada passo visível em `ai_executions` em tempo real).
   retry de step da IA (`RetryRunner`), que já existe.
 - Botão de "tentar novamente" a partir do estado `ERROR` — hoje regeneração só
   existe a partir de `REVISION_REQUESTED`.
-- Corrigir a race condition pré-existente no limite diário
-  (`ArticleService::countCreatedLast24h` não é atômica) — não é introduzida
-  pela fila, mas ficou mais visível com job assíncrono.

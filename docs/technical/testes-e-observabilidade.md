@@ -36,6 +36,8 @@
 >
 > **Implementado (Fase 9.2):** com pouco dado real ainda (poucos artigos produzidos), "custo médio por artigo" usa o **maior custo por artigo já observado**, em qualquer site (`CostBudgetService::maxObservedCostPerArticle()`) — mais conservador que uma média de amostra pequena, e recalculado a cada carregamento conforme mais artigos forem produzidos, sem guardar um número fixo (não há tabela nova/migration para isso). **Margem de segurança: 1,5x.** Sem meta definida pro mês, ou sem nenhum dado real de custo em nenhum site ainda, o indicador simplesmente não aparece — reforça a [Regra de não-invenção (seção 58)](../ai/regras-claude-code.md#58-regra-de-não-invenção): não inventar um número sem base real. O alerta é só visual, na Visão Geral do site (`sites/show.php`) — sem e-mail/Slack, como já previsto em [94.1](#941-monitoramento-e-alertas).
 
+**Teto diário de gerações (guarda distinta do limite mensal acima):** `ProductionController::DAILY_LIMIT` (15/dia por site) enquanto o limite de custo por site/mês não bloqueia automaticamente. **Corrigido (Fase 9, performance/correção):** `ArticleService::countCreatedLast24h()` sozinha tinha race condition — duas requisições concorrentes liam a mesma contagem antes de qualquer uma criar a linha, podendo passar do teto. `ArticleService::createWithDailyLimit()` fecha isso com `GET_LOCK` do MySQL escopado por site (check + criação da linha viram uma seção crítica). Validado com 4 rodadas de 2 processos concorrentes reais — em todas, exatamente 1 passou.
+
 ### 96. Política de retry / falha da IA `[PROPOSTA]`
 
 Diferente da [regeneração por rejeição humana (seção 29)](../editorial/fluxo-editorial.md#29-regeneração), esta trata de falhas técnicas (timeout, erro de API, resposta inválida):

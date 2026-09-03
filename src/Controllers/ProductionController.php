@@ -10,6 +10,7 @@ use App\Services\ArticleReviewService;
 use App\Services\ArticleService;
 use App\Services\AuthService;
 use App\Services\CategoryService;
+use App\Services\DailyLimitExceededException;
 use App\Services\FeedbackService;
 use App\Services\GoalService;
 use App\Services\ImageService;
@@ -64,13 +65,6 @@ final class ProductionController extends Controller
         $site = $this->requireSite($siteId);
         Csrf::verify();
 
-        // Guarda de custo enquanto não há limite por site/mês (requisitos §95).
-        if ($this->articles->countCreatedLast24h((int) $site['id']) >= self::DAILY_LIMIT) {
-            Session::flash('error', 'Limite de ' . self::DAILY_LIMIT . ' gerações por dia neste site atingido. Tente amanhã.');
-            Http::redirect('/sites/' . $site['id'] . '/production');
-            return;
-        }
-
         // goal_id / category_id precisam ser deste site (POST pode vir forjado ou defasado).
         $goalId = null;
         if (($_POST['goal_id'] ?? '') !== '' && (new GoalService())->find((int) $site['id'], (int) $_POST['goal_id']) !== null) {
@@ -81,7 +75,21 @@ final class ProductionController extends Controller
             $categoryId = (int) $_POST['category_id'];
         }
 
-        $articleId = (new ArticlePipeline())->prepareGenerate((int) $site['id'], $goalId);
+        $pipeline = new ArticlePipeline();
+
+        // Guarda de custo (requisitos §95) — check + create atômicos (Fase 9,
+        // fecha a race condition de countCreatedLast24h isolado).
+        try {
+            $articleId = $this->articles->createWithDailyLimit(
+                (int) $site['id'],
+                self::DAILY_LIMIT,
+                fn () => $pipeline->prepareGenerate((int) $site['id'], $goalId),
+            );
+        } catch (DailyLimitExceededException $e) {
+            Session::flash('error', $e->getMessage());
+            Http::redirect('/sites/' . $site['id'] . '/production');
+            return;
+        }
 
         try {
             $this->dispatchArticleJob(new Job('article.generate', [

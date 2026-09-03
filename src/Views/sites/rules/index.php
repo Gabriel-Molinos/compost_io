@@ -18,7 +18,7 @@ $renderList = static function (array $items, string $emptyText) use ($base): voi
         echo '<p class="mt-4 text-sm text-text-secondary">' . View::e($emptyText) . '</p>';
         return;
     }
-    echo '<ul class="mt-4 divide-y divide-border rounded-lg border border-border">';
+    echo '<ul class="mt-4 divide-y divide-border rounded-lg border border-border bg-surface">';
     foreach ($items as $rule) {
         echo '<li class="flex items-center justify-between gap-4 px-4 py-3">';
         echo '<div><p class="text-text-primary">' . View::e($rule['description']) . '</p>';

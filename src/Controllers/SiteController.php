@@ -74,6 +74,10 @@ final class SiteController extends Controller
             'canEditSite' => AuthService::isAdmin(),
             'costBudget'  => $this->costBudget->evaluate($spend),
             'attention'   => $this->articles->attentionCounts((int) $site['id']),
+            // Só produzidos (mesma agregação leve do relatório, §97 performance) — dá
+            // uma sensação de "painel de controle" na Visão Geral sem duplicar a
+            // aba Relatórios (que segue sendo o lugar da análise completa).
+            'trend'       => $this->reports->trend((int) $site['id'], $currentPeriod, 6),
         ]);
     }
 

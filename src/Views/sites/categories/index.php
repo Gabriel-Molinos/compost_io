@@ -21,7 +21,7 @@ require __DIR__ . '/../_tabs.php';
 <?php if ($categories === []): ?>
     <p class="mt-6 text-text-secondary">Nenhuma categoria cadastrada para este site.</p>
 <?php else: ?>
-    <ul class="mt-6 divide-y divide-border rounded-lg border border-border">
+    <ul class="mt-6 divide-y divide-border rounded-lg border border-border bg-surface">
         <?php foreach ($categories as $category): ?>
             <li class="flex items-start justify-between gap-4 px-4 py-3">
                 <div>

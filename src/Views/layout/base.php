@@ -26,12 +26,12 @@ $site ??= null;
 $tabs ??= null;
 $activeTab ??= null;
 
-$globalNav = [['/', 'Início']];
+$globalNav = [['/', 'Início', 'home']];
 if ($authUser !== null) {
     if ($authUser['role'] === 'ADMIN') {
-        $globalNav[] = ['/users', 'Usuários'];
+        $globalNav[] = ['/users', 'Usuários', 'users'];
     }
-    $globalNav[] = ['/sites', 'Sites'];
+    $globalNav[] = ['/sites', 'Sites', 'sites'];
 }
 
 $isActive = static fn (string $href): bool => $href === $currentPath

@@ -43,7 +43,7 @@ $isEdit = !empty($goal['id']);
             <?php if (isset($errors['targets'])): ?>
                 <p class="mt-1 text-sm text-danger"><?= View::e($errors['targets']) ?></p>
             <?php endif; ?>
-            <div class="mt-2 divide-y divide-border rounded-lg border border-border">
+            <div class="mt-2 divide-y divide-border rounded-lg border border-border bg-surface">
                 <?php foreach ($categories as $category): ?>
                     <?php $cid = (int) $category['id']; ?>
                     <div class="flex items-center justify-between gap-4 px-4 py-2.5">

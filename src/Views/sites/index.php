@@ -22,7 +22,7 @@ use App\View;
         <?= $isAdmin ? 'Nenhum site cadastrado ainda.' : 'Você não está vinculado a nenhum site.' ?>
     </p>
 <?php else: ?>
-    <ul class="mt-6 divide-y divide-border rounded-lg border border-border">
+    <ul class="mt-6 divide-y divide-border rounded-lg border border-border bg-surface">
         <?php foreach ($sites as $site): ?>
             <li>
                 <a href="/sites/<?= View::e($site['id']) ?>"

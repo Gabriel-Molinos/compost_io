@@ -39,7 +39,7 @@ $isAdmin = $user !== null && $user['role'] === 'ADMIN';
                 Nenhum site vinculado ao seu usuário ainda. Peça ao administrador para te vincular a um site.
             </p>
         <?php else: ?>
-            <ul class="mt-3 divide-y divide-border rounded-lg border border-border">
+            <ul class="mt-3 divide-y divide-border rounded-lg border border-border bg-surface">
                 <?php foreach ($mySites as $site): ?>
                     <li>
                         <a href="/sites/<?= View::e($site['id']) ?>"

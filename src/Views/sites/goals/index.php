@@ -28,7 +28,7 @@ $base = '/sites/' . $site['id'] . '/goals';
 <?php if ($goals === []): ?>
     <p class="mt-6 text-text-secondary">Nenhuma meta cadastrada para este site.</p>
 <?php else: ?>
-    <ul class="mt-6 divide-y divide-border rounded-lg border border-border">
+    <ul class="mt-6 divide-y divide-border rounded-lg border border-border bg-surface">
         <?php foreach ($goals as $goal): ?>
             <li class="flex items-start justify-between gap-4 px-4 py-3">
                 <div>

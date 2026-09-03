@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\Csrf;
+use App\Support\Labels;
 use App\View;
 
 /** @var array<string,mixed> $site */
@@ -12,13 +13,6 @@ use App\View;
 
 $activeTab = 'production';
 require __DIR__ . '/../_tabs.php';
-
-$statusLabels = [
-    'PLANNED' => 'Planejado', 'IN_PROGRESS' => 'Em produção', 'IN_REVIEW' => 'Em revisão',
-    'REVISION_REQUESTED' => 'Revisão pedida', 'APPROVED' => 'Aprovado', 'SCHEDULED' => 'Agendado',
-    'PUBLISHED' => 'Publicado', 'DISCARDED' => 'Descartado', 'BLOCKED' => 'Bloqueado',
-    'ERROR' => 'Falha técnica',
-];
 ?>
 <h2 class="font-display text-lg font-semibold text-text-primary">Produção</h2>
 <p class="mt-1 text-sm text-text-secondary">
@@ -56,21 +50,24 @@ $statusLabels = [
 <?php if ($articles === []): ?>
     <p class="mt-6 text-text-secondary">Nenhum artigo produzido ainda.</p>
 <?php else: ?>
-    <ul class="mt-6 divide-y divide-border rounded-lg border border-border">
+    <h3 class="mt-8 text-xs font-semibold uppercase tracking-wide text-text-muted">
+        Rascunhos (<?= count($articles) ?>)
+    </h3>
+    <ul class="mt-3 divide-y divide-border rounded-lg border border-border bg-surface">
         <?php foreach ($articles as $a): ?>
-            <li class="flex items-start justify-between gap-4 px-4 py-3">
+            <li class="flex items-start justify-between gap-4 px-4 py-3.5">
                 <div class="min-w-0">
                     <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>"
-                       class="text-text-primary hover:text-cyan">
+                       class="font-medium text-text-primary hover:text-cyan">
                         <?= View::e($a['title'] ?: 'Rascunho #' . $a['id']) ?>
                     </a>
-                    <p class="mt-0.5 text-xs text-text-muted">
-                        <?= View::e($statusLabels[$a['status']] ?? $a['status']) ?>
-                        <?php if ((int) ($a['attempt_number'] ?? 1) > 1): ?> · tentativa <?= View::e($a['attempt_number']) ?><?php endif; ?>
-                        <?php if (!empty($a['category_name'])): ?> · <?= View::e($a['category_name']) ?><?php endif; ?>
-                        <?php if (!empty($a['word_count'])): ?> · <?= View::e($a['word_count']) ?> palavras<?php endif; ?>
-                        · custo ~US$ <?= number_format((float) $a['ai_cost'], 4) ?>
-                    </p>
+                    <div class="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-text-muted">
+                        <?= Labels::articleStatusBadge((string) $a['status']) ?>
+                        <?php if ((int) ($a['attempt_number'] ?? 1) > 1): ?><span>· tentativa <?= View::e($a['attempt_number']) ?></span><?php endif; ?>
+                        <?php if (!empty($a['category_name'])): ?><span>· <?= View::e($a['category_name']) ?></span><?php endif; ?>
+                        <?php if (!empty($a['word_count'])): ?><span>· <?= View::e($a['word_count']) ?> palavras</span><?php endif; ?>
+                        <span>· custo ~US$ <?= number_format((float) $a['ai_cost'], 4) ?></span>
+                    </div>
                 </div>
                 <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>/delete"
                       onsubmit="return confirm('Descartar este rascunho?');">

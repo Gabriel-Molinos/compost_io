@@ -33,12 +33,14 @@ require __DIR__ . '/../_tabs.php';
     .article-body th, .article-body td { border: 1px solid #2a3441; padding: .4rem .6rem; }
 </style>
 <a href="/sites/<?= View::e($site['id']) ?>/production" class="text-sm text-text-secondary hover:text-text-primary">← Produção</a>
-<h2 class="font-display mt-2 text-xl font-bold text-text-primary"><?= View::e($article['title'] ?: 'Rascunho #' . $article['id']) ?></h2>
+<div class="mt-2 flex flex-wrap items-center gap-3">
+    <h2 class="font-display text-xl font-bold text-text-primary"><?= View::e($article['title'] ?: 'Rascunho #' . $article['id']) ?></h2>
+    <?= Labels::articleStatusBadge((string) $article['status']) ?>
+</div>
 <p class="mt-1 text-sm text-text-muted">
-    Status: <strong class="text-text-secondary"><?= View::e(Labels::articleStatus($article['status'])) ?></strong>
-    <?php if ((int) ($article['attempt_number'] ?? 1) > 1): ?> · tentativa <?= View::e($article['attempt_number']) ?><?php endif; ?>
-    <?php if (!empty($article['focus_keyword'])): ?> · palavra-chave: <em><?= View::e($article['focus_keyword']) ?></em><?php endif; ?>
-    · custo total ~US$ <?= number_format($totalCost, 4) ?>
+    <?php if ((int) ($article['attempt_number'] ?? 1) > 1): ?>tentativa <?= View::e($article['attempt_number']) ?> · <?php endif; ?>
+    <?php if (!empty($article['focus_keyword'])): ?>palavra-chave: <em><?= View::e($article['focus_keyword']) ?></em> · <?php endif; ?>
+    custo total ~US$ <?= number_format($totalCost, 4) ?>
 </p>
 <?php if (!empty($article['meta_description'])): ?>
     <p class="mt-2 text-sm text-text-secondary"><strong>Meta descrição:</strong> <?= View::e($article['meta_description']) ?></p>
@@ -351,7 +353,7 @@ $maxAttempts = 3;
 
 <section class="mt-6">
     <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Passos da IA</h3>
-    <ul class="mt-2 divide-y divide-border rounded-lg border border-border text-sm">
+    <ul class="mt-2 divide-y divide-border rounded-lg border border-border bg-surface text-sm">
         <?php foreach ($executions as $e): ?>
             <li class="flex items-center justify-between gap-4 px-4 py-2">
                 <span class="text-text-primary"><?= View::e($e['step']) ?></span>

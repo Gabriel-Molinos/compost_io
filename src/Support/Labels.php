@@ -32,4 +32,48 @@ final class Labels
             default             => $status,
         };
     }
+
+    /**
+     * Tom semântico do status (pra badge colorida — R-UI-07: cor nunca é a
+     * única pista, a badge sempre carrega o texto do status junto).
+     * `success`/`warning`/`danger`/`info` mapeiam direto pras cores da
+     * identidade visual; `cyan`/`muted` cobrem os estados neutros/de espera.
+     */
+    public static function articleStatusTone(string $status): string
+    {
+        return match ($status) {
+            'IN_PROGRESS'                    => 'info',
+            'IN_REVIEW', 'SCHEDULED'         => 'cyan',
+            'REVISION_REQUESTED'             => 'warning',
+            'APPROVED', 'PUBLISHED'          => 'success',
+            'BLOCKED', 'ERROR'               => 'danger',
+            'PLANNED', 'DISCARDED'           => 'muted',
+            default                          => 'muted',
+        };
+    }
+
+    /** Classes Tailwind (fundo + texto) do tom — usado pela badge e em qualquer outro indicador colorido. */
+    public static function toneClasses(string $tone): string
+    {
+        return match ($tone) {
+            'success' => 'bg-success/15 text-success',
+            'warning' => 'bg-warning/15 text-warning',
+            'danger'  => 'bg-danger/15 text-danger',
+            'info'    => 'bg-info/15 text-info',
+            'cyan'    => 'bg-cyan/15 text-cyan',
+            default   => 'bg-border/40 text-text-secondary', // muted
+        };
+    }
+
+    /** Badge pronta (HTML) pro status de um artigo — texto + cor, nunca só cor (R-UI-07). */
+    public static function articleStatusBadge(string $status): string
+    {
+        $tone = self::articleStatusTone($status);
+        $label = self::articleStatus($status);
+
+        return '<span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ' . self::toneClasses($tone) . '">'
+            . '<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-current"></span>'
+            . htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . '</span>';
+    }
 }

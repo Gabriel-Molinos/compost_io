@@ -61,15 +61,15 @@ $navClass = static fn (string $href): string => $href === $currentPath || ($href
         .skip-link:focus { transform: translateY(0); }
     </style>
 </head>
-<body class="min-h-screen bg-base text-text-primary font-sans antialiased">
+<body class="app-bg min-h-screen text-text-primary font-sans antialiased">
     <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
 
     <div class="mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-8">
         <header class="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
             <div class="flex items-center gap-6">
                 <a href="/" class="flex items-center gap-3">
-                    <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="h-8 w-8">
-                    <span class="font-display text-sm font-semibold tracking-[0.2em] text-text-primary">COMPOST</span>
+                    <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-8 w-8">
+                    <img src="/assets/brand/wordmark.png" alt="COMPOST" class="h-5 w-auto">
                 </a>
                 <?php if ($authUser !== null): ?>
                     <nav aria-label="Principal" class="flex gap-4 text-sm">

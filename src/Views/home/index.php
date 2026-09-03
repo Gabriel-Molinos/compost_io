@@ -22,11 +22,11 @@ $isAdmin = $user !== null && $user['role'] === 'ADMIN';
 
 <?php if ($isAdmin): ?>
     <div class="mt-8 grid gap-4 sm:grid-cols-2">
-        <a href="/users" class="rounded-lg border border-border bg-surface p-5 hover:border-cyan">
+        <a href="/users" class="hover-card rounded-lg border border-border bg-surface p-5 hover:border-cyan">
             <h2 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Usuários</h2>
             <p class="mt-2 text-text-secondary">Administradores e Redatores-Chefe, com vínculo por site.</p>
         </a>
-        <a href="/sites" class="rounded-lg border border-border bg-surface p-5 hover:border-cyan">
+        <a href="/sites" class="hover-card rounded-lg border border-border bg-surface p-5 hover:border-cyan">
             <h2 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Sites</h2>
             <p class="mt-2 text-text-secondary">Cadastro dos sites WordPress geridos pela plataforma.</p>
         </a>
@@ -65,7 +65,7 @@ $isAdmin = $user !== null && $user['role'] === 'ADMIN';
         <h2 id="status-banco" class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Banco de dados</h2>
         <?php if ($db['connected']): ?>
             <p class="mt-3 flex items-center gap-2 text-success">
-                <span aria-hidden="true">●</span><span>Conectado ao MySQL (SSL)</span>
+                <span aria-hidden="true" class="status-dot">●</span><span>Conectado ao MySQL (SSL)</span>
             </p>
             <dl class="mt-4 grid grid-cols-2 gap-4 font-mono text-sm">
                 <div><dt class="text-text-muted">Tabelas</dt><dd class="text-lg text-text-primary"><?= View::e($db['tables'] ?? 0) ?></dd></div>

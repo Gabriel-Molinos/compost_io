@@ -1,3 +1,142 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* =============================================================================
+   COMPOST — efeitos globais da identidade Y2K (docs/product/identidade-visual.md).
+   Transições suaves, glow contido no acento ciano, textura sutil de scanline —
+   tudo aditivo sobre as classes utilitárias do Tailwind, sem duplicar
+   componente por View (R-UI-02/R-UI-03). `prefers-reduced-motion` já é
+   respeitado globalmente pelo reset em layout/base.php e layout/auth.php
+   (zera duração de toda animação/transição); as regras específicas abaixo
+   também têm sua própria guarda onde fizer sentido (scroll suave).
+   ============================================================================= */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+
+  ::selection {
+    background: rgba(0, 208, 240, .35);
+    color: #F0F8FF;
+  }
+
+  /* Scrollbar temática (Firefox + Chromium/WebKit). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #3D5266 #061830;
+  }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: #061830; }
+  ::-webkit-scrollbar-thumb { background: #3D5266; border-radius: 6px; border: 2px solid #061830; }
+  ::-webkit-scrollbar-thumb:hover { background: #00A8C4; }
+
+  /* Transição suave em todo elemento interativo, sem precisar tocar cada View. */
+  a, button, input, select, textarea, summary, [role="alert"], [role="status"] {
+    transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease;
+  }
+
+  /* Glow suave de foco em todo campo de formulário — some com o do teclado
+     (:focus-visible acima), soma na interação de mouse/toque. */
+  input:focus, select:focus, textarea:focus {
+    box-shadow: 0 0 0 3px rgba(0, 208, 240, .15);
+  }
+
+  /* Realce de linha em qualquer tabela do app — sem precisar de classe extra. */
+  tbody tr {
+    transition: background-color 150ms ease;
+  }
+  tbody tr:hover {
+    background-color: rgba(240, 248, 255, .03);
+  }
+
+  /* <details>/<summary> (editor de corpo, reagendar…): marcador custom com
+     seta que gira ao abrir, em vez do triângulo padrão do navegador. */
+  summary {
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary::before {
+    content: '▸';
+    display: inline-block;
+    margin-right: .35em;
+    color: #00D0F0;
+    transition: transform 150ms ease;
+  }
+  details[open] > summary::before {
+    transform: rotate(90deg);
+  }
+}
+
+@layer components {
+  /* Fundo do app: vinheta radial + scanline sutil (~3%) — textura única
+     permitida pela identidade visual, nunca acima disso. */
+  .app-bg {
+    background-color: #050B0F;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 50% -10%, rgba(0, 208, 240, .08), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(240, 248, 255, .025) 0px, rgba(240, 248, 255, .025) 1px, transparent 1px, transparent 3px);
+    background-attachment: fixed;
+  }
+
+  /* Glow contido no acento ciano — qualquer botão/elemento com bg-cyan ganha
+     o mesmo brilho no hover/foco automaticamente (sem classe extra por View). */
+  .bg-cyan:hover, .bg-cyan:focus-visible {
+    box-shadow: 0 0 0 1px rgba(0, 208, 240, .45), 0 0 18px rgba(0, 208, 240, .35);
+  }
+  .bg-success\/90:hover, .bg-success\/90:focus-visible {
+    box-shadow: 0 0 0 1px rgba(61, 240, 122, .45), 0 0 18px rgba(61, 240, 122, .3);
+  }
+
+  /* Botão pressionado — leve encolhida, feedback tátil (R-UI-04). */
+  button:active, a:active {
+    transform: scale(.98);
+  }
+
+  /* Cards clicáveis (aplicado explicitamente via .hover-card): leve elevação
+     + glow contido. Não é global — a maioria dos elementos com `border` no
+     app não é um card clicável. */
+  .hover-card {
+    transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+  }
+  .hover-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px -12px rgba(0, 208, 240, .35);
+  }
+
+  /* Ícone da marca no header: leve brilho ao passar o mouse. */
+  .brand-icon {
+    transition: filter 200ms ease, transform 200ms ease;
+  }
+  .brand-icon:hover {
+    filter: drop-shadow(0 0 6px rgba(0, 208, 240, .55));
+    transform: scale(1.05);
+  }
+
+  /* Entrada suave do conteúdo principal ao carregar a página. */
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  #conteudo {
+    animation: fade-in-up 240ms ease both;
+  }
+
+  /* Pulso sutil pros indicadores "ao vivo" (status conectado, gerando…). */
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .35; }
+  }
+  .status-dot {
+    animation: pulse-dot 1.6s ease-in-out infinite;
+  }
+}

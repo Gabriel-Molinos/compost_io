@@ -30,9 +30,10 @@ use App\View;
         }
     </style>
 </head>
-<body class="flex min-h-screen items-center justify-center bg-base px-6 py-12 font-sans text-text-primary antialiased">
-    <main class="w-full max-w-sm">
-        <img src="/assets/brand/logo-lockup.webp" alt="COMPOST — Editorial Dashboard" class="mx-auto mb-8 h-auto w-56">
+<body class="app-bg flex min-h-screen items-center justify-center px-6 py-12 font-sans text-text-primary antialiased">
+    <main id="conteudo" class="w-full max-w-sm">
+        <img src="/assets/brand/logo-lockup.webp" alt="COMPOST — Editorial Dashboard"
+             class="mx-auto mb-8 h-auto w-56 drop-shadow-[0_0_30px_rgba(0,208,240,0.25)]">
 
         <?= $content ?>
     </main>

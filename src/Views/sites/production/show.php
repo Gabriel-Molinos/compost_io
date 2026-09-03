@@ -45,7 +45,8 @@ require __DIR__ . '/../_tabs.php';
 <?php endif; ?>
 
 <?php if (in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true)): ?>
-    <p role="status" class="mt-4 rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
+    <p role="status" class="mt-4 flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
+        <span aria-hidden="true" class="status-dot text-cyan">●</span>
         Gerando em segundo plano — a página atualiza sozinha.
     </p>
 <?php elseif ($article['status'] === 'ERROR'): ?>

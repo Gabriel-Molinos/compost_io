@@ -24,7 +24,8 @@ Logo e ícone **finais** (arte fechada):
 | Asset | Origem | Uso |
 |---|---|---|
 | Ícone | `http://tutehi.com/wp-content/uploads/2026/08/iconcompost.webp` | favicon, navegação recolhida, avatar da app |
-| Lockup completo | `http://tutehi.com/wp-content/uploads/2026/08/compostlogo-1.webp` | tela de login, cabeçalho em telas largas |
+| Lockup completo | `http://tutehi.com/wp-content/uploads/2026/08/compostlogo-1.webp` | tela de login |
+| Wordmark (recorte) | derivado do lockup via GD, `public/assets/brand/wordmark.png` | cabeçalho compacto, ao lado do ícone |
 
 - **Símbolo:** pena/aparo branco com um laço, sobre um **círculo em gradiente
   teal** — claro no topo-esquerda, escuro embaixo-direita. Fundo transparente.
@@ -38,7 +39,9 @@ Logo e ícone **finais** (arte fechada):
 - **Feito (2026-09-03):** os dois arquivos foram baixados para `public/assets/brand/`
   (`icon.webp`, `logo-lockup.webp`) — nada depende mais do host externo em runtime.
   O ícone também foi convertido (via GD) em `favicon-32.png`, `apple-touch-icon.png`
-  (180×180) e `icon-512.png`, referenciados em `layout/base.php`/`layout/auth.php`.
+  (180×180) e `icon-512.png`; e a região só do texto "COMPOST" foi recortada do lockup
+  em `wordmark.png` (pro cabeçalho compacto, que não cabe o lockup inteiro) — todos
+  referenciados em `layout/base.php`/`layout/auth.php`.
 
 ## Mockups (referência de layout — precisam ser refeitos na nova paleta)
 
@@ -219,10 +222,19 @@ fontFamily: {
 - **2026-09-03** — **migração aplicada** (fase de acabamento, depois do fluxo editorial
   fases 6–9 completo): `tailwind.config.js` com a paleta/tipografia finais; ícone e lockup
   baixados para `public/assets/brand/` + favicons gerados via GD; `layout/base.php` (header
-  compacto: ícone + wordmark "COMPOST" em Orbitron) e `layout/auth.php` (login: lockup
-  completo) atualizados; `font-display` aplicado a todo H1/H2/H3 e número de KPI das Views;
-  `cyan-light` → `cyan-bright` em todo o código (37 usos). Nenhuma mudança de conteúdo/lógica,
-  só identidade visual.
+  compacto) e `layout/auth.php` (login: lockup completo) atualizados; `font-display` aplicado
+  a todo H1/H2/H3 e número de KPI das Views; `cyan-light` → `cyan-bright` em todo o código
+  (37 usos). Nenhuma mudança de conteúdo/lógica, só identidade visual.
+- **2026-09-03 (mesmo dia)** — **wordmark real no header + efeitos globais**: a primeira
+  passada tinha colocado "COMPOST" em texto Orbitron no header — a própria doc diz "o wordmark
+  é arte, não fonte" (seção Marca), corrigido logo em seguida. `public/assets/brand/wordmark.png`
+  (novo) recorta só a região do texto "COMPOST" do `logo-lockup.webp` via GD — o header usa
+  ícone + esse wordmark, os dois como imagem. Camada de efeitos globais em `src/styles/input.css`
+  (transições, glow ciano contido em botões primários, glow de foco em formulários, scrollbar
+  temática, `.hover-card` nos cards clicáveis, `.status-dot` em indicadores "ao vivo", entrada
+  suave do conteúdo) — tudo aditivo sobre as classes Tailwind já usadas nas Views, sem duplicar
+  componente por tela, e respeitando `prefers-reduced-motion`. Ver bloco `[Acabamento]` do
+  `CHANGELOG.md`.
 
 ## Ver também
 

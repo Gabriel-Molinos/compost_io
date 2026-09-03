@@ -45,7 +45,8 @@ $statusLabel = static fn (string $s): string => match ($s) {
     </div>
 </div>
 <p class="mt-1 text-sm text-text-secondary">
-    Agendamentos deste site. Para reagendar ou cancelar, abra o artigo.
+    Agendamentos deste site. Arraste um item agendado pra outro dia pra reagendar (mantém autor,
+    imagem e horário) — ou abra o artigo pra mudar tudo, ou cancelar.
 </p>
 
 <div class="mt-5 overflow-x-auto">
@@ -66,7 +67,8 @@ $statusLabel = static fn (string $s): string => match ($s) {
                         $inMonth = $day->format('m') === $monthNum;
                         $items = $byDay[$ymd] ?? [];
                         ?>
-                        <td class="h-28 border border-border p-1 align-top <?= $inMonth ? '' : 'bg-surface/40 text-text-muted' ?>">
+                        <td data-calendar-day="<?= View::e($ymd) ?>"
+                            class="h-28 border border-border p-1 align-top transition-colors <?= $inMonth ? '' : 'bg-surface/40 text-text-muted' ?>">
                             <div class="flex items-center justify-between">
                                 <span class="text-xs <?= $ymd === $todayYmd ? 'rounded bg-cyan px-1.5 font-semibold text-[#050B0F]' : 'text-text-muted' ?>">
                                     <?= (int) $day->format('j') ?>
@@ -74,9 +76,11 @@ $statusLabel = static fn (string $s): string => match ($s) {
                             </div>
                             <div class="mt-1 space-y-1">
                                 <?php foreach ($items as $it): ?>
+                                    <?php $pending = $it['status'] === 'PENDING'; ?>
                                     <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($it['article_id']) ?>#agendar"
-                                       class="block truncate rounded px-1 py-0.5 text-xs <?= $badge((string) $it['status']) ?>"
-                                       title="<?= View::e($it['title'] ?: 'Rascunho #' . $it['article_id']) ?> — <?= View::e(substr((string) $it['scheduled_date'], 11, 5)) ?> · <?= View::e($statusLabel((string) $it['status'])) ?><?= $it['author_name'] ? ' · ' . View::e($it['author_name']) : '' ?>">
+                                       <?php if ($pending): ?>data-schedule-article="<?= View::e($it['article_id']) ?>"<?php endif; ?>
+                                       class="block truncate rounded px-1 py-0.5 text-xs <?= $badge((string) $it['status']) ?> <?= $pending ? 'cursor-grab active:cursor-grabbing' : '' ?>"
+                                       title="<?= View::e($it['title'] ?: 'Rascunho #' . $it['article_id']) ?> — <?= View::e(substr((string) $it['scheduled_date'], 11, 5)) ?> · <?= View::e($statusLabel((string) $it['status'])) ?><?= $it['author_name'] ? ' · ' . View::e($it['author_name']) : '' ?><?= $pending ? ' · arraste pra outro dia pra reagendar' : '' ?>">
                                         <?= View::e(substr((string) $it['scheduled_date'], 11, 5)) ?>
                                         <?= View::e($it['title'] ?: 'Rascunho #' . $it['article_id']) ?>
                                     </a>
@@ -94,3 +98,5 @@ $statusLabel = static fn (string $s): string => match ($s) {
     <span class="flex items-center gap-1"><span class="h-3 w-3 rounded bg-cyan/15"></span> agendado</span>
     <span class="flex items-center gap-1"><span class="h-3 w-3 rounded bg-success/15"></span> publicado</span>
 </div>
+
+<script src="/assets/js/calendar.js" defer></script>

@@ -188,6 +188,43 @@ final class ScheduleService
         )->execute(['au' => $authorId, 'img' => $imageId, 'd' => $when, 'id' => (int) $schedule['id']]);
     }
 
+    /**
+     * Reagenda só a data (mantém o horário, autor e imagem) — usado pelo
+     * arrastar-e-soltar do calendário (Fase 9, §71 pendência da Fase 7).
+     * Mesma regra de "só no futuro" do reagendamento completo.
+     *
+     * @throws RuntimeException entrada inválida, sem agendamento pendente, ou nova data no passado
+     */
+    public function rescheduleDate(int $articleId, int $siteId, string $newDateYmd): void
+    {
+        if ($this->articles->find($siteId, $articleId) === null) {
+            throw new RuntimeException('Artigo não encontrado.');
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $newDateYmd)) {
+            throw new RuntimeException('Data inválida.');
+        }
+
+        $schedule = $this->activeForArticle($articleId);
+        if ($schedule === null) {
+            throw new RuntimeException('Não há agendamento pendente para este artigo.');
+        }
+
+        $time = substr((string) $schedule['scheduled_date'], 11); // "HH:MM:SS"
+
+        try {
+            $when = new DateTimeImmutable($newDateYmd . ' ' . $time);
+        } catch (Exception) {
+            throw new RuntimeException('Data inválida.');
+        }
+
+        if ($when < new DateTimeImmutable('now')) {
+            throw new RuntimeException('A nova data precisa estar no futuro.');
+        }
+
+        Connection::get()->prepare('UPDATE schedules SET scheduled_date = :d WHERE id = :id')
+            ->execute(['d' => $when->format('Y-m-d H:i:00'), 'id' => (int) $schedule['id']]);
+    }
+
     /** Cancela o agendamento vigente e devolve o artigo para APPROVED. */
     public function cancel(int $articleId, int $siteId): void
     {

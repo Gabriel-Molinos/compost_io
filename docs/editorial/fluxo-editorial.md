@@ -325,6 +325,7 @@ Um artigo rejeitado pode ser regenerado. Cada tentativa deve ser registrada.
 Depois da aprovação, o redator escolhe: imagem, categoria, autor, data, horário. Depois a plataforma envia ao WordPress.
 
 > **Implementado na Fase 7.4.** `APPROVED → SCHEDULED` (`ScheduleService`), linha `PENDING` em `schedules`. A imagem destacada precisa estar escolhida. Dá para reagendar e cancelar (volta a `APPROVED`). Calendário mensal por site na aba **Calendário** (7.6).
+> **Fase 9:** dá pra reagendar só a data arrastando o item pra outro dia direto no Calendário (mantém autor/imagem/horário) — o formulário completo continua na tela do artigo.
 
 ### 31. Integração WordPress
 

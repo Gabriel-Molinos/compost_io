@@ -34,6 +34,7 @@ $navClass = static fn (string $href): string => $href === $currentPath || ($href
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
+    <meta name="csrf-token" content="<?= View::e(Csrf::token()) ?>">
     <title><?= View::e($title) ?> · COMPOST</title>
     <?php if (!empty($metaRefresh)): ?>
         <meta http-equiv="refresh" content="<?= (int) $metaRefresh ?>">

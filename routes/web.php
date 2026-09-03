@@ -96,6 +96,7 @@ return static function (Router $router): void {
 
     // Calendário editorial (agendamentos do site)
     $router->add('GET', '/sites/{id}/calendar', [CalendarController::class, 'index'], auth: true);
+    $router->add('POST', '/sites/{id}/calendar/reschedule', [CalendarController::class, 'reschedule'], auth: true);
 
     // Relatórios do site (RF-013)
     $router->add('GET', '/sites/{id}/reports', [ReportController::class, 'index'], auth: true);

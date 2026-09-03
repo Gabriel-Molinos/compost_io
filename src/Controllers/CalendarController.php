@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Services\ScheduleService;
+use App\Support\Csrf;
 use App\View;
 use DateTimeImmutable;
 use Exception;
+use RuntimeException;
+use Throwable;
 
 /**
- * Calendário mensal dos agendamentos do site (Fase 7.6). Somente visualização —
- * reagendar/cancelar continuam na tela do artigo.
+ * Calendário mensal dos agendamentos do site (Fase 7.6). Visualização, mais
+ * reagendar por arrastar-e-soltar direto no calendário (Fase 9) — só a data,
+ * mantendo autor/imagem/horário; o formulário completo continua na tela do
+ * artigo (autor, imagem, hora).
  */
 final class CalendarController extends Controller
 {
@@ -58,6 +63,38 @@ final class CalendarController extends Controller
             'byDay'     => $byDay,
             'todayYmd'  => (new DateTimeImmutable('now'))->format('Y-m-d'),
         ]);
+    }
+
+    /**
+     * Endpoint interno (JSON, docs/technical/requisitos.md §68) consumido pelo
+     * `assets/js/calendar.js` — arrastar um agendamento pra outro dia. CSRF
+     * verificado via `Csrf::check()` (não `verify()`: aqui a resposta é JSON,
+     * não um redirect).
+     */
+    public function reschedule(string $siteId): void
+    {
+        $site = $this->requireSite($siteId);
+        header('Content-Type: application/json; charset=utf-8');
+
+        if (!Csrf::check($_POST['_token'] ?? null)) {
+            http_response_code(419);
+            echo json_encode(['ok' => false, 'error' => 'Sessão expirada — recarregue a página.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $articleId = (int) ($_POST['article_id'] ?? 0);
+        $newDate = (string) ($_POST['new_date'] ?? '');
+
+        try {
+            (new ScheduleService())->rescheduleDate($articleId, (int) $site['id'], $newDate);
+            echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE);
+        } catch (RuntimeException $e) {
+            http_response_code(422);
+            echo json_encode(['ok' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'error' => 'Erro inesperado ao reagendar.'], JSON_UNESCAPED_UNICODE);
+        }
     }
 
     private function month(mixed $raw): DateTimeImmutable

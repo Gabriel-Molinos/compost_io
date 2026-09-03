@@ -35,7 +35,7 @@ $statusLabel = static fn (string $s): string => match ($s) {
 };
 ?>
 <div class="flex flex-wrap items-center justify-between gap-3">
-    <h2 class="text-lg font-semibold text-text-primary">Calendário editorial</h2>
+    <h2 class="font-display text-lg font-semibold text-text-primary">Calendário editorial</h2>
     <div class="flex items-center gap-2 text-sm">
         <a href="?month=<?= View::e($prevMonth) ?>"
            class="rounded-md border border-border px-2 py-1 text-text-secondary hover:text-text-primary">←</a>

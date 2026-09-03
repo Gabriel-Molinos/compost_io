@@ -14,9 +14,9 @@ require __DIR__ . '/../_tabs.php';
 $base = '/sites/' . $site['id'] . '/goals';
 ?>
 <div class="flex items-center justify-between">
-    <h2 class="text-lg font-semibold text-text-primary">Metas editoriais</h2>
+    <h2 class="font-display text-lg font-semibold text-text-primary">Metas editoriais</h2>
     <a href="<?= $base ?>/new"
-       class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+       class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
         Nova meta
     </a>
 </div>
@@ -43,7 +43,7 @@ $base = '/sites/' . $site['id'] . '/goals';
                 </div>
                 <div class="flex shrink-0 items-center gap-3 text-sm">
                     <a href="<?= $base ?>/<?= View::e($goal['id']) ?>/edit"
-                       class="text-cyan hover:text-cyan-light">Editar</a>
+                       class="text-cyan hover:text-cyan-bright">Editar</a>
                     <form method="post" action="<?= $base ?>/<?= View::e($goal['id']) ?>/delete"
                           onsubmit="return confirm('Remover a meta de <?= View::e($goal['period']) ?>?');">
                         <?= Csrf::field() ?>

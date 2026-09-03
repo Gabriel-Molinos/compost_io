@@ -11,7 +11,7 @@ use App\View;
 
 $describedBy = $error !== null ? 'login-error' : null;
 ?>
-<h1 class="text-xl font-bold text-text-primary">Entrar</h1>
+<h1 class="font-display text-xl font-bold text-text-primary">Entrar</h1>
 <p class="mt-1 text-sm text-text-secondary">Acesse com seu e-mail e senha.</p>
 
 <?php if ($flash !== null): ?>
@@ -64,7 +64,7 @@ $describedBy = $error !== null ? 'login-error' : null;
 
     <button type="submit"
             class="w-full rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] transition-colors
-                   hover:bg-cyan-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+                   hover:bg-cyan-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
         Entrar
     </button>
 </form>

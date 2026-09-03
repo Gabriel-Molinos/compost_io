@@ -21,12 +21,12 @@ if ($isEdit) {
     <div class="flex items-center gap-3">
         <a href="/sites" class="text-sm text-text-secondary hover:text-text-primary">← Sites</a>
     </div>
-    <h1 class="mt-2 text-2xl font-bold text-text-primary">Novo site</h1>
+    <h1 class="font-display mt-2 text-2xl font-bold text-text-primary">Novo site</h1>
     <?php
 }
 
 if ($isEdit): ?>
-    <h2 class="text-lg font-semibold text-text-primary">Configuração do site</h2>
+    <h2 class="font-display text-lg font-semibold text-text-primary">Configuração do site</h2>
 <?php endif; ?>
 
 <?php if ($errors !== []): ?>
@@ -58,7 +58,7 @@ if ($isEdit): ?>
 
     <div class="flex gap-3 pt-2">
         <button type="submit"
-                class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-light">
+                class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-bright">
             <?= $isEdit ? 'Salvar' : 'Criar site' ?>
         </button>
         <a href="<?= View::e($backHref) ?>" class="rounded-md border border-border px-4 py-2 text-text-secondary hover:text-text-primary">

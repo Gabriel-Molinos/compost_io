@@ -21,7 +21,7 @@ $isEdit = !empty($goal['id']);
 <a href="/sites/<?= View::e($site['id']) ?>/goals" class="text-sm text-text-secondary hover:text-text-primary">
     ← Metas
 </a>
-<h2 class="mt-2 text-lg font-semibold text-text-primary"><?= $isEdit ? 'Editar meta' : 'Nova meta' ?></h2>
+<h2 class="font-display mt-2 text-lg font-semibold text-text-primary"><?= $isEdit ? 'Editar meta' : 'Nova meta' ?></h2>
 
 <form method="post" action="<?= View::e($action) ?>" class="mt-6 max-w-xl space-y-5" novalidate>
     <?= Csrf::field() ?>
@@ -62,7 +62,7 @@ $isEdit = !empty($goal['id']);
     </fieldset>
 
     <div class="flex gap-3 pt-2">
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-light">
+        <button type="submit" class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-bright">
             <?= $isEdit ? 'Salvar' : 'Criar meta' ?>
         </button>
         <a href="/sites/<?= View::e($site['id']) ?>/goals"

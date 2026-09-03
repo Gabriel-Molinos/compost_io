@@ -8,10 +8,10 @@ use App\View;
 /** @var bool $isAdmin */
 ?>
 <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-text-primary">Sites</h1>
+    <h1 class="font-display text-2xl font-bold text-text-primary">Sites</h1>
     <?php if ($isAdmin): ?>
         <a href="/sites/new"
-           class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+           class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
             Novo site
         </a>
     <?php endif; ?>

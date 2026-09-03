@@ -21,7 +21,7 @@ $base = '/sites/' . $site['id'] . '/memory';
 </p>
 
 <section class="mt-6" aria-labelledby="h-nova">
-    <h2 id="h-nova" class="text-lg font-semibold text-text-primary">Nova lição</h2>
+    <h2 id="h-nova" class="font-display text-lg font-semibold text-text-primary">Nova lição</h2>
     <form method="post" action="<?= $base ?>" class="mt-3 grid gap-3 sm:max-w-xl">
         <?= Csrf::field() ?>
         <label class="text-sm">
@@ -29,7 +29,7 @@ $base = '/sites/' . $site['id'] . '/memory';
             <textarea name="lesson" rows="3" required placeholder="Ex.: Este site nunca usa títulos em formato de pergunta."
                       class="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none"></textarea>
         </label>
-        <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+        <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
             Adicionar à memória
         </button>
     </form>
@@ -37,7 +37,7 @@ $base = '/sites/' . $site['id'] . '/memory';
 
 <?php if ($recentFeedback !== []): ?>
     <section class="mt-8" aria-labelledby="h-promover">
-        <h2 id="h-promover" class="text-lg font-semibold text-text-primary">Promover de rejeições recentes</h2>
+        <h2 id="h-promover" class="font-display text-lg font-semibold text-text-primary">Promover de rejeições recentes</h2>
         <p class="mt-1 text-sm text-text-secondary">
             Vira uma lição duradoura com o texto pronto — você pode editar depois.
         </p>
@@ -64,7 +64,7 @@ $base = '/sites/' . $site['id'] . '/memory';
 <?php endif; ?>
 
 <section class="mt-8" aria-labelledby="h-licoes">
-    <h2 id="h-licoes" class="text-lg font-semibold text-text-primary">Lições (<?= count($lessons) ?>)</h2>
+    <h2 id="h-licoes" class="font-display text-lg font-semibold text-text-primary">Lições (<?= count($lessons) ?>)</h2>
     <?php if ($lessons === []): ?>
         <p class="mt-2 text-sm text-text-secondary">Nenhuma lição ainda.</p>
     <?php else: ?>
@@ -85,13 +85,13 @@ $base = '/sites/' . $site['id'] . '/memory';
 
                     <div class="mt-2 flex flex-wrap items-center gap-4 text-sm">
                         <details>
-                            <summary class="cursor-pointer text-cyan hover:text-cyan-light">Editar</summary>
+                            <summary class="cursor-pointer text-cyan hover:text-cyan-bright">Editar</summary>
                             <form method="post" action="<?= $base ?>/<?= View::e($l['id']) ?>" class="mt-2 grid gap-2 sm:max-w-xl">
                                 <?= Csrf::field() ?>
                                 <textarea name="lesson" rows="3" required
                                           class="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none"
                                 ><?= View::e($l['lesson']) ?></textarea>
-                                <button type="submit" class="justify-self-start rounded-md bg-cyan px-3 py-1.5 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                                <button type="submit" class="justify-self-start rounded-md bg-cyan px-3 py-1.5 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
                                     Salvar
                                 </button>
                             </form>

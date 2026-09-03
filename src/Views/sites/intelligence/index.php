@@ -25,7 +25,7 @@ $fmtDate = static function (?string $ts): string {
 ?>
 <div class="flex flex-wrap items-start justify-between gap-3">
     <div>
-        <h2 class="text-lg font-semibold text-text-primary">Centro de Inteligência Editorial</h2>
+        <h2 class="font-display text-lg font-semibold text-text-primary">Centro de Inteligência Editorial</h2>
         <p class="mt-1 max-w-2xl text-sm text-text-secondary">
             Análise narrativa da operação, gerada pela IA a partir dos números dos
             últimos meses e dos motivos de rejeição. Cada geração <strong>tem custo</strong>.
@@ -35,7 +35,7 @@ $fmtDate = static function (?string $ts): string {
           onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Analisando… (pode levar 1 min)';">
         <?= Csrf::field() ?>
         <button type="submit"
-                class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
             <?= $insight === null ? 'Gerar análise' : 'Regenerar' ?>
         </button>
     </form>
@@ -60,7 +60,7 @@ $fmtDate = static function (?string $ts): string {
     <div class="mt-5 space-y-4">
         <?php foreach (IntelligenceService::QUESTIONS as $key => $label): ?>
             <section class="rounded-lg border border-border bg-surface p-4">
-                <h3 class="text-sm font-semibold text-text-primary"><?= View::e($label) ?></h3>
+                <h3 class="font-display text-sm font-semibold text-text-primary"><?= View::e($label) ?></h3>
                 <?php if ($key === 'ajustes'): ?>
                     <?php $items = is_array($answers['ajustes'] ?? null) ? $answers['ajustes'] : []; ?>
                     <?php if ($items === []): ?>

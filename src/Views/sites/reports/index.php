@@ -21,7 +21,7 @@ require __DIR__ . '/../_tabs.php';
 $n = static fn ($v): string => $v === null ? '—' : (string) $v;
 ?>
 <div class="flex flex-wrap items-center justify-between gap-3">
-    <h2 class="text-lg font-semibold text-text-primary">Relatório mensal</h2>
+    <h2 class="font-display text-lg font-semibold text-text-primary">Relatório mensal</h2>
     <div class="flex items-center gap-2 text-sm">
         <a href="?month=<?= View::e($prevMonth) ?>" class="rounded-md border border-border px-2 py-1 text-text-secondary hover:text-text-primary">←</a>
         <span class="min-w-[9rem] text-center font-medium text-text-primary"><?= View::e($monthName) ?></span>
@@ -34,7 +34,7 @@ $n = static fn ($v): string => $v === null ? '—' : (string) $v;
     $card = static function (string $label, string $value, ?string $sub = null): void {
         echo '<div class="rounded-lg border border-border bg-surface p-4">';
         echo '<dt class="text-xs uppercase tracking-wide text-text-muted">' . View::e($label) . '</dt>';
-        echo '<dd class="mt-1 font-mono text-2xl text-text-primary">' . View::e($value) . '</dd>';
+        echo '<dd class="mt-1 font-display text-2xl text-text-primary">' . View::e($value) . '</dd>';
         if ($sub !== null) {
             echo '<p class="mt-0.5 text-xs text-text-muted">' . View::e($sub) . '</p>';
         }
@@ -56,7 +56,7 @@ $n = static fn ($v): string => $v === null ? '—' : (string) $v;
 </dl>
 
 <section class="mt-8">
-    <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+    <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">
         Comparado com <?= View::e($prevMonthName) ?>
     </h3>
     <?php if (!$comparison['had_data']): ?>
@@ -117,7 +117,7 @@ $n = static fn ($v): string => $v === null ? '—' : (string) $v;
 </section>
 
 <section class="mt-8">
-    <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+    <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">
         Tendência (últimos <?= count($trend['periods']) ?> meses)
     </h3>
     <?php
@@ -149,15 +149,15 @@ $n = static fn ($v): string => $v === null ? '—' : (string) $v;
     ?>
     <div class="mt-3 grid gap-3 sm:grid-cols-3">
         <?php
-        $trendCard('Artigos produzidos', $trend['produced'], '#0AFFEF', static fn ($v) => (string) (int) $v, 'Produzidos');
-        $trendCard('Artigos publicados', $trend['published'], '#34D399', static fn ($v) => (string) (int) $v, 'Publicados');
-        $trendCard('Custo de IA', $trend['ai_cost'], '#FBBF24', static fn ($v) => 'US$ ' . number_format((float) $v, 2), 'Custo (US$)');
+        $trendCard('Artigos produzidos', $trend['produced'], '#00D0F0', static fn ($v) => (string) (int) $v, 'Produzidos');
+        $trendCard('Artigos publicados', $trend['published'], '#3DF07A', static fn ($v) => (string) (int) $v, 'Publicados');
+        $trendCard('Custo de IA', $trend['ai_cost'], '#FFC53D', static fn ($v) => 'US$ ' . number_format((float) $v, 2), 'Custo (US$)');
         ?>
     </div>
 </section>
 
 <section class="mt-8">
-    <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Por categoria (meta × realizado)</h3>
+    <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Por categoria (meta × realizado)</h3>
     <?php if ($report['categories'] === []): ?>
         <p class="mt-2 text-sm text-text-secondary">Nenhuma categoria cadastrada.</p>
     <?php else: ?>
@@ -186,7 +186,7 @@ $n = static fn ($v): string => $v === null ? '—' : (string) $v;
 </section>
 
 <section class="mt-8">
-    <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Motivos de rejeição</h3>
+    <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Motivos de rejeição</h3>
     <?php if ($report['reject_reasons'] === []): ?>
         <p class="mt-2 text-sm text-text-secondary">Nenhuma rejeição neste mês.</p>
     <?php else: ?>

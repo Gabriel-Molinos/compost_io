@@ -24,7 +24,7 @@ final class SvgChart
     public static function bars(
         array $labels,
         array $values,
-        string $color = '#0AFFEF',
+        string $color = '#00D0F0', // cyan.DEFAULT (docs/product/identidade-visual.md)
         ?callable $format = null,
         int $width = 640,
         int $height = 160,
@@ -56,11 +56,11 @@ final class SvgChart
                 $x, $y, $barWidth, max($barHeight, 0.0), $color
             );
             $bars .= sprintf(
-                '<text x="%.1f" y="%d" text-anchor="middle" font-size="10" fill="#8A97A6">%s</text>',
+                '<text x="%.1f" y="%d" text-anchor="middle" font-size="10" fill="#7B8FA1">%s</text>',
                 $x + $barWidth / 2, $padTop - 6, htmlspecialchars($format($v), ENT_QUOTES)
             );
             $bars .= sprintf(
-                '<text x="%.1f" y="%d" text-anchor="middle" font-size="10" fill="#8A97A6">%s</text>',
+                '<text x="%.1f" y="%d" text-anchor="middle" font-size="10" fill="#7B8FA1">%s</text>',
                 $x + $barWidth / 2, $height - 4, htmlspecialchars((string) $label, ENT_QUOTES)
             );
         }

@@ -25,7 +25,7 @@ $tabs = [
 ?>
 <div class="mb-6 border-b border-border">
     <a href="/sites" class="text-sm text-text-secondary hover:text-text-primary">← Sites</a>
-    <h1 class="mt-1 text-2xl font-bold text-text-primary"><?= View::e($site['name']) ?></h1>
+    <h1 class="font-display mt-1 text-2xl font-bold text-text-primary"><?= View::e($site['name']) ?></h1>
     <nav aria-label="Seções do site" class="mt-3 flex flex-wrap gap-4 text-sm">
         <?php foreach ($tabs as [$key, $label, $href, $visible]): ?>
             <?php if (!$visible) { continue; } ?>

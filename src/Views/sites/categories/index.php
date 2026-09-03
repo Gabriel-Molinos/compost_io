@@ -11,9 +11,9 @@ $activeTab = 'categories';
 require __DIR__ . '/../_tabs.php';
 ?>
 <div class="flex items-center justify-between">
-    <h2 class="text-lg font-semibold text-text-primary">Categorias</h2>
+    <h2 class="font-display text-lg font-semibold text-text-primary">Categorias</h2>
     <a href="/sites/<?= View::e($site['id']) ?>/categories/new"
-       class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+       class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
         Nova categoria
     </a>
 </div>
@@ -32,7 +32,7 @@ require __DIR__ . '/../_tabs.php';
                 </div>
                 <div class="flex shrink-0 items-center gap-3 text-sm">
                     <a href="/sites/<?= View::e($site['id']) ?>/categories/<?= View::e($category['id']) ?>/edit"
-                       class="text-cyan hover:text-cyan-light">Editar</a>
+                       class="text-cyan hover:text-cyan-bright">Editar</a>
                     <form method="post"
                           action="/sites/<?= View::e($site['id']) ?>/categories/<?= View::e($category['id']) ?>/delete"
                           onsubmit="return confirm('Remover esta categoria?');">

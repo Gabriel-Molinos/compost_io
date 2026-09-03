@@ -9,12 +9,13 @@ pesada. Referência mental: HUD de painel sci-fi limpo / vaporwave sóbrio.
 **Modo:** dark-only por enquanto. Um modo claro pode entrar numa revisão futura —
 por isso a paleta abaixo marca quais tons funcionam sobre fundo claro.
 
-> **Status de implementação (2026-08-28):** esta é a identidade **final aprovada**.
-> O código atual ([tailwind.config.js](../../tailwind.config.js), Views) ainda usa
-> a paleta/tipografia **antiga** (ciano `#0AFFEF`, Manrope + JetBrains Mono, layout
-> mínimo de teste). A migração para o que está aqui é uma **fase de acabamento**,
-> depois que o fluxo editorial inteiro estiver funcionando — não é para ser feita
-> agora. A seção "Bloco Tailwind pronto" no fim já traz o `theme` para colar.
+> **Status de implementação (migrada em 2026-09-03):** esta identidade está **implementada**
+> no código — [tailwind.config.js](../../tailwind.config.js), `layout/base.php`/`layout/auth.php`,
+> `font-display` (Orbitron) nos H1–H3 e KPIs de todas as Views, logo/ícone reais baixados para
+> `public/assets/brand/` (favicon incluído), `cyan.light`/`cyan.dark` renomeados para
+> `cyan.bright`/`cyan.pressed`/`cyan.dark` (a antiga classe `cyan-light` virou `cyan-bright` em
+> todo o código). Definida em 2026-08-28, ficou registrada como "fase de acabamento" até o fluxo
+> editorial inteiro (fases 6–9) estar pronto — só então foi aplicada.
 
 ## Marca
 
@@ -34,9 +35,10 @@ Logo e ícone **finais** (arte fechada):
   `#00D0F0`, caixa-alta, `letter-spacing` largo). O estilo do descritor
   "EDITORIAL DASHBOARD" (geométrica larga) é o que a fonte de UI **Orbitron**
   reproduz nos títulos de tela — coerente com o lockup.
-- **A fazer na fase de acabamento:** baixar os dois arquivos para
-  `public/assets/brand/` (ou converter o ícone para os tamanhos de favicon) e
-  referenciar de lá — não depender do host externo em runtime.
+- **Feito (2026-09-03):** os dois arquivos foram baixados para `public/assets/brand/`
+  (`icon.webp`, `logo-lockup.webp`) — nada depende mais do host externo em runtime.
+  O ícone também foi convertido (via GD) em `favicon-32.png`, `apple-touch-icon.png`
+  (180×180) e `icon-512.png`, referenciados em `layout/base.php`/`layout/auth.php`.
 
 ## Mockups (referência de layout — precisam ser refeitos na nova paleta)
 
@@ -196,10 +198,13 @@ fontFamily: {
 },
 ```
 
-> Ao migrar: `font-sans` deixa de ser Manrope e passa a ser Chakra Petch; surge
-> `font-display` (Orbitron) para títulos e números. O `:focus-visible` e o
-> `.skip-link` em [layout/base.php](../../src/Views/layout/base.php) trocam
-> `#0AFFEF` → `#7FE8FF` (foco) e `#0AFFEF` → `#00D0F0` (fundo do skip-link).
+> **Migrado (2026-09-03).** `font-sans` deixou de ser Manrope e passou a ser Chakra Petch;
+> `font-display` (Orbitron) aplicado a todo H1/H2/H3 e KPI numérico das Views (~50 pontos,
+> ver `CHANGELOG.md`). `:focus-visible`/`.skip-link` em [layout/base.php](../../src/Views/layout/base.php)
+> e [layout/auth.php](../../src/Views/layout/auth.php) já usam `#7FE8FF` (foco) e `#00D0F0`
+> (fundo do skip-link). `cyan.light`/`cyan.dark` do config antigo viraram `cyan.bright`
+> (`#7FE8FF`, hover — a classe `cyan-light` usada em ~37 lugares virou `cyan-bright`),
+> `cyan.pressed` (`#00A8C4`) e `cyan.dark` (`#0092B0`, novo, ainda sem uso no código).
 
 ## Histórico
 
@@ -211,6 +216,13 @@ fontFamily: {
   **Substitui** a paleta anterior (ciano único `#0AFFEF`, superfícies
   quase-monocromáticas `#101B2C`/`#16212A`, Manrope + JetBrains Mono) — que
   continua no código até a fase de acabamento.
+- **2026-09-03** — **migração aplicada** (fase de acabamento, depois do fluxo editorial
+  fases 6–9 completo): `tailwind.config.js` com a paleta/tipografia finais; ícone e lockup
+  baixados para `public/assets/brand/` + favicons gerados via GD; `layout/base.php` (header
+  compacto: ícone + wordmark "COMPOST" em Orbitron) e `layout/auth.php` (login: lockup
+  completo) atualizados; `font-display` aplicado a todo H1/H2/H3 e número de KPI das Views;
+  `cyan-light` → `cyan-bright` em todo o código (37 usos). Nenhuma mudança de conteúdo/lógica,
+  só identidade visual.
 
 ## Ver também
 

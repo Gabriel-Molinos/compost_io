@@ -11,7 +11,7 @@ use App\View;
 
 $isAdmin = $user !== null && $user['role'] === 'ADMIN';
 ?>
-<h1 class="text-2xl font-bold text-text-primary">
+<h1 class="font-display text-2xl font-bold text-text-primary">
     Olá<?= $user !== null ? ', ' . View::e($user['name']) : '' ?>
 </h1>
 <p class="mt-2 text-text-secondary">
@@ -23,17 +23,17 @@ $isAdmin = $user !== null && $user['role'] === 'ADMIN';
 <?php if ($isAdmin): ?>
     <div class="mt-8 grid gap-4 sm:grid-cols-2">
         <a href="/users" class="rounded-lg border border-border bg-surface p-5 hover:border-cyan">
-            <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Usuários</h2>
+            <h2 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Usuários</h2>
             <p class="mt-2 text-text-secondary">Administradores e Redatores-Chefe, com vínculo por site.</p>
         </a>
         <a href="/sites" class="rounded-lg border border-border bg-surface p-5 hover:border-cyan">
-            <h2 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Sites</h2>
+            <h2 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Sites</h2>
             <p class="mt-2 text-text-secondary">Cadastro dos sites WordPress geridos pela plataforma.</p>
         </a>
     </div>
 <?php else: ?>
     <section aria-labelledby="meus-sites" class="mt-8">
-        <h2 id="meus-sites" class="text-sm font-semibold uppercase tracking-wide text-text-muted">Meus sites</h2>
+        <h2 id="meus-sites" class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Meus sites</h2>
         <?php if ($mySites === []): ?>
             <p class="mt-3 text-text-secondary">
                 Nenhum site vinculado ao seu usuário ainda. Peça ao administrador para te vincular a um site.
@@ -62,7 +62,7 @@ $isAdmin = $user !== null && $user['role'] === 'ADMIN';
 
 <?php if ($isAdmin): ?>
     <section aria-labelledby="status-banco" class="mt-8 rounded-lg border border-border bg-surface p-5">
-        <h2 id="status-banco" class="text-sm font-semibold uppercase tracking-wide text-text-muted">Banco de dados</h2>
+        <h2 id="status-banco" class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Banco de dados</h2>
         <?php if ($db['connected']): ?>
             <p class="mt-3 flex items-center gap-2 text-success">
                 <span aria-hidden="true">●</span><span>Conectado ao MySQL (SSL)</span>

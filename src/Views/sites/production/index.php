@@ -20,7 +20,7 @@ $statusLabels = [
     'ERROR' => 'Falha técnica',
 ];
 ?>
-<h2 class="text-lg font-semibold text-text-primary">Produção</h2>
+<h2 class="font-display text-lg font-semibold text-text-primary">Produção</h2>
 <p class="mt-1 text-sm text-text-secondary">
     A IA gera um rascunho (planejamento → pesquisa → escrita). Cada geração faz
     várias chamadas ao Gemini e <strong>tem custo</strong> — gere poucos por vez.
@@ -48,7 +48,7 @@ $statusLabels = [
             <?php endforeach; ?>
         </select>
     </label>
-    <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+    <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
         Gerar rascunho
     </button>
 </form>

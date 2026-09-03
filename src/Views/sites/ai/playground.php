@@ -60,7 +60,7 @@ require __DIR__ . '/../_tabs.php';
     </label>
 
     <div class="flex items-end">
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-light">
+        <button type="submit" class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-bright">
             Rodar
         </button>
     </div>
@@ -74,7 +74,7 @@ require __DIR__ . '/../_tabs.php';
 
 <?php if ($result !== null): ?>
     <section class="mt-8">
-        <h2 class="text-lg font-semibold text-text-primary">Resposta do Gemini</h2>
+        <h2 class="font-display text-lg font-semibold text-text-primary">Resposta do Gemini</h2>
         <p class="mt-1 text-xs text-text-muted">
             <?= View::e($result['model']) ?> · <?= View::e($result['elapsed']) ?>s ·
             tokens: prompt <?= View::e($result['tokens']['prompt']) ?> ·

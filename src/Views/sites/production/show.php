@@ -28,12 +28,12 @@ require __DIR__ . '/../_tabs.php';
     .article-body h3 { font-size: 1.05rem; font-weight: 600; margin: 1.25rem 0 .5rem; }
     .article-body p { margin: .75rem 0; line-height: 1.7; }
     .article-body ul, .article-body ol { margin: .75rem 0; padding-left: 1.5rem; list-style: revert; }
-    .article-body a { color: #0AFFEF; text-decoration: underline; }
+    .article-body a { color: #00D0F0; text-decoration: underline; }
     .article-body table { border-collapse: collapse; margin: 1rem 0; }
     .article-body th, .article-body td { border: 1px solid #2a3441; padding: .4rem .6rem; }
 </style>
 <a href="/sites/<?= View::e($site['id']) ?>/production" class="text-sm text-text-secondary hover:text-text-primary">← Produção</a>
-<h2 class="mt-2 text-xl font-bold text-text-primary"><?= View::e($article['title'] ?: 'Rascunho #' . $article['id']) ?></h2>
+<h2 class="font-display mt-2 text-xl font-bold text-text-primary"><?= View::e($article['title'] ?: 'Rascunho #' . $article['id']) ?></h2>
 <p class="mt-1 text-sm text-text-muted">
     Status: <strong class="text-text-secondary"><?= View::e(Labels::articleStatus($article['status'])) ?></strong>
     <?php if ((int) ($article['attempt_number'] ?? 1) > 1): ?> · tentativa <?= View::e($article['attempt_number']) ?><?php endif; ?>
@@ -66,7 +66,7 @@ require __DIR__ . '/../_tabs.php';
 
 <?php if ($article['status'] === 'IN_REVIEW'): ?>
     <section class="mt-5 rounded-lg border border-border bg-surface p-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Revisão</h3>
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Revisão</h3>
         <p class="mt-1 text-sm text-text-secondary">Aprovar libera o agendamento. Rejeitar registra o motivo e permite regenerar.</p>
         <div class="mt-3 flex flex-wrap items-start gap-6">
             <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/approve">
@@ -125,15 +125,15 @@ $authorOptions = static function (array $authors, int $selectedId): string {
 
 <?php if ($article['status'] === 'APPROVED'): ?>
     <section id="agendar" class="mt-5 rounded-lg border border-border bg-surface p-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Agendar publicação</h3>
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Agendar publicação</h3>
         <?php if ($authors === []): ?>
             <p class="mt-1 text-sm text-text-secondary">
                 Nenhum autor disponível. Sincronize os autores em
-                <a href="/sites/<?= View::e($site['id']) ?>/wordpress" class="text-cyan hover:text-cyan-light">WordPress</a>.
+                <a href="/sites/<?= View::e($site['id']) ?>/wordpress" class="text-cyan hover:text-cyan-bright">WordPress</a>.
             </p>
         <?php elseif ($featuredSelected === null): ?>
             <p class="mt-1 text-sm text-text-secondary">
-                Escolha a <a href="#imagens" class="text-cyan hover:text-cyan-light">imagem destacada</a> antes de agendar.
+                Escolha a <a href="#imagens" class="text-cyan hover:text-cyan-bright">imagem destacada</a> antes de agendar.
             </p>
         <?php else: ?>
             <p class="mt-1 text-sm text-text-secondary">Define autor, data/hora e usa a imagem destacada já escolhida. O envio ao WordPress é um passo à parte.</p>
@@ -152,7 +152,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
                     <input type="datetime-local" name="scheduled_date" required min="<?= $nowLocal ?>"
                            class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
                 </label>
-                <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
                     Agendar
                 </button>
             </form>
@@ -161,7 +161,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
 <?php elseif ($article['status'] === 'SCHEDULED' && $schedule !== null): ?>
     <?php $imageIdForForm = $featuredSelected['id'] ?? $schedule['image_id']; ?>
     <section id="agendar" class="mt-5 rounded-lg border border-cyan/40 bg-surface p-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Agendado</h3>
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Agendado</h3>
         <p class="mt-1 text-sm text-text-primary">
             <strong><?= View::e(date('d/m/Y H:i', strtotime((string) $schedule['scheduled_date']))) ?></strong>
             · autor: <?= View::e($schedule['author_name'] ?? '—') ?>
@@ -174,7 +174,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
         <form method="post" action="<?= $scheduleBase ?>/schedule/publish" class="mt-4"
               onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Enviando…';">
             <?= Csrf::field() ?>
-            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
                 <?= $whenTs > time() ? 'Enviar ao WordPress (agenda para a data)' : 'Publicar no WordPress agora' ?>
             </button>
             <p class="mt-1 text-xs text-text-muted">
@@ -185,7 +185,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
 
         <div class="mt-4 flex flex-wrap items-start gap-6">
             <details class="text-sm">
-                <summary class="cursor-pointer font-medium text-cyan hover:text-cyan-light">Reagendar</summary>
+                <summary class="cursor-pointer font-medium text-cyan hover:text-cyan-bright">Reagendar</summary>
                 <form method="post" action="<?= $scheduleBase ?>/schedule/update" class="mt-3 grid gap-4 sm:max-w-md">
                     <?= Csrf::field() ?>
                     <input type="hidden" name="image_id" value="<?= View::e($imageIdForForm) ?>">
@@ -202,7 +202,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
                                value="<?= View::e(date('Y-m-d\TH:i', strtotime((string) $schedule['scheduled_date']))) ?>"
                                class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
                     </label>
-                    <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                    <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
                         Salvar
                     </button>
                 </form>
@@ -218,7 +218,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
     </section>
 <?php elseif ($article['status'] === 'SCHEDULED' && $schedule === null): ?>
     <section id="agendar" class="mt-5 rounded-lg border border-danger/40 bg-danger/10 p-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-danger">Falha no envio ao WordPress</h3>
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-danger">Falha no envio ao WordPress</h3>
         <p role="alert" class="mt-1 text-sm text-text-secondary">
             <?php if ($lastSchedule !== null): ?>
                 Tentativa automática de publicação (agendada pra
@@ -240,7 +240,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
 <?php elseif ($article['status'] === 'PUBLISHED' && $lastSchedule !== null && !empty($lastSchedule['wordpress_post_id'])): ?>
     <?php $postUrl = rtrim((string) ($site['wordpress_url'] ?? ''), '/') . '/?p=' . (int) $lastSchedule['wordpress_post_id']; ?>
     <section id="agendar" class="mt-5 rounded-lg border border-success/40 bg-surface p-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Publicado</h3>
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Publicado</h3>
         <p class="mt-1 text-sm text-text-primary">
             Post #<?= View::e($lastSchedule['wordpress_post_id']) ?> no WordPress
             <?php if (!empty($lastSchedule['author_name'])): ?> · autor: <?= View::e($lastSchedule['author_name']) ?><?php endif; ?>
@@ -248,7 +248,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
         </p>
         <?php if (!empty($site['wordpress_url'])): ?>
             <a href="<?= View::e($postUrl) ?>" target="_blank" rel="noopener"
-               class="mt-1 inline-block text-sm text-cyan hover:text-cyan-light">Abrir no WordPress →</a>
+               class="mt-1 inline-block text-sm text-cyan hover:text-cyan-bright">Abrir no WordPress →</a>
         <?php endif; ?>
 
         <div class="mt-4 flex flex-wrap items-center gap-3">
@@ -280,7 +280,7 @@ $maxAttempts = 3;
 ?>
 <?php if ($article['status'] === 'REVISION_REQUESTED'): ?>
     <section class="mt-5 rounded-lg border border-border bg-surface p-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Regeneração</h3>
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Regeneração</h3>
         <p class="mt-1 text-sm text-text-secondary">
             Tentativa <?= $attempt ?> de <?= $maxAttempts ?>.
             <?php if ($attempt >= $maxAttempts): ?>
@@ -293,14 +293,14 @@ $maxAttempts = 3;
               class="mt-3"
               onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Iniciando…';">
             <?= Csrf::field() ?>
-            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
                 Regenerar artigo
             </button>
         </form>
     </section>
 <?php elseif ($article['status'] === 'ERROR'): ?>
     <section class="mt-5 rounded-lg border border-border bg-surface p-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Tentar de novo</h3>
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Tentar de novo</h3>
         <p class="mt-1 text-sm text-text-secondary">
             Tentativa <?= $attempt ?> de <?= $maxAttempts ?> — a falha foi técnica (ver acima), não uma rejeição do
             Redator-Chefe.
@@ -314,14 +314,14 @@ $maxAttempts = 3;
               class="mt-3"
               onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Iniciando…';">
             <?= Csrf::field() ?>
-            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
                 Tentar de novo
             </button>
         </form>
     </section>
 <?php elseif ($article['status'] === 'BLOCKED'): ?>
     <section class="mt-5 rounded-lg border border-danger/40 bg-danger/10 p-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-danger">Bloqueado</h3>
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-danger">Bloqueado</h3>
         <p class="mt-1 text-sm text-text-secondary">
             O limite de <?= $maxAttempts ?> tentativas nesta linhagem foi atingido (rejeição e/ou falha técnica), sem aprovação. Decida o próximo passo — descartar, ou revisar a meta/diretrizes do site antes de tentar um novo tema.
         </p>
@@ -330,7 +330,7 @@ $maxAttempts = 3;
 
 <?php if (!empty($feedback)): ?>
     <section class="mt-5 rounded-lg border border-border bg-surface p-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Feedback de rejeição (<?= count($feedback) ?>)</h3>
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Feedback de rejeição (<?= count($feedback) ?>)</h3>
         <ul class="mt-2 space-y-3 text-sm">
             <?php foreach ($feedback as $f): ?>
                 <li class="border-l-2 border-danger/50 pl-3">
@@ -349,7 +349,7 @@ $maxAttempts = 3;
 <?php endif; ?>
 
 <section class="mt-6">
-    <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Passos da IA</h3>
+    <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Passos da IA</h3>
     <ul class="mt-2 divide-y divide-border rounded-lg border border-border text-sm">
         <?php foreach ($executions as $e): ?>
             <li class="flex items-center justify-between gap-4 px-4 py-2">
@@ -371,12 +371,12 @@ $maxAttempts = 3;
 
 <?php if ($sources !== []): ?>
     <section class="mt-6">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Fontes (<?= count($sources) ?>)</h3>
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Fontes (<?= count($sources) ?>)</h3>
         <ul class="mt-2 space-y-1 text-sm">
             <?php foreach ($sources as $s): ?>
                 <li>
                     <a href="<?= View::e($s['url']) ?>" target="_blank" rel="noopener"
-                       class="text-cyan hover:text-cyan-light"><?= View::e($s['title'] ?: $s['url']) ?></a>
+                       class="text-cyan hover:text-cyan-bright"><?= View::e($s['title'] ?: $s['url']) ?></a>
                     <?php if (!empty($s['publisher'])): ?><span class="text-text-muted"> — <?= View::e($s['publisher']) ?></span><?php endif; ?>
                 </li>
             <?php endforeach; ?>
@@ -398,7 +398,7 @@ $maxAttempts = 3;
     };
     ?>
     <section id="imagens" class="mt-6">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">
             Imagens (<?= count($images) ?>)
         </h3>
 
@@ -423,7 +423,7 @@ $maxAttempts = 3;
                         </label>
                     <?php endforeach; ?>
                 </div>
-                <button type="submit" class="mt-3 rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                <button type="submit" class="mt-3 rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
                     Salvar imagem destacada
                 </button>
             </form>
@@ -454,7 +454,7 @@ $compliance = $notes['compliance'] ?? null;
 ?>
 <?php if ($review !== null): ?>
     <section class="mt-6 rounded-lg border border-border bg-surface p-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Parecer da IA (pré-revisão humana)</h3>
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Parecer da IA (pré-revisão humana)</h3>
         <p class="mt-2 text-sm text-text-primary">
             <strong><?= View::e($review['recommendation'] ?? '?') ?></strong> — <?= View::e($review['summary'] ?? '') ?>
         </p>
@@ -508,7 +508,7 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
 <?php endif; ?>
 
 <section class="mt-8">
-    <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+    <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">
         Corpo <?php if ($version && $version['word_count']): ?><span class="text-text-muted">(<?= View::e($version['word_count']) ?> palavras)</span><?php endif; ?>
     </h3>
     <?php if ($version === null): ?>
@@ -519,7 +519,7 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
         </article>
         <?php if ($article['status'] === 'IN_REVIEW'): ?>
             <details class="mt-3">
-                <summary class="cursor-pointer text-sm font-medium text-cyan hover:text-cyan-light">Editar corpo (HTML)</summary>
+                <summary class="cursor-pointer text-sm font-medium text-cyan hover:text-cyan-bright">Editar corpo (HTML)</summary>
                 <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/content" class="mt-3">
                     <?= Csrf::field() ?>
                     <label class="text-sm">
@@ -532,7 +532,7 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                         Tags permitidas são filtradas ao salvar (títulos, parágrafos, listas, links, tabelas, imagens).
                         Vira uma nova versão — a anterior fica preservada no histórico.
                     </p>
-                    <button type="submit" class="mt-2 rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                    <button type="submit" class="mt-2 rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
                         Salvar corpo
                     </button>
                 </form>

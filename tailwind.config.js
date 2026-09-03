@@ -1,32 +1,43 @@
 /** @type {import('tailwindcss').Config} */
-// Paleta e tipografia: docs/product/identidade-visual.md
+// Paleta e tipografia: docs/product/identidade-visual.md (identidade final, 2026-08-28;
+// migrada no código na fase de acabamento, 2026-09-03).
 module.exports = {
   content: ['./src/Views/**/*.php', './public/**/*.php'],
   theme: {
     extend: {
       colors: {
         base: '#050B0F',
-        surface: '#101B2C',
-        'surface-2': '#16212A',
-        border: '#24374D',
+        surface: '#061830',
+        'surface-2': '#0A2647',
+        border: '#3D5266',
+        'border-strong': '#4A6076',
         cyan: {
-          DEFAULT: '#0AFFEF',
-          light: '#5CFFF3',
-          dark: '#00B8AE',
+          DEFAULT: '#00D0F0',
+          bright: '#7FE8FF',
+          pressed: '#00A8C4',
+          dark: '#0092B0',
+        },
+        blue: {
+          light: '#6FCFFF',
         },
         text: {
-          primary: '#F2FAFB',
-          secondary: '#8CA3AC',
-          muted: '#7C929C',
+          primary: '#F0F8FF',
+          secondary: '#8FA6BC',
+          muted: '#7B8FA1',
         },
-        success: '#34D399',
-        warning: '#FBBF24',
-        danger: '#F87171',
-        info: '#818CF8',
+        success: '#3DF07A',
+        warning: '#FFC53D',
+        danger: '#FF5C7A',
+        info: '#6FCFFF',
       },
       fontFamily: {
-        sans: ['Manrope', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Orbitron', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"Chakra Petch"', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+      backgroundImage: {
+        // Gradiente do símbolo da marca (círculo atrás do ícone) — não usar como cor de texto.
+        'brand-grad': 'linear-gradient(135deg, #05A8C6, #06405A)',
       },
     },
   },

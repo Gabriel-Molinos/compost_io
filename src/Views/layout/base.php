@@ -40,19 +40,22 @@ $navClass = static fn (string $href): string => $href === $currentPath || ($href
         <meta http-equiv="refresh" content="<?= (int) $metaRefresh ?>">
     <?php endif; ?>
 
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png">
+    <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Orbitron:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/assets/css/app.css">
 
     <style>
-        :focus-visible { outline: 2px solid #0AFFEF; outline-offset: 2px; border-radius: 2px; }
+        :focus-visible { outline: 2px solid #7FE8FF; outline-offset: 2px; border-radius: 2px; }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
         }
         .skip-link {
             position: absolute; left: 0; top: 0; transform: translateY(-120%);
-            background: #0AFFEF; color: #050B0F; padding: .5rem 1rem; font-weight: 600;
+            background: #00D0F0; color: #050B0F; padding: .5rem 1rem; font-weight: 600;
             transition: transform .15s ease;
         }
         .skip-link:focus { transform: translateY(0); }
@@ -65,9 +68,8 @@ $navClass = static fn (string $href): string => $href === $currentPath || ($href
         <header class="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
             <div class="flex items-center gap-6">
                 <a href="/" class="flex items-center gap-3">
-                    <span aria-hidden="true"
-                          class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-cyan/10 text-cyan">◆</span>
-                    <span class="text-sm font-semibold tracking-[0.2em] text-cyan">COMPOST</span>
+                    <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="h-8 w-8">
+                    <span class="font-display text-sm font-semibold tracking-[0.2em] text-text-primary">COMPOST</span>
                 </a>
                 <?php if ($authUser !== null): ?>
                     <nav aria-label="Principal" class="flex gap-4 text-sm">

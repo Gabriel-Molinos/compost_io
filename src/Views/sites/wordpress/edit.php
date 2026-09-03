@@ -26,7 +26,7 @@ $formData = [
     'username'      => $connection['username'] ?? '',
 ];
 ?>
-<h2 class="text-lg font-semibold text-text-primary">Conexão WordPress</h2>
+<h2 class="font-display text-lg font-semibold text-text-primary">Conexão WordPress</h2>
 <p class="mt-1 text-sm text-text-secondary">
     Credencial usada para publicar os artigos deste site. Fica isolada por site e a senha é
     armazenada cifrada (nunca em texto puro).
@@ -57,7 +57,7 @@ $formData = [
     </p>
 
     <div class="flex flex-wrap gap-3 pt-2">
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-light">
+        <button type="submit" class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-bright">
             Salvar
         </button>
         <a href="/sites/<?= View::e($site['id']) ?>" class="rounded-md border border-border px-4 py-2 text-text-secondary hover:text-text-primary">
@@ -85,12 +85,12 @@ $formData = [
     </p>
 
     <div class="mt-8 border-t border-border pt-6">
-        <h3 class="text-base font-semibold text-text-primary">Autores e categorias</h3>
+        <h3 class="font-display text-base font-semibold text-text-primary">Autores e categorias</h3>
         <p class="mt-1 text-sm text-text-secondary">
             Na primeira conexão bem-sucedida, as categorias do WordPress são importadas
             automaticamente (casadas por nome com as que já existirem). Depois disso você
             gerencia as categorias na aba <a href="/sites/<?= View::e($site['id']) ?>/categories"
-            class="text-cyan hover:text-cyan-light">Categorias</a> — excluir e adicionar é manual.
+            class="text-cyan hover:text-cyan-bright">Categorias</a> — excluir e adicionar é manual.
             Os autores são um espelho do WordPress; ressincronize quando mudarem lá.
         </p>
 

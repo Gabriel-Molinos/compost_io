@@ -8,9 +8,9 @@ use App\View;
 /** @var list<array<string, mixed>> $users */
 ?>
 <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-text-primary">Usuários</h1>
+    <h1 class="font-display text-2xl font-bold text-text-primary">Usuários</h1>
     <a href="/users/new"
-       class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+       class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
         Novo usuário
     </a>
 </div>
@@ -45,7 +45,7 @@ use App\View;
                     </td>
                     <td class="px-4 py-3 text-right">
                         <a href="/users/<?= View::e($user['id']) ?>/edit"
-                           class="text-cyan hover:text-cyan-light">Editar</a>
+                           class="text-cyan hover:text-cyan-bright">Editar</a>
                     </td>
                 </tr>
             <?php endforeach; ?>

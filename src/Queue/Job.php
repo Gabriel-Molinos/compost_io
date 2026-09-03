@@ -12,6 +12,14 @@ namespace App\Queue;
  */
 final class Job
 {
+    /**
+     * Tentativas antes de um job ir pro dead-letter (`RedisQueueDriver::fail()`)
+     * — mesma cardinalidade do retry de step da IA (§96). Pública pra um
+     * handler poder saber, na própria falha, se é a última chance (ex.:
+     * `ScheduleJobHandlers` marca `schedules.FAILED` só nesse ponto).
+     */
+    public const MAX_ATTEMPTS = 3;
+
     /** @param array<string, scalar|null> $payload */
     public function __construct(
         public readonly string $type,

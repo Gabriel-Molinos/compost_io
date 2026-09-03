@@ -216,6 +216,27 @@ $authorOptions = static function (array $authors, int $selectedId): string {
             </form>
         </div>
     </section>
+<?php elseif ($article['status'] === 'SCHEDULED' && $schedule === null): ?>
+    <section id="agendar" class="mt-5 rounded-lg border border-danger/40 bg-danger/10 p-4">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-danger">Falha no envio ao WordPress</h3>
+        <p role="alert" class="mt-1 text-sm text-text-secondary">
+            <?php if ($lastSchedule !== null): ?>
+                Tentativa automática de publicação (agendada pra
+                <?= View::e(date('d/m/Y H:i', strtotime((string) $lastSchedule['scheduled_date']))) ?>) esgotou as
+                tentativas.
+            <?php else: ?>
+                O envio ao WordPress falhou.
+            <?php endif; ?>
+            Cancele e agende de novo pra tentar mais uma vez.
+        </p>
+        <form method="post" action="<?= $scheduleBase ?>/schedule/cancel" class="mt-3"
+              onsubmit="return confirm('Cancelar o agendamento? O artigo volta para aprovado.');">
+            <?= Csrf::field() ?>
+            <button type="submit" class="rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
+                Cancelar agendamento
+            </button>
+        </form>
+    </section>
 <?php elseif ($article['status'] === 'PUBLISHED' && $lastSchedule !== null && !empty($lastSchedule['wordpress_post_id'])): ?>
     <?php $postUrl = rtrim((string) ($site['wordpress_url'] ?? ''), '/') . '/?p=' . (int) $lastSchedule['wordpress_post_id']; ?>
     <section id="agendar" class="mt-5 rounded-lg border border-success/40 bg-surface p-4">

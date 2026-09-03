@@ -90,6 +90,35 @@ final class ScheduleService
         return $stmt->fetchAll();
     }
 
+    /**
+     * Agendamentos `PENDING` cuja data já chegou — o que o worker automático
+     * (Fase 9, `bin/worker.php`) despacha como `schedule.publish`. Antes disso,
+     * o envio ao WordPress dependia de alguém lembrar de clicar "Enviar".
+     *
+     * @return list<array{id: int, article_id: int, site_id: int}>
+     */
+    public function dueForPublish(): array
+    {
+        $stmt = Connection::get()->query(
+            "SELECT s.id, s.article_id, a.site_id
+             FROM schedules s
+             JOIN articles a ON a.id = s.article_id AND a.deleted_at IS NULL
+             WHERE s.status = 'PENDING' AND s.scheduled_date <= NOW()"
+        );
+
+        return array_map(
+            static fn (array $r): array => ['id' => (int) $r['id'], 'article_id' => (int) $r['article_id'], 'site_id' => (int) $r['site_id']],
+            $stmt->fetchAll()
+        );
+    }
+
+    /** Marca um agendamento como `FAILED` — envio ao WordPress esgotou as tentativas (Fase 9). Nunca falha silenciosamente. */
+    public function markFailed(int $scheduleId): void
+    {
+        Connection::get()->prepare("UPDATE schedules SET status = 'FAILED' WHERE id = :id AND status = 'PENDING'")
+            ->execute(['id' => $scheduleId]);
+    }
+
     /** @return list<array<string, mixed>> autores ativos do site */
     public function authorsForSite(int $siteId): array
     {

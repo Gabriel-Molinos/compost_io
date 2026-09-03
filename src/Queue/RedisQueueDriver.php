@@ -19,9 +19,6 @@ use Predis\Client;
  */
 final class RedisQueueDriver implements QueueDriver
 {
-    /** Tentativas antes de mandar pro dead-letter — mesma cardinalidade do retry de step da IA (§96). */
-    private const MAX_ATTEMPTS = 3;
-
     private Client $client;
 
     /** @param int $reserveTimeoutSeconds timeout do BRPOPLPUSH — worker usa isso pra checar sinais de parada entre tentativas */
@@ -60,7 +57,7 @@ final class RedisQueueDriver implements QueueDriver
         $this->client->lrem($this->config->processingKey(), 1, $job->toJson());
 
         $next = $job->withIncrementedAttempts();
-        if ($next->attempts >= self::MAX_ATTEMPTS) {
+        if ($next->attempts >= Job::MAX_ATTEMPTS) {
             $this->client->lpush($this->config->deadLetterKey(), [json_encode(
                 ['job' => json_decode($next->toJson(), true), 'error' => $error, 'failed_at' => date('c')],
                 JSON_THROW_ON_ERROR

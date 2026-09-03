@@ -30,14 +30,27 @@ http-equiv="refresh">`, sem JS). A partir de `ERROR` dá pra "Tentar de novo"
 **Retry/dead-letter no nível de job (Fase 9):** `RedisQueueDriver` segue o
 padrão "fila confiável" do Redis — `reserve()` usa `BRPOPLPUSH` (move pra
 `processingKey`, não remove) em vez de `BRPOP`; sucesso chama `ack()` (tira
-de `processingKey`); falha chama `fail()` (reenfileira até 3 tentativas,
-depois `deadLetterKey`). Se o worker morrer no meio de um job, ele fica
-visível em `processingKey` — recuperar com `bin/queue_requeue_stuck.php`
-(sem timeout automático, é manual por decisão de escopo). Importante:
-`bin/worker.php` distingue `PipelineException` (falha definitiva do
-pipeline, já tratada — `ack()`, nunca `fail()`, senão reenfileirar rodaria a
-IA de novo do zero, custo real) de qualquer outra exceção (bug/infra — aí
-sim `fail()`, candidata a retry de job de verdade).
+de `processingKey`); falha chama `fail()` (reenfileira até `Job::MAX_ATTEMPTS`
+tentativas — constante pública, 3 —, depois `deadLetterKey`). Se o worker
+morrer no meio de um job, ele fica visível em `processingKey` — recuperar
+com `bin/queue_requeue_stuck.php` (sem timeout automático, é manual por
+decisão de escopo). Importante: `bin/worker.php` distingue `PipelineException`
+(falha definitiva do pipeline, já tratada — `ack()`, nunca `fail()`, senão
+reenfileirar rodaria a IA de novo do zero, custo real) de qualquer outra
+exceção (bug/infra — aí sim `fail()`, candidata a retry de job de verdade).
+
+**Publicação agendada automática (Fase 9):** `bin/worker.php` varre
+`ScheduleService::dueForPublish()` a cada ~60s (dentro do próprio laço,
+independente de `reserve()` ter achado job) e despacha `schedule.publish`
+por agendamento `PENDING` vencido — `App\Queue\ScheduleJobHandlers` chama
+`WordPressPublishService::publish()` de verdade. Falha de API do WordPress
+segue o `fail()` normal (retry automático); na última tentativa antes do
+dead-letter, o handler marca `schedules.status = 'FAILED'` (valor do ENUM já
+existia, nunca usado até agora) — visível na página do artigo, com botão
+"Cancelar agendamento" pra recomeçar. Uma guarda em memória no worker evita
+despachar o mesmo agendamento duas vezes entre varreduras (o schedule só sai
+de `PENDING`, e portanto de `dueForPublish()`, quando o job de fato termina —
+`PUBLISHED` ou `FAILED`).
 
 ## Peças
 
@@ -50,6 +63,7 @@ sim `fail()`, candidata a retry de job de verdade).
 | `App\Queue\RedisConfig` | lê `REDIS_URL` do `.env` (`fromEnv()`, mesmo padrão de `GeminiConfig`); deriva `processingKey()`/`deadLetterKey()` de `queueKey` |
 | `App\Queue\Queue` | registra handlers por tipo, `dispatch()` enfileira, `execute()` roda, `reserve()`/`ack()`/`fail()` delegam ao driver |
 | `App\Queue\ArticleJobHandlers` | registra `article.generate`/`article.regenerate` numa `Queue` — usado pelo controller (driver sync) e pelo worker (driver redis); marca `ERROR` em falha definitiva |
+| `App\Queue\ScheduleJobHandlers` | registra `schedule.publish` — só usado pelo worker (a varredura que despacha só roda lá); marca `schedules.FAILED` na última tentativa |
 | `App\Queue\RetryPolicy` | 3 tentativas; backoff 30s→2min→10min em produção, 1s→2s→4s fora |
 | `App\Queue\RetryRunner` | roda uma operação repetindo só em `AIException::$retryable` |
 | `App\Services\AiExecutionService` | ciclo de `ai_executions`: QUEUED→RUNNING→RETRYING→SUCCESS/FAILED |
@@ -99,7 +113,14 @@ de job (Fase 9) validado contra o Redis local: sucesso limpa `processingKey`;
 3 falhas seguidas incrementam `attempts` (0→1→2→3) e caem no dead-letter; job
 "preso" (reserve sem ack/fail, simulando worker morto) recuperado com
 `bin/queue_requeue_stuck.php --dry-run` (só lista) e sem a flag (move de
-volta, `reserve()` seguinte pega o mesmo job de novo).
+volta, `reserve()` seguinte pega o mesmo job de novo). Publicação agendada
+automática validada com dados sintéticos: `dueForPublish()` encontra
+agendamento vencido e ignora um no futuro; artigo propositalmente fora do
+status `SCHEDULED` faz `WordPressPublishService::publish()` falhar na
+checagem local (sem tocar o WordPress real) — confirmadas as 3 tentativas,
+o dead-letter e `schedules.status = FAILED`; banner de erro na página do
+artigo renderizado nos 3 cenários (com/sem agendamento anterior, e o caso
+que não deve aparecer).
 
 ## Próximo (não implementado)
 

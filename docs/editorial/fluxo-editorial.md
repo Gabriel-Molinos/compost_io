@@ -337,7 +337,7 @@ A integração deverá conseguir:
 
 Cada site terá sua própria conexão.
 
-> **Implementado na Fase 7.5.** `SCHEDULED → PUBLISHED` (`WordPressPublishService`). Post como `future` (o WordPress publica na data) ou `publish` se a data já passou. Sobe a imagem destacada e as de corpo (WebP, distribuídas entre as seções), define categoria/autor/slug/excerpt, resolve links internos. "Atualizar no WordPress" e "Retirar do WordPress" (post → lixeira). Envio por **botão manual** — worker automático na data é pendência futura.
+> **Implementado na Fase 7.5.** `SCHEDULED → PUBLISHED` (`WordPressPublishService`). Post como `future` (o WordPress publica na data) ou `publish` se a data já passou. Sobe a imagem destacada e as de corpo (WebP, distribuídas entre as seções), define categoria/autor/slug/excerpt, resolve links internos. "Atualizar no WordPress" e "Retirar do WordPress" (post → lixeira). Envio por botão manual **ou automático** (Fase 9: `bin/worker.php` varre `schedules` `PENDING` vencidos a cada ~60s e publica sozinho — `ScheduleJobHandlers`/`ScheduleService::dueForPublish()`; falha esgotada vira `schedules.status = FAILED`, visível na página do artigo).
 
 ### 32. Relatórios
 

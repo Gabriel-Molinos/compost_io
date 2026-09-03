@@ -10,23 +10,34 @@ use App\View;
 /** @var string $content */
 /** @var string $title */
 /** @var int|null $metaRefresh */
+/** @var array<string,mixed>|null $site  — setado por sites/_tabs.php quando a página é de um site */
+/** @var list<array{0:string,1:string,2:string,3:bool}>|null $tabs — idem */
 
 $authUser = AuthService::user();
 $currentPath = rtrim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/', '/') ?: '/';
 $flashSuccess = Session::pullFlash('success');
 $flashError = Session::pullFlash('error');
 
-$nav = [['/', 'Início']];
+// $site/$tabs/$activeTab só existem quando a View (via sites/_tabs.php) já
+// rodou dentro deste mesmo escopo de require — mesma técnica que traz
+// $content até aqui. Nas páginas fora de um site (Início, Sites, Usuários,
+// login) eles simplesmente não existem; ??= evita "undefined variable".
+$site ??= null;
+$tabs ??= null;
+$activeTab ??= null;
+
+$globalNav = [['/', 'Início']];
 if ($authUser !== null) {
     if ($authUser['role'] === 'ADMIN') {
-        $nav[] = ['/users', 'Usuários'];
+        $globalNav[] = ['/users', 'Usuários'];
     }
-    $nav[] = ['/sites', 'Sites'];
+    $globalNav[] = ['/sites', 'Sites'];
 }
 
-$navClass = static fn (string $href): string => $href === $currentPath || ($href !== '/' && str_starts_with($currentPath, $href))
-    ? 'text-text-primary'
-    : 'text-text-secondary hover:text-text-primary';
+$isActive = static fn (string $href): bool => $href === $currentPath
+    || ($href !== '/' && str_starts_with($currentPath, $href));
+
+$hasSiteNav = $authUser !== null && $site !== null && $tabs !== null;
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -57,6 +68,7 @@ $navClass = static fn (string $href): string => $href === $currentPath || ($href
             position: absolute; left: 0; top: 0; transform: translateY(-120%);
             background: #00D0F0; color: #050B0F; padding: .5rem 1rem; font-weight: 600;
             transition: transform .15s ease;
+            z-index: 50;
         }
         .skip-link:focus { transform: translateY(0); }
     </style>
@@ -64,54 +76,80 @@ $navClass = static fn (string $href): string => $href === $currentPath || ($href
 <body class="app-bg min-h-screen text-text-primary font-sans antialiased">
     <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
 
-    <div class="mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-8">
-        <header class="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
-            <div class="flex items-center gap-6">
-                <a href="/" class="flex items-center gap-3">
-                    <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-8 w-8">
-                    <img src="/assets/brand/wordmark.png" alt="COMPOST" class="h-5 w-auto">
-                </a>
-                <?php if ($authUser !== null): ?>
-                    <nav aria-label="Principal" class="flex gap-4 text-sm">
-                        <?php foreach ($nav as [$href, $label]): ?>
-                            <a href="<?= View::e($href) ?>" class="<?= $navClass($href) ?>"><?= View::e($label) ?></a>
-                        <?php endforeach; ?>
-                    </nav>
-                <?php endif; ?>
+    <div class="flex min-h-screen">
+        <!-- Sidebar fixa (telas ≥ lg) -->
+        <aside class="hidden w-64 shrink-0 flex-col border-r border-border bg-surface/60 px-4 py-6 lg:flex">
+            <a href="/" class="flex items-center gap-3 px-2">
+                <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-8 w-8">
+                <img src="/assets/brand/wordmark.png" alt="COMPOST" class="h-5 w-auto">
+            </a>
+
+            <div class="mt-8 flex-1 overflow-y-auto">
+                <?php require __DIR__ . '/_nav.php'; ?>
             </div>
 
             <?php if ($authUser !== null): ?>
-                <div class="flex items-center gap-3 text-sm">
-                    <span class="hidden text-text-secondary sm:inline"><?= View::e($authUser['email']) ?></span>
-                    <form method="post" action="/logout">
+                <div class="mt-6 border-t border-border pt-4">
+                    <p class="truncate px-2 text-xs text-text-secondary"><?= View::e($authUser['email']) ?></p>
+                    <form method="post" action="/logout" class="mt-2">
                         <?= Csrf::field() ?>
                         <button type="submit"
-                                class="rounded-md border border-border px-3 py-1.5 text-text-secondary hover:border-cyan hover:text-text-primary">
+                                class="w-full rounded-md border border-border px-3 py-1.5 text-left text-sm text-text-secondary hover:border-cyan hover:text-text-primary">
                             Sair
                         </button>
                     </form>
                 </div>
             <?php endif; ?>
-        </header>
+        </aside>
 
-        <?php if ($flashSuccess !== null): ?>
-            <p role="status" class="mb-6 rounded-md border border-success/40 bg-success/10 px-3 py-2 text-sm text-success">
-                <?= View::e($flashSuccess) ?>
-            </p>
-        <?php endif; ?>
-        <?php if ($flashError !== null): ?>
-            <p role="alert" class="mb-6 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
-                <?= View::e($flashError) ?>
-            </p>
-        <?php endif; ?>
+        <div class="flex min-w-0 flex-1 flex-col">
+            <!-- Topo compacto (telas < lg) — a navegação mora num <details>, sem depender de JS. -->
+            <header class="flex items-center justify-between gap-4 border-b border-border px-4 py-3 lg:hidden">
+                <a href="/" class="flex items-center gap-3">
+                    <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-7 w-7">
+                    <img src="/assets/brand/wordmark.png" alt="COMPOST" class="h-4 w-auto">
+                </a>
+                <?php if ($authUser !== null): ?>
+                    <details class="relative">
+                        <summary class="rounded-md border border-border px-3 py-1.5 text-sm text-text-secondary">Menu</summary>
+                        <div class="absolute right-0 z-40 mt-2 w-64 rounded-lg border border-border bg-surface p-4 shadow-2xl">
+                            <?php require __DIR__ . '/_nav.php'; ?>
+                            <div class="mt-6 border-t border-border pt-4">
+                                <p class="truncate px-2 text-xs text-text-secondary"><?= View::e($authUser['email']) ?></p>
+                                <form method="post" action="/logout" class="mt-2">
+                                    <?= Csrf::field() ?>
+                                    <button type="submit"
+                                            class="w-full rounded-md border border-border px-3 py-1.5 text-left text-sm text-text-secondary hover:border-cyan">
+                                        Sair
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </details>
+                <?php endif; ?>
+            </header>
 
-        <main id="conteudo" class="flex-1">
-            <?= $content ?>
-        </main>
+            <main id="conteudo" class="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+                <?php if ($flashSuccess !== null): ?>
+                    <p role="status" class="mb-6 rounded-md border border-success/40 bg-success/10 px-3 py-2 text-sm text-success">
+                        <?= View::e($flashSuccess) ?>
+                    </p>
+                <?php endif; ?>
+                <?php if ($flashError !== null): ?>
+                    <p role="alert" class="mb-6 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
+                        <?= View::e($flashError) ?>
+                    </p>
+                <?php endif; ?>
 
-        <footer class="mt-12 border-t border-border pt-6 text-xs text-text-muted">
-            COMPOST · <?= View::e(date('Y')) ?>
-        </footer>
+                <div class="mx-auto max-w-6xl">
+                    <?= $content ?>
+                </div>
+            </main>
+
+            <footer class="border-t border-border px-4 py-6 text-xs text-text-muted sm:px-6 lg:px-10">
+                COMPOST · <?= View::e(date('Y')) ?>
+            </footer>
+        </div>
     </div>
 </body>
 </html>

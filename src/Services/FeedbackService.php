@@ -28,6 +28,21 @@ final class FeedbackService
         return (int) $pdo->lastInsertId();
     }
 
+    /** Um feedback específico do site — usado ao promover pra memória editorial curada (Fase 9). @return array<string, mixed>|null */
+    public function findForSite(int $siteId, int $feedbackId): ?array
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT f.id, f.reason, f.justification
+             FROM feedback f
+             JOIN articles a ON a.id = f.article_id
+             WHERE f.id = :f AND a.site_id = :s
+             LIMIT 1'
+        );
+        $stmt->execute(['f' => $feedbackId, 's' => $siteId]);
+
+        return $stmt->fetch() ?: null;
+    }
+
     /** @return list<array<string, mixed>> */
     public function forArticle(int $articleId): array
     {
@@ -64,7 +79,7 @@ final class FeedbackService
     {
         $limit = max(1, min(50, $limit));
         $stmt = Connection::get()->prepare(
-            "SELECT f.reason, f.justification, f.created_at
+            "SELECT f.id, f.reason, f.justification, f.created_at
              FROM feedback f
              JOIN articles a ON a.id = f.article_id
              WHERE a.site_id = :s

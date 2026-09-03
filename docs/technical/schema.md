@@ -104,6 +104,7 @@ Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mant
 - `0009` — nova tabela **`editorial_insights`**: histórico das análises do Centro de Inteligência Editorial por site (uma chamada paga ao Gemini por geração). Fase 8.3.
 - `0010` — `articles.status`: +`ERROR` no ENUM — falha técnica definitiva do pipeline rodando via fila (retries esgotados). Fase 9.1b.
 - `0011` — índices para os filtros de período dos relatórios: `articles (site_id, created_at)` / `(site_id, reviewed_at)`, `ai_executions (article_id, cost)` / `(created_at)`, `feedback (created_at)`. Só índice, nenhuma coluna nova. Fase 9 (performance) — levantamento mostrou scan de `ai_executions` inteira (todos os sites) na consulta de custo máximo global (`CostBudgetService`).
+- `0012` — nova tabela **`editorial_memory`**: "lições" duradouras de memória editorial, escritas por humano (Redator-Chefe/Admin), opcionalmente promovidas de um `feedback` existente. Fase 9 — fecha a pendência §87.2 abaixo.
 
 ### 87.1 Autenticação — sem tabela
 
@@ -114,7 +115,7 @@ O login (RF-001) usa **sessão nativa do PHP** ([requisitos §64.2](requisitos.m
 Não entraram na migration 0001 — dependem de decisão do responsável:
 
 - **`article_lineages` / `content_slots`** — a Fase 6.2 usa `articles.lineage_id` de forma **auto-referente** (o 1º artigo da cadeia aponta para si; regeneração cria nova linha com o mesmo `lineage_id` e `attempt_number + 1`). Cobre "3 tentativas por linhagem → `BLOCKED`". O conceito de **múltiplas linhagens por slot** ("2 linhagens completas → `BLOCKED`") foi adiado — se for necessário, aí sim modelar Slot → Linhagem → Artigo.
-- **`editorial_memory`** — a Fase 6.3 **não** criou tabela: a "memória editorial" é derivada em tempo de geração do próprio histórico (`feedback` recente do site + artigos já aprovados), injetada no prompt via `PromptBuilder::memoryLayer()`. Uma tabela de "lições curadas/resumidas pela IA" continua possível para a Fase 8 (Inteligência Editorial).
+- ~~`editorial_memory`~~ — **implementado** (Fase 9, migration `0012`): a Fase 6.3 não tinha criado tabela — a "memória editorial" era só derivada em tempo de geração (`feedback` recente + artigos aprovados). Agora existe `editorial_memory` (aba **Memória** do site, `EditorialMemoryController`/`EditorialMemoryService`): lições duradouras, escritas sempre por humano — **nunca geradas pela IA sozinha** (Regra de não-invenção, §58) — somadas (não substituindo) ao que já entrava via `ArticlePipeline::siteMemoryContext()`.
 - ~~`site_ai_budgets`~~ — **não precisou** (Fase 9.2): o limite de custo de IA por site/mês ([seção 95](testes-e-observabilidade.md#95-controle-de-custo-de-ia-proposta)) é calculado dinamicamente a cada carregamento (`CostBudgetService`), sem guardar número fixo em tabela.
 - ~~`articles.status = 'ERROR'`~~ — **implementado** (Fase 9.1b, migration `0010`): estado para falha técnica definitiva do pipeline rodando via fila ([seção 96](testes-e-observabilidade.md#96-política-de-retry--falha-da-ia-proposta)). Motivo vem de `ai_executions.error_message`, sem coluna nova.
 

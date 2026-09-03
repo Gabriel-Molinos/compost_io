@@ -315,6 +315,11 @@ Um artigo rejeitado pode ser regenerado. Cada tentativa deve ser registrada.
 > `BLOCKED`. O conceito de "múltiplas linhagens por slot" foi adiado (ver
 > [schema §87.2](../technical/schema.md#872-pendências-de-modelagem-proposta)).
 
+> **Implementado (Fase 9):** além do feedback recente derivado em tempo real (acima), o site
+> pode ter uma **memória editorial curada** — lições duradouras escritas por um humano
+> (Redator-Chefe/Admin), nunca pela IA — na aba **Memória**. Entram somadas em todo prompt
+> de geração/regeneração, não só na regeneração. Ver [schema §87.2](../technical/schema.md#872-pendências-de-modelagem-proposta) (`editorial_memory`).
+
 ### 30. Agendamento
 
 Depois da aprovação, o redator escolhe: imagem, categoria, autor, data, horário. Depois a plataforma envia ao WordPress.

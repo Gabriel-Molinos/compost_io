@@ -20,6 +20,7 @@ use App\Services\ArticleNoteService;
 use App\Services\ArticleReviewService;
 use App\Services\ArticleService;
 use App\Services\CategoryService;
+use App\Services\EditorialMemoryService;
 use App\Services\FeedbackService;
 use App\Services\ImageService;
 use App\Services\PromptBuilder;
@@ -61,6 +62,7 @@ final class ArticlePipeline
     private ArticleNoteService $notes;
     private CategoryService $categories;
     private FeedbackService $feedback;
+    private EditorialMemoryService $memory;
     private ImageService $imageStore;
     private ?ImageProvider $imageProvider;
     private RetryRunner $retry;
@@ -83,6 +85,7 @@ final class ArticlePipeline
         $this->notes = $notes ?? new ArticleNoteService();
         $this->categories = $categories ?? new CategoryService();
         $this->feedback = new FeedbackService();
+        $this->memory = new EditorialMemoryService();
         $this->imageStore = $imageStore ?? new ImageService();
         // Instanciado sob demanda em generateImages() — não exige IMAGE_API_KEY
         // quando o pipeline roda sem a etapa de imagem (ex.: testes).
@@ -530,18 +533,31 @@ final class ArticlePipeline
     }
 
     /**
-     * "Memória editorial" do site (fatia 6.3): rejeições recentes + artigos já
-     * aprovados. Entra em toda geração para a IA aprender com o histórico do site.
+     * "Memória editorial" do site: rejeições recentes (fatia 6.3) + artigos já
+     * aprovados + lições curadas (Fase 9, `EditorialMemoryService`) — essas
+     * últimas escritas sempre por um humano, nunca pela IA (Regra de
+     * não-invenção, §58), e duradouras (não somem quando saem da janela das
+     * últimas 8 rejeições). Entra em toda geração para a IA aprender com o
+     * histórico do site.
      */
     private function siteMemoryContext(int $siteId): string
     {
         $rejections = $this->feedback->recentForSite($siteId, 8);
         $approved = $this->articles->recentApprovedForSite($siteId, 10);
-        if ($rejections === [] && $approved === []) {
+        $curated = $this->memory->activeForSite($siteId);
+        if ($rejections === [] && $approved === [] && $curated === []) {
             return '';
         }
 
         $lines = ['Aprendizado do histórico deste site — leve em conta antes de decidir tema, ângulo e tom:'];
+
+        if ($curated !== []) {
+            $lines[] = '';
+            $lines[] = 'Lições fixas deste site (curadas pelo Redator-Chefe/Admin):';
+            foreach ($curated as $c) {
+                $lines[] = '- ' . trim((string) $c['lesson']);
+            }
+        }
 
         if ($rejections !== []) {
             $lines[] = '';

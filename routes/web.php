@@ -6,6 +6,7 @@ use App\Controllers\AiPlaygroundController;
 use App\Controllers\AuthController;
 use App\Controllers\CalendarController;
 use App\Controllers\CategoryController;
+use App\Controllers\EditorialMemoryController;
 use App\Controllers\EditorialRuleController;
 use App\Controllers\GoalController;
 use App\Controllers\HomeController;
@@ -65,6 +66,13 @@ return static function (Router $router): void {
     $router->add('GET',  '/sites/{id}/rules/{rid}/edit',  [EditorialRuleController::class, 'edit'],     auth: true);
     $router->add('POST', '/sites/{id}/rules/{rid}',       [EditorialRuleController::class, 'update'],   auth: true);
     $router->add('POST', '/sites/{id}/rules/{rid}/delete', [EditorialRuleController::class, 'destroy'], auth: true);
+
+    $router->add('GET',  '/sites/{id}/memory',              [EditorialMemoryController::class, 'index'],   auth: true);
+    $router->add('POST', '/sites/{id}/memory',               [EditorialMemoryController::class, 'store'],   auth: true);
+    $router->add('POST', '/sites/{id}/memory/promote',       [EditorialMemoryController::class, 'promote'], auth: true);
+    $router->add('POST', '/sites/{id}/memory/{mid}',         [EditorialMemoryController::class, 'update'],  auth: true);
+    $router->add('POST', '/sites/{id}/memory/{mid}/toggle',  [EditorialMemoryController::class, 'toggle'],  auth: true);
+    $router->add('POST', '/sites/{id}/memory/{mid}/delete',  [EditorialMemoryController::class, 'destroy'], auth: true);
 
     // Metas editoriais do site
     $router->add('GET',  '/sites/{id}/goals',             [GoalController::class, 'index'],   auth: true);

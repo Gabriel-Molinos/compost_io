@@ -12,6 +12,7 @@ $tabs = [
     ['overview',   'Visão geral', '/sites/' . $site['id'],                true],
     ['categories', 'Categorias',  '/sites/' . $site['id'] . '/categories', true],
     ['rules',      'Interesses',  '/sites/' . $site['id'] . '/rules',      true],
+    ['memory',     'Memória',     '/sites/' . $site['id'] . '/memory',     true],
     ['goals',      'Metas',       '/sites/' . $site['id'] . '/goals',      true],
     ['production', 'Produção',    '/sites/' . $site['id'] . '/production', true],
     ['calendar',   'Calendário',  '/sites/' . $site['id'] . '/calendar',   true],

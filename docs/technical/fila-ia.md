@@ -23,18 +23,32 @@ Falha definitiva do pipeline (retries esgotados) marca o artigo como
 `ERROR` (migration `0010`) — visível na página do artigo, com o motivo vindo
 do `ai_executions.error_message` do passo que falhou. Enquanto o artigo está
 `PLANNED`/`IN_PROGRESS`, a página se atualiza sozinha (`<meta
-http-equiv="refresh">`, sem JS).
+http-equiv="refresh">`, sem JS). A partir de `ERROR` dá pra "Tentar de novo"
+(mesma mecânica de linhagem/tentativas da regeneração por rejeição, §29 —
+`prepareRegenerate()` aceita os dois status).
+
+**Retry/dead-letter no nível de job (Fase 9):** `RedisQueueDriver` segue o
+padrão "fila confiável" do Redis — `reserve()` usa `BRPOPLPUSH` (move pra
+`processingKey`, não remove) em vez de `BRPOP`; sucesso chama `ack()` (tira
+de `processingKey`); falha chama `fail()` (reenfileira até 3 tentativas,
+depois `deadLetterKey`). Se o worker morrer no meio de um job, ele fica
+visível em `processingKey` — recuperar com `bin/queue_requeue_stuck.php`
+(sem timeout automático, é manual por decisão de escopo). Importante:
+`bin/worker.php` distingue `PipelineException` (falha definitiva do
+pipeline, já tratada — `ack()`, nunca `fail()`, senão reenfileirar rodaria a
+IA de novo do zero, custo real) de qualquer outra exceção (bug/infra — aí
+sim `fail()`, candidata a retry de job de verdade).
 
 ## Peças
 
 | Classe | Papel |
 |---|---|
-| `App\Queue\Job` | `{type, payload, id}` — unidade de trabalho; `toJson()`/`fromJson()` pra serializar |
-| `App\Queue\QueueDriver` | interface do transporte (`push`, `reserve`, `name`) |
-| `App\Queue\SyncQueueDriver` | executa o job no `push()`; `reserve()` não se aplica (lança) |
-| `App\Queue\RedisQueueDriver` | `push()` = `LPUSH`; `reserve()` = `BRPOP` bloqueante (Fase 9.1) |
-| `App\Queue\RedisConfig` | lê `REDIS_URL` do `.env` (`fromEnv()`, mesmo padrão de `GeminiConfig`) |
-| `App\Queue\Queue` | registra handlers por tipo, `dispatch()` enfileira, `execute()` roda, `reserve()` delega ao driver |
+| `App\Queue\Job` | `{type, payload, id, attempts}` — unidade de trabalho; `toJson()`/`fromJson()` pra serializar |
+| `App\Queue\QueueDriver` | interface do transporte (`push`, `reserve`, `ack`, `fail`, `name`) |
+| `App\Queue\SyncQueueDriver` | executa o job no `push()`; `reserve`/`ack`/`fail` não se aplicam (lançam) |
+| `App\Queue\RedisQueueDriver` | `push()` = `LPUSH`; `reserve()` = `BRPOPLPUSH` (move pra `processingKey`); `ack()`/`fail()` fecham o ciclo (retry até 3x, depois `deadLetterKey`) |
+| `App\Queue\RedisConfig` | lê `REDIS_URL` do `.env` (`fromEnv()`, mesmo padrão de `GeminiConfig`); deriva `processingKey()`/`deadLetterKey()` de `queueKey` |
+| `App\Queue\Queue` | registra handlers por tipo, `dispatch()` enfileira, `execute()` roda, `reserve()`/`ack()`/`fail()` delegam ao driver |
 | `App\Queue\ArticleJobHandlers` | registra `article.generate`/`article.regenerate` numa `Queue` — usado pelo controller (driver sync) e pelo worker (driver redis); marca `ERROR` em falha definitiva |
 | `App\Queue\RetryPolicy` | 3 tentativas; backoff 30s→2min→10min em produção, 1s→2s→4s fora |
 | `App\Queue\RetryRunner` | roda uma operação repetindo só em `AIException::$retryable` |
@@ -80,11 +94,17 @@ contra o site Gavsy: uma com `QUEUE_DRIVER=sync` (roda inline, igual antes —
 296s, terminou `IN_REVIEW`) e uma com `QUEUE_DRIVER=redis` + `bin/worker.php`
 rodando (dispatch em 0,06s, artigo ficou `PLANNED` até o worker processar,
 terminou `IN_REVIEW` em ~3min — planning→research→writing→seo→compliance→
-review, cada passo visível em `ai_executions` em tempo real).
+review, cada passo visível em `ai_executions` em tempo real). Retry/dead-letter
+de job (Fase 9) validado contra o Redis local: sucesso limpa `processingKey`;
+3 falhas seguidas incrementam `attempts` (0→1→2→3) e caem no dead-letter; job
+"preso" (reserve sem ack/fail, simulando worker morto) recuperado com
+`bin/queue_requeue_stuck.php --dry-run` (só lista) e sem a flag (move de
+volta, `reserve()` seguinte pega o mesmo job de novo).
 
 ## Próximo (não implementado)
 
 - Redis gerenciado em produção (hoje só há instância local de dev) +
   `bin/worker.php` rodando sob `supervisor`.
-- Retry/dead-letter no nível de *job* (falha do handler inteiro) — distinto do
-  retry de step da IA (`RetryRunner`), que já existe.
+- Timeout/lease automático pra jobs presos em `processingKey` — hoje a
+  recuperação é manual (`bin/queue_requeue_stuck.php`), decisão de escopo
+  registrada ao abrir o retry/dead-letter de job.

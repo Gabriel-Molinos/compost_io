@@ -33,4 +33,20 @@ final class RedisConfig
 
         return new self($url);
     }
+
+    /**
+     * Lista "em processamento" (padrão fila confiável do Redis, Fase 9):
+     * `reserve()` move o job pra cá em vez de descartar — sobrevive ao worker
+     * morrer no meio do processamento (recuperável via `bin/queue_requeue_stuck.php`).
+     */
+    public function processingKey(): string
+    {
+        return $this->queueKey . ':processing';
+    }
+
+    /** Jobs que esgotaram as tentativas de retry — nunca perdidos silenciosamente (Fase 9). */
+    public function deadLetterKey(): string
+    {
+        return $this->queueKey . ':dead';
+    }
 }

@@ -31,6 +31,18 @@ final class SyncQueueDriver implements QueueDriver
         throw new \LogicException('SyncQueueDriver não tem fila para reservar — jobs rodam inline no push().');
     }
 
+    /** Não se aplica: sem `reserve()`, não há o que confirmar. */
+    public function ack(Job $job): void
+    {
+        throw new \LogicException('SyncQueueDriver não usa ack() — jobs rodam inline no push().');
+    }
+
+    /** Não se aplica: uma falha no driver síncrono já propaga na hora, no `push()`. */
+    public function fail(Job $job, string $error): void
+    {
+        throw new \LogicException('SyncQueueDriver não usa fail() — a exceção já propaga no push().');
+    }
+
     public function name(): string
     {
         return 'sync';

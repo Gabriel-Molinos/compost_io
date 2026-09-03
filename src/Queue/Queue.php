@@ -50,6 +50,18 @@ final class Queue
         return $this->driver->reserve();
     }
 
+    /** Confirma sucesso do job de `reserve()` — ver `QueueDriver::ack()`. */
+    public function ack(Job $job): void
+    {
+        $this->driver->ack($job);
+    }
+
+    /** Registra falha do job de `reserve()` — ver `QueueDriver::fail()`. */
+    public function fail(Job $job, string $error): void
+    {
+        $this->driver->fail($job, $error);
+    }
+
     /** Executa um job (chamado pelo driver síncrono agora, pelo worker no futuro). */
     public function execute(Job $job): void
     {

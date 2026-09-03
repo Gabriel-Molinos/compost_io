@@ -23,6 +23,15 @@ use Throwable;
  * Cada lado passa seu próprio `ArticlePipeline` (retry inline no controller,
  * `RetryPolicy::default()` no worker — ver comentário em
  * `ArticlePipeline::__construct()`).
+ *
+ * Os handlers sempre relançam a exceção (necessário pro driver síncrono —
+ * é assim que `ProductionController` sabe mostrar o erro na hora). Quem
+ * decide o que fazer com isso no driver Redis é `bin/worker.php`: uma
+ * `PipelineException` (falha definitiva do pipeline, já esgotou os retries
+ * internos de step) vira `ack()` — o artigo já foi marcado `ERROR` aqui,
+ * reenfileirar rodaria a IA de novo do zero (custo real) por algo já
+ * tratado. Qualquer OUTRA exceção (bug, infra) vira `fail()` — candidata a
+ * retry de verdade no nível de job (Fase 9).
  */
 final class ArticleJobHandlers
 {

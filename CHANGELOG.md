@@ -100,6 +100,8 @@ Cobre RF-005 e RF-015. Fase 3 (Planejamento) concluída — mergeada em `develop
 
 - 2026-09-03 — **"Tentar de novo" a partir de ERROR** ([§96](docs/technical/testes-e-observabilidade.md#96-política-de-retry--falha-da-ia-proposta)): `ArticlePipeline::prepareRegenerate()` aceita artigo em `ERROR` além de `REVISION_REQUESTED` — mesma mecânica de linhagem/tentativas da regeneração por rejeição (§29), sem feedback de rejeição (não existe pra falha técnica). Botão "Tentar de novo" na página do artigo, mesma rota `/regenerate`. Validado com artigo sintético em `ERROR` (sem custo de IA) e com um caso de status normal continuando barrado.
 
+- 2026-09-03 — **Retry/dead-letter de job na fila** ([ADR-006](docs/decisions/adr-006-fila-redis.md)): `RedisQueueDriver` vira "fila confiável" — `reserve()` usa `BRPOPLPUSH` (move pra `processingKey` em vez de remover) no lugar de `BRPOP`; `ack()`/`fail()` novos na interface `QueueDriver` fecham o ciclo (sucesso limpa `processingKey`; falha reenfileira até 3 tentativas — `Job::attempts` novo — depois cai num `deadLetterKey`, nunca perdido silenciosamente). `bin/worker.php` distingue `PipelineException` (já tratada pelo pipeline, vira `ack()` — reenfileirar rodaria a IA de novo do zero, custo real) de qualquer outra exceção (`fail()`, candidata a retry de job de verdade). Job preso por worker morto: `bin/queue_requeue_stuck.php` (`--dry-run` só lista) recupera manualmente — sem timeout automático, decisão de escopo. Validado com 3 cenários reais contra o Memurai local: sucesso, 3 falhas→dead-letter, job preso→recuperação.
+
 ## Ver também
 
 - [Roadmap](docs/product/roadmap.md) — fases que geram entradas aqui

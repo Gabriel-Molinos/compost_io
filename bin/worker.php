@@ -11,8 +11,12 @@ declare(strict_types=1);
  * que os enfileira — não há fila para este worker consumir, ele só avisa e sai.
  *
  * Com `QUEUE_DRIVER=redis`, entra no laço `reserve()`/`execute()` de verdade,
- * bloqueando em BRPOP até haver job (ver `RedisQueueDriver`). Rodar sob
- * `supervisor` em produção; manualmente (este comando) em dev.
+ * bloqueando em BRPOPLPUSH até haver job (ver `RedisQueueDriver`). Sucesso
+ * chama `ack()`; falha chama `fail()` (reenfileira até 3 tentativas, depois
+ * dead-letter — Fase 9, nunca perde job silenciosamente). Rodar sob
+ * `supervisor` em produção; manualmente (este comando) em dev. Se o worker
+ * morrer no meio de um job, ele fica visível na lista "em processamento" —
+ * recuperar com `bin/queue_requeue_stuck.php`.
  *
  * Handlers: `article.generate`/`article.regenerate` chamam `ArticlePipeline`
  * de verdade (Fase 9.1b) — a criação da linha do artigo (`prepareGenerate()`/
@@ -72,7 +76,19 @@ while (true) {
 
     try {
         $queue->execute($job);
+        $queue->ack($job);
+    } catch (\App\Services\Pipeline\PipelineException $e) {
+        // Falha definitiva do PIPELINE (já esgotou os retries internos de
+        // step — RetryRunner) — o handler já marcou o artigo como ERROR
+        // (ArticleJobHandlers). Reenfileirar rodaria a IA de novo do zero
+        // (custo real) por algo que já está tratado; ack() encerra o job
+        // aqui, sem retry nem dead-letter.
+        fwrite(STDERR, "Job {$job->id} ({$job->type}) falhou (pipeline, já tratado): " . $e->getMessage() . "\n");
+        $queue->ack($job);
     } catch (\Throwable $e) {
+        // Qualquer outra falha (bug, infra) é candidata a retry de verdade —
+        // fail() reenfileira até 3 tentativas, depois dead-letter.
         fwrite(STDERR, "Job {$job->id} ({$job->type}) falhou: " . $e->getMessage() . "\n");
+        $queue->fail($job, $e->getMessage());
     }
 }

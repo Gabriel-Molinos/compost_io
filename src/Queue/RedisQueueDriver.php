@@ -7,16 +7,24 @@ namespace App\Queue;
 use Predis\Client;
 
 /**
- * Driver de fila real via Redis (ADR-006): `push()` empilha na lista
- * `queueKey`, `reserve()` bloqueia (BRPOP) até haver job ou até o timeout.
+ * Driver de fila real via Redis (ADR-006), padrão "fila confiável" do
+ * próprio Redis (retry + dead-letter, Fase 9): `push()` empilha na lista
+ * `queueKey`; `reserve()` MOVE (não remove) o job pra `processingKey` via
+ * `BRPOPLPUSH` — se o worker morrer no meio do processamento, o job continua
+ * visível ali (recuperável com `bin/queue_requeue_stuck.php`), não some.
+ * Sucesso chama `ack()` (tira de `processingKey`); falha chama `fail()`
+ * (reenfileira até `MAX_ATTEMPTS`, depois manda pro `deadLetterKey`).
  * Consumido por `bin/worker.php`. Usa `predis/predis` — alternativa 100% PHP
  * à extensão nativa `ext-redis`, prevista no próprio ADR-006.
  */
 final class RedisQueueDriver implements QueueDriver
 {
+    /** Tentativas antes de mandar pro dead-letter — mesma cardinalidade do retry de step da IA (§96). */
+    private const MAX_ATTEMPTS = 3;
+
     private Client $client;
 
-    /** @param int $reserveTimeoutSeconds timeout do BRPOP — worker usa isso pra checar sinais de parada entre tentativas */
+    /** @param int $reserveTimeoutSeconds timeout do BRPOPLPUSH — worker usa isso pra checar sinais de parada entre tentativas */
     public function __construct(
         private readonly RedisConfig $config,
         private readonly int $reserveTimeoutSeconds = 5,
@@ -32,13 +40,36 @@ final class RedisQueueDriver implements QueueDriver
 
     public function reserve(): ?Job
     {
-        $result = $this->client->brpop([$this->config->queueKey], $this->reserveTimeoutSeconds);
-        if ($result === null) {
+        $raw = $this->client->brpoplpush($this->config->queueKey, $this->config->processingKey(), $this->reserveTimeoutSeconds);
+        if ($raw === null || $raw === false) {
             return null;
         }
 
-        // BRPOP retorna [chave, valor].
-        return Job::fromJson($result[1]);
+        return Job::fromJson($raw);
+    }
+
+    public function ack(Job $job): void
+    {
+        $this->client->lrem($this->config->processingKey(), 1, $job->toJson());
+    }
+
+    public function fail(Job $job, string $error): void
+    {
+        // Tira da lista "em processamento" — reenfileirar ou mandar pro
+        // dead-letter, mas nunca deixar duplicado em processingKey.
+        $this->client->lrem($this->config->processingKey(), 1, $job->toJson());
+
+        $next = $job->withIncrementedAttempts();
+        if ($next->attempts >= self::MAX_ATTEMPTS) {
+            $this->client->lpush($this->config->deadLetterKey(), [json_encode(
+                ['job' => json_decode($next->toJson(), true), 'error' => $error, 'failed_at' => date('c')],
+                JSON_THROW_ON_ERROR
+            )]);
+
+            return;
+        }
+
+        $this->client->lpush($this->config->queueKey, [$next->toJson()]);
     }
 
     public function name(): string

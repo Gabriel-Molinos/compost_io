@@ -21,6 +21,21 @@ interface QueueDriver
      */
     public function reserve(): ?Job;
 
+    /**
+     * Confirma que o job de {@see self::reserve()} foi processado com
+     * sucesso — tira da lista "em processamento" (padrão fila confiável do
+     * Redis: `reserve()` já moveu pra lá, não removeu de vez, pra sobreviver
+     * se o worker morrer no meio do processamento).
+     */
+    public function ack(Job $job): void;
+
+    /**
+     * O job de {@see self::reserve()} falhou: reenfileira (até um limite de
+     * tentativas) ou manda pra fila de erro (dead-letter) se já esgotou —
+     * nunca perde o job silenciosamente.
+     */
+    public function fail(Job $job, string $error): void;
+
     /** Nome curto do driver, para log. */
     public function name(): string;
 }

@@ -31,6 +31,7 @@ final class ReportController extends Controller
             'site'       => $site,
             'report'     => $report,
             'comparison' => $service->compare($report, $previous),
+            'trend'      => $service->trend((int) $site['id'], $period),
             'prevMonthName' => $this->monthLabel($current->modify('-1 month')),
             'monthName'  => $this->monthLabel($current),
             'prevMonth'  => $prevPeriod,

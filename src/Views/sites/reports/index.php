@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 use App\Services\ArticleReviewService;
+use App\Support\SvgChart;
 use App\View;
 
 /** @var array<string,mixed> $site */
 /** @var array<string,mixed> $report */
 /** @var array<string,mixed> $comparison */
+/** @var array{periods:list<string>,produced:list<int>,published:list<int>,ai_cost:list<float>} $trend */
 /** @var string $monthName */
 /** @var string $prevMonthName */
 /** @var string $prevMonth */
@@ -112,6 +114,46 @@ $n = static fn ($v): string => $v === null ? '—' : (string) $v;
             </ul>
         <?php endif; ?>
     <?php endif; ?>
+</section>
+
+<section class="mt-8">
+    <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">
+        Tendência (últimos <?= count($trend['periods']) ?> meses)
+    </h3>
+    <?php
+    $mesesAbrev = ['01' => 'jan', '02' => 'fev', '03' => 'mar', '04' => 'abr', '05' => 'mai', '06' => 'jun',
+        '07' => 'jul', '08' => 'ago', '09' => 'set', '10' => 'out', '11' => 'nov', '12' => 'dez'];
+    $shortLabel = static function (string $p) use ($mesesAbrev): string {
+        [$y, $m] = explode('-', $p);
+        return $mesesAbrev[$m] . '/' . substr($y, 2);
+    };
+    $labels = array_map($shortLabel, $trend['periods']);
+
+    $trendCard = static function (string $title, array $values, string $color, callable $format, string $unitForTable) use ($labels): void {
+        echo '<div class="rounded-lg border border-border bg-surface p-4">';
+        echo '<p class="text-sm font-medium text-text-primary">' . View::e($title) . '</p>';
+        if (array_sum(array_map('floatval', $values)) <= 0) {
+            echo '<p class="mt-3 text-sm text-text-secondary">Sem dados no período.</p>';
+        } else {
+            echo '<div class="mt-2">' . SvgChart::bars($labels, $values, $color, $format) . '</div>';
+            // Fallback acessível (WCAG 2.2 AA) — o SVG acima é aria-hidden.
+            echo '<table class="sr-only"><caption>' . View::e($title) . ' por mês</caption>';
+            echo '<thead><tr><th scope="col">Mês</th><th scope="col">' . View::e($unitForTable) . '</th></tr></thead><tbody>';
+            foreach ($labels as $i => $l) {
+                echo '<tr><td>' . View::e($l) . '</td><td>' . View::e($format($values[$i])) . '</td></tr>';
+            }
+            echo '</tbody></table>';
+        }
+        echo '</div>';
+    };
+    ?>
+    <div class="mt-3 grid gap-3 sm:grid-cols-3">
+        <?php
+        $trendCard('Artigos produzidos', $trend['produced'], '#0AFFEF', static fn ($v) => (string) (int) $v, 'Produzidos');
+        $trendCard('Artigos publicados', $trend['published'], '#34D399', static fn ($v) => (string) (int) $v, 'Publicados');
+        $trendCard('Custo de IA', $trend['ai_cost'], '#FBBF24', static fn ($v) => 'US$ ' . number_format((float) $v, 2), 'Custo (US$)');
+        ?>
+    </div>
 </section>
 
 <section class="mt-8">

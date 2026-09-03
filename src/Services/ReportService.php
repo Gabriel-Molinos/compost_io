@@ -154,6 +154,57 @@ final class ReportService
     }
 
     /**
+     * Tendência dos últimos `$months` meses (incluindo `$period`), pra
+     * visualização em gráfico na aba Relatórios (Fase 9) — a comparação de
+     * `compare()` só olha 2 meses; isso dá uma visão mais longa. 3 queries
+     * agregadas (`GROUP BY` por mês), não uma por mês — mesma preocupação de
+     * performance da fatia "60+ sites" (§97), embora aqui seja só sob demanda.
+     *
+     * @return array{periods: list<string>, produced: list<int>, published: list<int>, ai_cost: list<float>}
+     */
+    public function trend(int $siteId, string $period, int $months = 6): array
+    {
+        $pdo = Connection::get();
+        $months = max(2, min(24, $months));
+
+        $end = (new DateTimeImmutable($period . '-01'))->modify('+1 month');
+        $start = $end->modify('-' . $months . ' months');
+
+        $periods = [];
+        for ($cursor = $start; $cursor < $end; $cursor = $cursor->modify('+1 month')) {
+            $periods[] = $cursor->format('Y-m');
+        }
+
+        $win = ['s' => $siteId, 'a' => $start->format('Y-m-d H:i:s'), 'b' => $end->format('Y-m-d H:i:s')];
+
+        $produced = $this->countByMonth($pdo,
+            "SELECT DATE_FORMAT(created_at, '%Y-%m') AS ym, COUNT(*) AS total
+             FROM articles
+             WHERE site_id = :s AND deleted_at IS NULL AND created_at >= :a AND created_at < :b
+             GROUP BY ym", $win);
+
+        $published = $this->countByMonth($pdo,
+            "SELECT DATE_FORMAT(sc.scheduled_date, '%Y-%m') AS ym, COUNT(*) AS total
+             FROM schedules sc JOIN articles a ON a.id = sc.article_id
+             WHERE a.site_id = :s AND sc.status = 'PUBLISHED'
+               AND sc.scheduled_date >= :a AND sc.scheduled_date < :b
+             GROUP BY ym", $win);
+
+        $cost = $this->sumByMonth($pdo,
+            "SELECT DATE_FORMAT(e.created_at, '%Y-%m') AS ym, SUM(e.cost) AS total
+             FROM ai_executions e JOIN articles a ON a.id = e.article_id
+             WHERE a.site_id = :s AND e.created_at >= :a AND e.created_at < :b
+             GROUP BY ym", $win);
+
+        return [
+            'periods'   => $periods,
+            'produced'  => array_map(static fn (string $p): int => $produced[$p] ?? 0, $periods),
+            'published' => array_map(static fn (string $p): int => $published[$p] ?? 0, $periods),
+            'ai_cost'   => array_map(static fn (string $p): float => $cost[$p] ?? 0.0, $periods),
+        ];
+    }
+
+    /**
      * Comparação com o mês anterior (RF-013, fluxo-editorial §32) — "o que
      * melhorou / não melhorou". Só deltas dos números que `monthly()` já
      * calculou; nenhuma consulta nova.
@@ -219,6 +270,34 @@ final class ReportService
         $stmt->execute($params);
 
         return (int) $stmt->fetchColumn();
+    }
+
+    /** @param array<string, mixed> $params @return array<string, int> "AAAA-MM" => total */
+    private function countByMonth(\PDO $pdo, string $sql, array $params): array
+    {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+
+        $out = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $out[(string) $row['ym']] = (int) $row['total'];
+        }
+
+        return $out;
+    }
+
+    /** @param array<string, mixed> $params @return array<string, float> "AAAA-MM" => soma */
+    private function sumByMonth(\PDO $pdo, string $sql, array $params): array
+    {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+
+        $out = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $out[(string) $row['ym']] = (float) $row['total'];
+        }
+
+        return $out;
     }
 
     /** Janela do mês (1º dia 00:00 até o 1º dia do mês seguinte) como params de query. */

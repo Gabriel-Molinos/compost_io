@@ -88,5 +88,3 @@ review, cada passo visível em `ai_executions` em tempo real).
   `bin/worker.php` rodando sob `supervisor`.
 - Retry/dead-letter no nível de *job* (falha do handler inteiro) — distinto do
   retry de step da IA (`RetryRunner`), que já existe.
-- Botão de "tentar novamente" a partir do estado `ERROR` — hoje regeneração só
-  existe a partir de `REVISION_REQUESTED`.

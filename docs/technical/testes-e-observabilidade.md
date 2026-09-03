@@ -46,6 +46,8 @@ Diferente da [regeneração por rejeição humana (seção 29)](../editorial/flu
 
 - Após esgotar as 3 tentativas, o artigo deve ir para um estado de erro visível ao Redator-Chefe (ex.: `BLOCKED` ou um novo estado `ERROR`), nunca falhar silenciosamente — reforça a [Regra de transparência (seção 59)](../ai/regras-claude-code.md#59-regra-de-transparência).
 
+**Implementado (Fase 9, "tentar de novo"):** `ArticlePipeline::prepareRegenerate()` aceita `ERROR` além de `REVISION_REQUESTED` — mesma mecânica de linhagem/tentativas da [regeneração por rejeição (seção 29)](../editorial/fluxo-editorial.md#29-regeneração) (`attempt_number`, `BLOCKED` ao esgotar `MAX_ATTEMPTS`), sem reaproveitar o feedback de rejeição (não existe pra uma falha técnica — `lineageFeedbackContext()` degrada pra string vazia nesse caso). Botão "Tentar de novo" na página do artigo (`sites/production/show.php`), mesma rota `/regenerate`.
+
 ### 97. Performance para 60+ sites (Fase 9)
 
 Levantamento (sem fatia numerada nos requisitos originais — feito sob demanda ao abrir a Fase 9/Escala) encontrou dois pontos concretos, ambos endereçados:

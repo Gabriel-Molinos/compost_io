@@ -270,10 +270,31 @@ $maxAttempts = 3;
         </p>
         <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/regenerate"
               class="mt-3"
-              onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Regenerando… (pode levar alguns minutos)';">
+              onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Iniciando…';">
             <?= Csrf::field() ?>
             <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
                 Regenerar artigo
+            </button>
+        </form>
+    </section>
+<?php elseif ($article['status'] === 'ERROR'): ?>
+    <section class="mt-5 rounded-lg border border-border bg-surface p-4">
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Tentar de novo</h3>
+        <p class="mt-1 text-sm text-text-secondary">
+            Tentativa <?= $attempt ?> de <?= $maxAttempts ?> — a falha foi técnica (ver acima), não uma rejeição do
+            Redator-Chefe.
+            <?php if ($attempt >= $maxAttempts): ?>
+                Esta é a última — se falhar de novo, o artigo fica <strong>bloqueado</strong> para decisão sua.
+            <?php else: ?>
+                Cria uma nova tentativa nesta linhagem; a IA refaz o artigo do zero. Leva alguns minutos e tem custo.
+            <?php endif; ?>
+        </p>
+        <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/regenerate"
+              class="mt-3"
+              onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Iniciando…';">
+            <?= Csrf::field() ?>
+            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                Tentar de novo
             </button>
         </form>
     </section>
@@ -281,7 +302,7 @@ $maxAttempts = 3;
     <section class="mt-5 rounded-lg border border-danger/40 bg-danger/10 p-4">
         <h3 class="text-sm font-semibold uppercase tracking-wide text-danger">Bloqueado</h3>
         <p class="mt-1 text-sm text-text-secondary">
-            O limite de <?= $maxAttempts ?> tentativas nesta linhagem foi atingido sem aprovação. Decida o próximo passo — descartar, ou revisar a meta/diretrizes do site antes de tentar um novo tema.
+            O limite de <?= $maxAttempts ?> tentativas nesta linhagem foi atingido (rejeição e/ou falha técnica), sem aprovação. Decida o próximo passo — descartar, ou revisar a meta/diretrizes do site antes de tentar um novo tema.
         </p>
     </section>
 <?php endif; ?>

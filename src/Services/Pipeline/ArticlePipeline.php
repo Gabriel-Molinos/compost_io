@@ -125,7 +125,9 @@ final class ArticlePipeline
 
     /**
      * Só a parte síncrona e rápida da regeneração (fluxo-editorial §29,
-     * RF-010): valida o artigo anterior, resolve a linhagem, e — ao passar de
+     * RF-010) OU de uma falha técnica definitiva (`ERROR`, Fase 9.1b/9.4 —
+     * "tentar de novo", conceito diferente mas mesma mecânica de linhagem):
+     * valida o artigo anterior, resolve a linhagem, e — ao passar de
      * {@see self::MAX_ATTEMPTS} tentativas — marca `BLOCKED` e já lança (esse
      * caso nunca chega a enfileirar nada). Sem chamada a IA.
      *
@@ -138,9 +140,9 @@ final class ArticlePipeline
         if ($prev === null) {
             throw new PipelineException('Artigo não encontrado.', $previousArticleId, 'regenerate');
         }
-        if ($prev['status'] !== 'REVISION_REQUESTED') {
+        if (!in_array($prev['status'], ['REVISION_REQUESTED', 'ERROR'], true)) {
             throw new PipelineException(
-                'Só é possível regenerar um artigo rejeitado (status atual: ' . $prev['status'] . ').',
+                'Só é possível regenerar um artigo rejeitado ou com falha técnica (status atual: ' . $prev['status'] . ').',
                 $previousArticleId,
                 'regenerate',
             );

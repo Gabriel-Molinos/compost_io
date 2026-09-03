@@ -277,6 +277,8 @@ Como o backend é **PHP puro, sem framework** (ver [seção 6](../technical/arqu
 
 O artigo só conta para a meta quando estiver `APPROVED`.
 
+> **Implementado (Fase 9):** em `IN_REVIEW`, o Redator-Chefe também pode editar o corpo (HTML) direto na página do artigo antes de aprovar/rejeitar — evita um ciclo inteiro de rejeição+regeneração (com custo de IA) só para corrigir um trecho. Grava como nova versão em `article_versions`, histórico preservado. Ver bloco `[Fase 9]` do `CHANGELOG.md`.
+
 Estados principais:
 
 ```

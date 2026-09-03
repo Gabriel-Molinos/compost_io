@@ -515,7 +515,28 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
         <p class="mt-2 text-text-secondary">Ainda sem corpo — a escrita não chegou a rodar.</p>
     <?php else: ?>
         <article class="article-body mt-3 max-w-none rounded-lg border border-border bg-surface p-6 text-text-primary">
-            <?= $version['content'] /* HTML gerado pela IA — renderizado como veio */ ?>
+            <?= $version['content'] /* HTML gerado pela IA (ou editado pelo Redator-Chefe) — renderizado como veio */ ?>
         </article>
+        <?php if ($article['status'] === 'IN_REVIEW'): ?>
+            <details class="mt-3">
+                <summary class="cursor-pointer text-sm font-medium text-cyan hover:text-cyan-light">Editar corpo (HTML)</summary>
+                <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/content" class="mt-3">
+                    <?= Csrf::field() ?>
+                    <label class="text-sm">
+                        <span class="block font-medium text-text-secondary">Corpo em HTML</span>
+                        <textarea name="content_html" rows="20" required
+                                  class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 font-mono text-xs text-text-primary focus:border-cyan focus:outline-none"
+                        ><?= View::e($version['content']) ?></textarea>
+                    </label>
+                    <p class="mt-1 text-xs text-text-muted">
+                        Tags permitidas são filtradas ao salvar (títulos, parágrafos, listas, links, tabelas, imagens).
+                        Vira uma nova versão — a anterior fica preservada no histórico.
+                    </p>
+                    <button type="submit" class="mt-2 rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-light">
+                        Salvar corpo
+                    </button>
+                </form>
+            </details>
+        <?php endif; ?>
     <?php endif; ?>
 </section>

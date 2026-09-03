@@ -202,6 +202,38 @@ final class ProductionController extends Controller
         Http::redirect('/sites/' . $site['id'] . '/production/' . $prepared['article_id']);
     }
 
+    /**
+     * Redator-Chefe edita o corpo do rascunho direto no dashboard, evitando
+     * um ciclo de rejeição+regeneração — com custo real de IA — só
+     * pra corrigir um trecho. Só em `IN_REVIEW` (mesma janela da decisão de
+     * aprovar/rejeitar); grava como nova versão em `article_versions`
+     * (histórico preservado, mesmo padrão que os passos da IA já usam).
+     */
+    public function updateContent(string $siteId, string $articleId): void
+    {
+        $site = $this->requireSite($siteId);
+        Csrf::verify();
+        $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
+
+        if ($article['status'] !== 'IN_REVIEW') {
+            Session::flash('error', 'Só é possível editar o corpo enquanto o artigo está em revisão.');
+            Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id']);
+            return;
+        }
+
+        $content = trim((string) ($_POST['content_html'] ?? ''));
+        if ($content === '') {
+            Session::flash('error', 'O corpo não pode ficar vazio.');
+            Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id']);
+            return;
+        }
+
+        $wordCount = str_word_count(strip_tags($content));
+        $this->articles->addVersion((int) $article['id'], $content, $wordCount);
+        Session::flash('success', 'Corpo atualizado.');
+        Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id']);
+    }
+
     /** Redator-Chefe aprova o artigo (RF-008): IN_REVIEW → APPROVED. */
     public function approve(string $siteId, string $articleId): void
     {

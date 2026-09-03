@@ -19,13 +19,41 @@ final class ReportService
 {
     private const APPROVED_STATES = "('APPROVED','SCHEDULED','PUBLISHED')";
 
+    /**
+     * Só `goal_total` + `ai_cost` do mês — o que a Visão Geral do site
+     * (`CostBudgetService`) realmente usa. 2 queries em vez das 10 de
+     * `monthly()` (levantamento de performance, Fase 9): a Visão Geral é
+     * carregada a cada visita, não só na aba Relatórios.
+     *
+     * @return array{goal_total: int|null, ai_cost: float}
+     */
+    public function currentSpend(int $siteId, string $period): array
+    {
+        $pdo = Connection::get();
+        $win = $this->windowFor($siteId, $period);
+
+        $stmt = $pdo->prepare('SELECT total_articles FROM goals WHERE site_id = :s AND period = :p LIMIT 1');
+        $stmt->execute(['s' => $siteId, 'p' => $period]);
+        $goalTotal = $stmt->fetchColumn();
+
+        $costStmt = $pdo->prepare(
+            "SELECT COALESCE(SUM(e.cost), 0) FROM ai_executions e
+             JOIN articles a ON a.id = e.article_id
+             WHERE a.site_id = :s AND e.created_at >= :a AND e.created_at < :b"
+        );
+        $costStmt->execute($win);
+
+        return [
+            'goal_total' => $goalTotal !== false ? (int) $goalTotal : null,
+            'ai_cost'    => (float) $costStmt->fetchColumn(),
+        ];
+    }
+
     /** @return array<string, mixed> */
     public function monthly(int $siteId, string $period): array
     {
         $pdo = Connection::get();
-        $start = $period . '-01 00:00:00';
-        $end = (new DateTimeImmutable($start))->modify('+1 month')->format('Y-m-d H:i:s');
-        $win = ['s' => $siteId, 'a' => $start, 'b' => $end];
+        $win = $this->windowFor($siteId, $period);
 
         $goal = null;
         $stmt = $pdo->prepare('SELECT id, total_articles, general_guidelines FROM goals WHERE site_id = :s AND period = :p LIMIT 1');
@@ -191,5 +219,14 @@ final class ReportService
         $stmt->execute($params);
 
         return (int) $stmt->fetchColumn();
+    }
+
+    /** Janela do mês (1º dia 00:00 até o 1º dia do mês seguinte) como params de query. */
+    private function windowFor(int $siteId, string $period): array
+    {
+        $start = $period . '-01 00:00:00';
+        $end = (new DateTimeImmutable($start))->modify('+1 month')->format('Y-m-d H:i:s');
+
+        return ['s' => $siteId, 'a' => $start, 'b' => $end];
     }
 }

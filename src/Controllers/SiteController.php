@@ -59,8 +59,11 @@ final class SiteController extends Controller
     {
         $site = $this->requireSite($id);
 
+        // currentSpend() (2 queries), não monthly() (10 queries) — a Visão Geral só
+        // usa goal_total/ai_cost; o relatório completo fica na aba Relatórios
+        // (levantamento de performance, Fase 9).
         $currentPeriod = date('Y-m');
-        $monthly = $this->reports->monthly((int) $site['id'], $currentPeriod);
+        $spend = $this->reports->currentSpend((int) $site['id'], $currentPeriod);
 
         View::render('sites/show', [
             'title'       => $site['name'],
@@ -69,7 +72,7 @@ final class SiteController extends Controller
             'ruleCounts'  => $this->rules->countsForSite((int) $site['id']),
             'goalCount'   => $this->goals->countForSite((int) $site['id']),
             'canEditSite' => AuthService::isAdmin(),
-            'costBudget'  => $this->costBudget->evaluate($monthly),
+            'costBudget'  => $this->costBudget->evaluate($spend),
             'attention'   => $this->articles->attentionCounts((int) $site['id']),
         ]);
     }

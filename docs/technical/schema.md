@@ -103,6 +103,7 @@ Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mant
 - `0008` — `articles.review_started_at` / `reviewed_at` (TIMESTAMP nullable): janelas do "tempo médio de revisão" do relatório mensal. Fase 8.1.
 - `0009` — nova tabela **`editorial_insights`**: histórico das análises do Centro de Inteligência Editorial por site (uma chamada paga ao Gemini por geração). Fase 8.3.
 - `0010` — `articles.status`: +`ERROR` no ENUM — falha técnica definitiva do pipeline rodando via fila (retries esgotados). Fase 9.1b.
+- `0011` — índices para os filtros de período dos relatórios: `articles (site_id, created_at)` / `(site_id, reviewed_at)`, `ai_executions (article_id, cost)` / `(created_at)`, `feedback (created_at)`. Só índice, nenhuma coluna nova. Fase 9 (performance) — levantamento mostrou scan de `ai_executions` inteira (todos os sites) na consulta de custo máximo global (`CostBudgetService`).
 
 ### 87.1 Autenticação — sem tabela
 

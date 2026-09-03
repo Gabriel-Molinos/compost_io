@@ -44,6 +44,17 @@ Diferente da [regeneração por rejeição humana (seção 29)](../editorial/flu
 
 - Após esgotar as 3 tentativas, o artigo deve ir para um estado de erro visível ao Redator-Chefe (ex.: `BLOCKED` ou um novo estado `ERROR`), nunca falhar silenciosamente — reforça a [Regra de transparência (seção 59)](../ai/regras-claude-code.md#59-regra-de-transparência).
 
+### 97. Performance para 60+ sites (Fase 9)
+
+Levantamento (sem fatia numerada nos requisitos originais — feito sob demanda ao abrir a Fase 9/Escala) encontrou dois pontos concretos, ambos endereçados:
+
+- **Índices faltando** nos filtros de período mais usados (`ReportService`, `CostBudgetService`) — `articles.created_at`/`reviewed_at`, `ai_executions.cost`/`created_at`, `feedback.created_at` não tinham índice, forçando scan de todas as linhas do site (ou, na consulta de custo máximo global, de `ai_executions` inteira, todos os sites) a cada carregamento. Corrigido pela migration `0011` (só índices, nenhuma coluna nova).
+- **`SiteController::show()`** (Visão Geral do site) rodava `ReportService::monthly()` inteiro — 10 queries — só para extrair `goal_total`/`ai_cost` usados pelo `CostBudgetService`. Como a Visão Geral é carregada a cada visita (não só a aba Relatórios), isso rodava a cada page load, de qualquer site. `ReportService::currentSpend()` (2 queries) substitui essa chamada; `monthly()` continua intacto para a aba Relatórios, que precisa do relatório completo.
+
+**Adiado, registrado como pendência:**
+- **Cache** do custo máximo global (`CostBudgetService::maxObservedCostPerArticle()`) — hoje recalculado a cada carregamento; um cache curto (minutos) evitaria isso, mas não há camada de cache no projeto ainda (nem Redis usado pra isso, só pra fila) e o volume atual não justifica introduzir uma. Decisão: só quando o volume real pedir.
+- **Paginação** de `ArticleService::allForSite()` (listagem de artigos do site, aba Produção) — sem `LIMIT`, cresce com o histórico de cada site. Mudança de UX (controles de página), mais invasiva que os itens acima — fica para quando um site tiver histórico grande o suficiente pra doer de verdade.
+
 ## Ver também
 
 - [Diagrama — falha técnica e retry](diagrama-sequencia.md#982-sequência-de-falha-técnica--retry-proposta)

@@ -46,7 +46,7 @@ $navClass = static fn (string $href): string => $href === $currentPath || ($href
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Orbitron:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="<?= View::e(View::asset('assets/css/app.css')) ?>">
 
     <style>
         :focus-visible { outline: 2px solid #7FE8FF; outline-offset: 2px; border-radius: 2px; }

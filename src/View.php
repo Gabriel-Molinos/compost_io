@@ -41,4 +41,19 @@ final class View
     {
         return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
+
+    /**
+     * URL de um arquivo estático em `public/` com cache-busting (`?v=` = mtime
+     * do arquivo) — sem isso, o navegador pode continuar servindo `app.css`
+     * do cache depois de um redeploy/rebuild, mesmo com o arquivo mudado no
+     * disco (a URL nunca muda de nome sozinha). Usado em `layout/base.php`/
+     * `layout/auth.php` para `app.css` e `calendar.js`.
+     */
+    public static function asset(string $path): string
+    {
+        $file = dirname(__DIR__) . '/public/' . ltrim($path, '/');
+        $mtime = is_file($file) ? filemtime($file) : false;
+
+        return '/' . ltrim($path, '/') . ($mtime !== false ? '?v=' . $mtime : '');
+    }
 }

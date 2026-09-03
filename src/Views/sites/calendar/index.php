@@ -99,4 +99,4 @@ $statusLabel = static fn (string $s): string => match ($s) {
     <span class="flex items-center gap-1"><span class="h-3 w-3 rounded bg-success/15"></span> publicado</span>
 </div>
 
-<script src="/assets/js/calendar.js" defer></script>
+<script src="<?= View::e(View::asset('assets/js/calendar.js')) ?>" defer></script>

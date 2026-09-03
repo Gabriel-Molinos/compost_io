@@ -17,6 +17,7 @@ $statusLabels = [
     'PLANNED' => 'Planejado', 'IN_PROGRESS' => 'Em produção', 'IN_REVIEW' => 'Em revisão',
     'REVISION_REQUESTED' => 'Revisão pedida', 'APPROVED' => 'Aprovado', 'SCHEDULED' => 'Agendado',
     'PUBLISHED' => 'Publicado', 'DISCARDED' => 'Descartado', 'BLOCKED' => 'Bloqueado',
+    'ERROR' => 'Falha técnica',
 ];
 ?>
 <h2 class="text-lg font-semibold text-text-primary">Produção</h2>

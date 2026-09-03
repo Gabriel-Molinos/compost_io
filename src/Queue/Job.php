@@ -22,4 +22,22 @@ final class Job
     {
         return new self($this->type, $this->payload, $id);
     }
+
+    /** Serializa para gravar na fila (Redis). */
+    public function toJson(): string
+    {
+        return json_encode(
+            ['id' => $this->id, 'type' => $this->type, 'payload' => $this->payload],
+            JSON_THROW_ON_ERROR
+        );
+    }
+
+    /** Reconstrói a partir do que foi lido da fila (Redis). */
+    public static function fromJson(string $json): self
+    {
+        /** @var array{id: string, type: string, payload: array<string, scalar|null>} $data */
+        $data = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+
+        return new self($data['type'], $data['payload'] ?? [], $data['id'] ?? '');
+    }
 }

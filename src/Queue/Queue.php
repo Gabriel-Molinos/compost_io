@@ -9,9 +9,12 @@ use RuntimeException;
 
 /**
  * Ponto único para enfileirar trabalho da IA. Os handlers são registrados por
- * tipo de job; o driver (hoje `sync`) decide *quando* eles rodam.
+ * tipo de job; o driver (`sync` ou `redis`, via `QUEUE_DRIVER`) decide
+ * *quando* eles rodam.
  *
- * O pipeline editorial (Fase 4.4) registra os handlers e chama `dispatch()`.
+ * O pipeline editorial usa isto desde a Fase 9.1b — ver
+ * `App\Queue\ArticleJobHandlers` (registra os handlers de artigo) e
+ * `docs/technical/fila-ia.md` (estado atual da fila).
  */
 final class Queue
 {
@@ -41,6 +44,12 @@ final class Queue
         return $this->driver->name();
     }
 
+    /** Retira o próximo job da fila (usado pelo worker) — ver `QueueDriver::reserve()`. */
+    public function reserve(): ?Job
+    {
+        return $this->driver->reserve();
+    }
+
     /** Executa um job (chamado pelo driver síncrono agora, pelo worker no futuro). */
     public function execute(Job $job): void
     {
@@ -56,8 +65,9 @@ final class Queue
 
         return match ($name) {
             'sync', null => new SyncQueueDriver(fn (Job $job) => $this->execute($job)),
+            'redis'      => new RedisQueueDriver(RedisConfig::fromEnv()),
             default      => throw new RuntimeException(
-                "QUEUE_DRIVER '{$name}' ainda não implementado — só 'sync' por ora (ADR-006, Fase 4.3)."
+                "QUEUE_DRIVER '{$name}' desconhecido — use 'sync' ou 'redis' (ADR-006)."
             ),
         };
     }

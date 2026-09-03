@@ -41,6 +41,11 @@ use Throwable;
  * Cada passo é uma execução rastreada em `ai_executions` com retry (4.3); o JSON
  * de cada passo é gravado em `article_ai_notes`. A aprovação é sempre humana
  * (requisitos §65.1) — as pendências de seo/compliance/review ficam nas notas.
+ *
+ * Cada fluxo (geração / regeneração) é dividido em `prepareX()` (síncrono,
+ * rápido, cria a linha do artigo) + `runX()` (chama IA de verdade) desde a
+ * Fase 9.1b — o controller chama `prepareX()` inline e despacha um `Job` pra
+ * `runX()` rodar no worker (ou inline mesmo, se `QUEUE_DRIVER=sync`).
  */
 final class ArticlePipeline
 {
@@ -82,19 +87,34 @@ final class ArticlePipeline
         // Instanciado sob demanda em generateImages() — não exige IMAGE_API_KEY
         // quando o pipeline roda sem a etapa de imagem (ex.: testes).
         $this->imageProvider = $imageProvider;
-        // O pipeline roda inline (driver de fila síncrono) — backoff curto.
-        // Um worker Redis futuro passaria RetryPolicy::default() aqui.
+        // Padrão = backoff curto (bom pra quando roda inline, driver sync).
+        // bin/worker.php passa RetryPolicy::default() (backoff longo) — é ele
+        // quem sabe se está rodando em segundo plano (Fase 9.1b).
         $this->retry = $retry ?? new RetryRunner(RetryPolicy::inline());
     }
 
     /**
+     * Só a parte síncrona e rápida (sem chamada a IA): cria a linha do artigo
+     * (`PLANNED`) e devolve o `article_id` — pra quem chamou (controller) já
+     * ter o que precisa pra redirecionar/despachar o job, antes do trabalho
+     * pesado rodar (Fase 9.1b — fila conectada ao pipeline).
+     */
+    public function prepareGenerate(int $siteId, ?int $goalId = null): int
+    {
+        return $this->articles->create($siteId, $goalId);
+    }
+
+    /**
+     * A parte que chama IA de verdade — roda inline (driver síncrono) ou pelo
+     * worker (driver Redis), sem diferença de código. Espera um artigo já
+     * criado por {@see self::prepareGenerate()}.
+     *
      * @return array{article_id:int, title:string, word_count:int, cost:float, recommendation:string, warnings:list<string>}
      * @throws PipelineException
      */
-    public function generate(int $siteId, ?int $goalId = null, ?int $categoryId = null): array
+    public function runGenerate(int $articleId, int $siteId, ?int $goalId = null, ?int $categoryId = null): array
     {
         $this->prompts->setEditorialContext($this->siteMemoryContext($siteId));
-        $articleId = $this->articles->create($siteId, $goalId);
 
         try {
             return $this->run($articleId, $siteId, $goalId, $categoryId);
@@ -104,14 +124,15 @@ final class ArticlePipeline
     }
 
     /**
-     * Regenera um artigo rejeitado (fluxo-editorial §29, RF-010): nova tentativa
-     * na mesma linhagem, com o feedback acumulado injetado no prompt. Ao passar
-     * de {@see self::MAX_ATTEMPTS} tentativas, o artigo anterior vira `BLOCKED`.
+     * Só a parte síncrona e rápida da regeneração (fluxo-editorial §29,
+     * RF-010): valida o artigo anterior, resolve a linhagem, e — ao passar de
+     * {@see self::MAX_ATTEMPTS} tentativas — marca `BLOCKED` e já lança (esse
+     * caso nunca chega a enfileirar nada). Sem chamada a IA.
      *
-     * @return array{article_id:int, title:string, word_count:int, cost:float, recommendation:string, warnings:list<string>}
+     * @return array{article_id:int, site_id:int, goal_id:?int, category_id:?int, lineage_id:int}
      * @throws PipelineException
      */
-    public function regenerate(int $previousArticleId): array
+    public function prepareRegenerate(int $previousArticleId): array
     {
         $prev = $this->articles->findById($previousArticleId);
         if ($prev === null) {
@@ -143,12 +164,31 @@ final class ArticlePipeline
         $goalId = $prev['goal_id'] !== null ? (int) $prev['goal_id'] : null;
         $categoryId = $prev['category_id'] !== null ? (int) $prev['category_id'] : null;
 
+        $articleId = $this->articles->createAttempt($siteId, $goalId, $lineageId, $attempt);
+
+        return [
+            'article_id'  => $articleId,
+            'site_id'     => $siteId,
+            'goal_id'     => $goalId,
+            'category_id' => $categoryId,
+            'lineage_id'  => $lineageId,
+        ];
+    }
+
+    /**
+     * A parte que chama IA de verdade — espera um artigo já criado por
+     * {@see self::prepareRegenerate()}.
+     *
+     * @return array{article_id:int, title:string, word_count:int, cost:float, recommendation:string, warnings:list<string>}
+     * @throws PipelineException
+     */
+    public function runRegenerate(int $articleId, int $siteId, ?int $goalId, ?int $categoryId, int $lineageId): array
+    {
         $context = array_filter([
             $this->lineageFeedbackContext($lineageId),
             $this->siteMemoryContext($siteId),
         ], static fn (string $s): bool => $s !== '');
         $this->prompts->setEditorialContext(implode("\n\n", $context));
-        $articleId = $this->articles->createAttempt($siteId, $goalId, $lineageId, $attempt);
 
         try {
             return $this->run($articleId, $siteId, $goalId, $categoryId);

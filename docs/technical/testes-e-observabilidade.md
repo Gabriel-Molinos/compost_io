@@ -23,9 +23,9 @@
 - Nunca logar credenciais, tokens ou dados sensíveis (reforça a [seção 48, regra 5](../technical/seguranca.md#48-política-de-segurança-para-credenciais)).
 - Logs de execução de IA (pesquisa, escrita, SEO, imagem) devem ser persistidos na tabela `ai_executions` (ver [seção 87](schema.md#87-tabelas--estado-atual-migration-0001)), não só em arquivo de log.
 
-### 94.1 Monitoramento e alertas `[PROPOSTA]`
+### 94.1 Monitoramento e alertas
 
-> **Precisa aprovação.** Sem ferramenta paga nesta fase: falha após retry, custo de IA no limite, ou artigo `BLOCKED` viram só um indicador visível na Visão Geral da dashboard (ver [seção 33](../editorial/fluxo-editorial.md#33-centro-de-inteligência-editorial)). Alerta externo (e-mail/Slack) e métricas de sistema ficam para quando o volume justificar (Fase 9).
+> **Implementado (Fase 9.3).** Sem ferramenta paga nesta fase: falha após retry (`articles.status = ERROR`, Fase 9.1b), custo de IA no limite (Fase 9.2), e artigo `BLOCKED` viram indicadores visuais na Visão Geral do site (`sites/show.php`) — ver [seção 33](../editorial/fluxo-editorial.md#33-centro-de-inteligência-editorial). `ArticleService::attentionCounts()` conta `BLOCKED`/`ERROR` por site; banner `role="alert"` aparece só quando há pendência, com link pra Produção. Alerta externo (e-mail/Slack) e métricas de sistema seguem fora de escopo — sem volume que justifique ainda.
 
 ### 95. Controle de custo de IA `[PROPOSTA]`
 
@@ -34,9 +34,7 @@
 
 > **Decisão registrada (método):** o limite de gasto por site/mês é calculado pela fórmula `custo médio por artigo × meta de artigos/mês do site × margem de segurança`. Ao atingir o limite, o comportamento inicial é **alertar o Administrador** (não bloquear automaticamente a produção) — bloqueio automático só deve ser considerado depois de haver dados reais de custo.
 >
-> **Decisão pendente:** o **valor numérico** do limite (e da margem de segurança) ainda não pode ser definido — depende de dados reais de custo por artigo, que só existirão após os primeiros artigos produzidos na Fase 4 (IA). Reforça a [Regra de não-invenção (seção 58)](../ai/regras-claude-code.md#58-regra-de-não-invenção): não inventar um número sem base real.
->
-> Enquanto não há dado real, começar a Fase 4 testando com poucos sites/artigos por vez (não os 60+ de uma vez) mantém o gasto de IA baixo e visível até o número do limite poder ser definido com base real.
+> **Implementado (Fase 9.2):** com pouco dado real ainda (poucos artigos produzidos), "custo médio por artigo" usa o **maior custo por artigo já observado**, em qualquer site (`CostBudgetService::maxObservedCostPerArticle()`) — mais conservador que uma média de amostra pequena, e recalculado a cada carregamento conforme mais artigos forem produzidos, sem guardar um número fixo (não há tabela nova/migration para isso). **Margem de segurança: 1,5x.** Sem meta definida pro mês, ou sem nenhum dado real de custo em nenhum site ainda, o indicador simplesmente não aparece — reforça a [Regra de não-invenção (seção 58)](../ai/regras-claude-code.md#58-regra-de-não-invenção): não inventar um número sem base real. O alerta é só visual, na Visão Geral do site (`sites/show.php`) — sem e-mail/Slack, como já previsto em [94.1](#941-monitoramento-e-alertas).
 
 ### 96. Política de retry / falha da IA `[PROPOSTA]`
 

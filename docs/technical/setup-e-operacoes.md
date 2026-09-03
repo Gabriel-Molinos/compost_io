@@ -23,6 +23,16 @@ Ferramentas necessárias:
 - VS Code
 - Claude Code
 
+#### 77.1 Redis local (dev)
+
+Sem instância gerenciada ainda (ao contrário do MySQL, que já aponta pra um cluster DigitalOcean — ver `.env`); localmente, qualquer uma destas opções sobe um Redis em `127.0.0.1:6379`, batendo com o `REDIS_URL` de exemplo do `.env.example`:
+
+- **Docker** (mais simples se já estiver instalado): `docker run -d --name dashredatora-redis -p 6379:6379 redis:7-alpine`
+- **WSL:** `sudo apt install redis-server && redis-server`
+- **Memurai** (Redis nativo pra Windows, sem WSL/Docker): https://www.memurai.com/
+
+Com o Redis no ar, `REDIS_URL=redis://127.0.0.1:6379` no `.env` e `QUEUE_DRIVER=redis` (na linha de comando ou no `.env`), `php bin/queue_smoke.php` e `php bin/worker.php` testam o push→reserve→execute de ponta a ponta (ver `docs/technical/fila-ia.md`).
+
 > Node.js **não** faz parte do ambiente de desenvolvimento — ver [ADR-008](../decisions/adr-008-frontend-php-puro.md).
 
 Checklist de configuração:

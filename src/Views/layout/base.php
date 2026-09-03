@@ -9,6 +9,7 @@ use App\View;
 
 /** @var string $content */
 /** @var string $title */
+/** @var int|null $metaRefresh */
 
 $authUser = AuthService::user();
 $currentPath = rtrim(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/', '/') ?: '/';
@@ -34,6 +35,9 @@ $navClass = static fn (string $href): string => $href === $currentPath || ($href
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
     <title><?= View::e($title) ?> · COMPOST</title>
+    <?php if (!empty($metaRefresh)): ?>
+        <meta http-equiv="refresh" content="<?= (int) $metaRefresh ?>">
+    <?php endif; ?>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

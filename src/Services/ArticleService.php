@@ -88,6 +88,31 @@ final class ArticleService
         return (int) $stmt->fetchColumn();
     }
 
+    /**
+     * Quantos artigos do site precisam de atenção humana agora (fluxo-editorial
+     * §33 / testes-e-observabilidade §94.1): `BLOCKED` (linhagem esgotou as
+     * tentativas de regeneração) e `ERROR` (falha técnica definitiva do
+     * pipeline, retries de IA esgotados). Alimenta o indicador da Visão Geral.
+     *
+     * @return array{blocked: int, error: int}
+     */
+    public function attentionCounts(int $siteId): array
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT status, COUNT(*) AS total FROM articles
+             WHERE site_id = :s AND deleted_at IS NULL AND status IN ('BLOCKED', 'ERROR')
+             GROUP BY status"
+        );
+        $stmt->execute(['s' => $siteId]);
+
+        $counts = ['blocked' => 0, 'error' => 0];
+        foreach ($stmt->fetchAll() as $row) {
+            $counts[$row['status'] === 'BLOCKED' ? 'blocked' : 'error'] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
     public function create(int $siteId, ?int $goalId): int
     {
         $pdo = Connection::get();

@@ -14,6 +14,9 @@ use App\Services\FeedbackService;
 use App\Services\GoalService;
 use App\Services\ImageService;
 use App\Services\ScheduleService;
+use App\Queue\ArticleJobHandlers;
+use App\Queue\Job;
+use App\Queue\Queue;
 use App\Services\Pipeline\ArticlePipeline;
 use App\Support\ImageStorage;
 use App\Services\Pipeline\PipelineException;
@@ -24,8 +27,10 @@ use App\View;
 use Throwable;
 
 /**
- * Produção de artigos pela IA (Fase 4.4a). "Gerar" roda o pipeline síncrono
- * (planning → research → writing) — várias chamadas ao Gemini numa requisição só.
+ * Produção de artigos pela IA (Fase 4.4a). "Gerar"/"Regenerar" só fazem a
+ * parte síncrona e rápida (criar a linha do artigo) e despacham um `Job` pra
+ * fila (Fase 9.1b) — quem chama IA de verdade é `bin/worker.php` (ou o
+ * próprio driver síncrono, inline, se `QUEUE_DRIVER=sync`).
  */
 final class ProductionController extends Controller
 {
@@ -76,36 +81,46 @@ final class ProductionController extends Controller
             $categoryId = (int) $_POST['category_id'];
         }
 
-        // O pipeline síncrono faz 6 chamadas ao gemini-2.5-pro — pode passar de 2 min.
-        set_time_limit(900);
-        @ini_set('max_execution_time', '900');
+        $articleId = (new ArticlePipeline())->prepareGenerate((int) $site['id'], $goalId);
 
         try {
-            $result = (new ArticlePipeline())->generate((int) $site['id'], $goalId, $categoryId);
+            $this->dispatchArticleJob(new Job('article.generate', [
+                'article_id'  => $articleId,
+                'site_id'     => (int) $site['id'],
+                'goal_id'     => $goalId,
+                'category_id' => $categoryId,
+            ]));
         } catch (PipelineException $e) {
+            // Só acontece com QUEUE_DRIVER=sync (o handler roda inline, nesta
+            // mesma requisição) — com redis, o dispatch só enfileira.
             Session::flash('error', 'Falha na geração (' . $e->step . '): ' . $e->getMessage()
-                . ' — rascunho #' . $e->articleId . ' ficou incompleto.');
+                . ' — rascunho #' . $e->articleId . ' ficou com status ERROR.');
             Http::redirect('/sites/' . $site['id'] . '/production/' . $e->articleId);
             return;
         } catch (Throwable $e) {
             Session::flash('error', 'Erro inesperado na geração: ' . $e->getMessage());
-            Http::redirect('/sites/' . $site['id'] . '/production');
+            Http::redirect('/sites/' . $site['id'] . '/production/' . $articleId);
             return;
         }
 
-        $recLabels = ['ready_for_human' => 'pronto p/ revisão', 'needs_fix' => 'precisa de ajustes', 'discard' => 'IA sugere descartar'];
-        $msg = 'Rascunho em revisão: "' . $result['title'] . '" · ' . $result['word_count']
-            . ' palavras · custo ~US$ ' . number_format($result['cost'], 4)
-            . ' · parecer IA: ' . ($recLabels[$result['recommendation']] ?? $result['recommendation']);
-        $imageCount = (new ImageService())->countForArticle((int) $result['article_id']);
-        if ($imageCount > 0) {
-            $msg .= ' · ' . $imageCount . ' imagem(ns) gerada(s)';
-        }
-        if ($result['warnings'] !== []) {
-            $msg .= ' · ' . count($result['warnings']) . ' aviso(s)';
-        }
-        Session::flash('success', $msg);
-        Http::redirect('/sites/' . $site['id'] . '/production/' . $result['article_id']);
+        Session::flash('success', 'Geração iniciada — atualize a página em alguns segundos.');
+        Http::redirect('/sites/' . $site['id'] . '/production/' . $articleId);
+    }
+
+    /**
+     * Registra os handlers de artigo e despacha. Com `QUEUE_DRIVER=sync`
+     * (padrão hoje) isso ainda roda o pipeline inline, na mesma requisição —
+     * daí o `set_time_limit`, igual antes da Fase 9.1b. Com `redis`, só
+     * enfileira e retorna na hora (quem processa é `bin/worker.php`).
+     */
+    private function dispatchArticleJob(Job $job): void
+    {
+        set_time_limit(900);
+        @ini_set('max_execution_time', '900');
+
+        $queue = new Queue();
+        ArticleJobHandlers::register($queue, new ArticlePipeline(), $this->articles);
+        $queue->dispatch($job);
     }
 
     public function show(string $siteId, string $articleId): void
@@ -115,8 +130,12 @@ final class ProductionController extends Controller
 
         $schedules = new ScheduleService();
 
+        // Enquanto o worker ainda está rodando (Fase 9.1b), a página se atualiza sozinha.
+        $generating = in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true);
+
         View::render('sites/production/show', [
-            'title'      => ($article['title'] ?: 'Rascunho #' . $article['id']) . ' · ' . $site['name'],
+            'title'       => ($article['title'] ?: 'Rascunho #' . $article['id']) . ' · ' . $site['name'],
+            'metaRefresh' => $generating ? 5 : null,
             'site'       => $site,
             'article'    => $article,
             'version'    => $this->articles->latestVersion((int) $article['id']),
@@ -142,25 +161,37 @@ final class ProductionController extends Controller
         Csrf::verify();
         $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
 
-        set_time_limit(900);
-        @ini_set('max_execution_time', '900');
-
+        // Validação/BLOCKED-check é síncrona e rápida (sem IA) — falha aqui
+        // ainda vira flash normal, redirecionando pro artigo anterior.
         try {
-            $result = (new ArticlePipeline())->regenerate((int) $article['id']);
+            $prepared = (new ArticlePipeline())->prepareRegenerate((int) $article['id']);
         } catch (PipelineException $e) {
             Session::flash('error', $e->getMessage());
             Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id']);
             return;
+        }
+
+        try {
+            $this->dispatchArticleJob(new Job('article.regenerate', [
+                'article_id'  => $prepared['article_id'],
+                'site_id'     => $prepared['site_id'],
+                'goal_id'     => $prepared['goal_id'],
+                'category_id' => $prepared['category_id'],
+                'lineage_id'  => $prepared['lineage_id'],
+            ]));
+        } catch (PipelineException $e) {
+            // Só acontece com QUEUE_DRIVER=sync — ver dispatchArticleJob().
+            Session::flash('error', $e->getMessage());
+            Http::redirect('/sites/' . $site['id'] . '/production/' . $prepared['article_id']);
+            return;
         } catch (Throwable $e) {
             Session::flash('error', 'Erro inesperado na regeneração: ' . $e->getMessage());
-            Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id']);
+            Http::redirect('/sites/' . $site['id'] . '/production/' . $prepared['article_id']);
             return;
         }
 
-        Session::flash('success', 'Nova tentativa gerada: "' . $result['title'] . '" · '
-            . $result['word_count'] . ' palavras · custo ~US$ ' . number_format($result['cost'], 4)
-            . ($result['warnings'] !== [] ? ' · ' . count($result['warnings']) . ' aviso(s)' : ''));
-        Http::redirect('/sites/' . $site['id'] . '/production/' . $result['article_id']);
+        Session::flash('success', 'Nova tentativa iniciada — atualize a página em alguns segundos.');
+        Http::redirect('/sites/' . $site['id'] . '/production/' . $prepared['article_id']);
     }
 
     /** Redator-Chefe aprova o artigo (RF-008): IN_REVIEW → APPROVED. */

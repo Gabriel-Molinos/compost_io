@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Services\ArticleService;
 use App\Services\AuthService;
 use App\Services\CategoryService;
+use App\Services\CostBudgetService;
 use App\Services\EditorialRuleService;
 use App\Services\GoalService;
+use App\Services\ReportService;
 use App\Services\SiteService;
 use App\Support\Csrf;
 use App\Support\Http;
@@ -21,6 +24,9 @@ final class SiteController extends Controller
     private CategoryService $categories;
     private EditorialRuleService $rules;
     private GoalService $goals;
+    private ReportService $reports;
+    private CostBudgetService $costBudget;
+    private ArticleService $articles;
 
     public function __construct()
     {
@@ -28,6 +34,9 @@ final class SiteController extends Controller
         $this->categories = new CategoryService();
         $this->rules = new EditorialRuleService();
         $this->goals = new GoalService();
+        $this->reports = new ReportService();
+        $this->costBudget = new CostBudgetService();
+        $this->articles = new ArticleService();
     }
 
     /** Lista de sites — ADMIN vê todos, Redator-Chefe vê os vinculados. */
@@ -50,6 +59,9 @@ final class SiteController extends Controller
     {
         $site = $this->requireSite($id);
 
+        $currentPeriod = date('Y-m');
+        $monthly = $this->reports->monthly((int) $site['id'], $currentPeriod);
+
         View::render('sites/show', [
             'title'       => $site['name'],
             'site'        => $site,
@@ -57,6 +69,8 @@ final class SiteController extends Controller
             'ruleCounts'  => $this->rules->countsForSite((int) $site['id']),
             'goalCount'   => $this->goals->countForSite((int) $site['id']),
             'canEditSite' => AuthService::isAdmin(),
+            'costBudget'  => $this->costBudget->evaluate($monthly),
+            'attention'   => $this->articles->attentionCounts((int) $site['id']),
         ]);
     }
 

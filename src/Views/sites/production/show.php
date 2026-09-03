@@ -44,6 +44,26 @@ require __DIR__ . '/../_tabs.php';
     <p class="mt-2 text-sm text-text-secondary"><strong>Meta descrição:</strong> <?= View::e($article['meta_description']) ?></p>
 <?php endif; ?>
 
+<?php if (in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true)): ?>
+    <p role="status" class="mt-4 rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
+        Gerando em segundo plano — a página atualiza sozinha.
+    </p>
+<?php elseif ($article['status'] === 'ERROR'): ?>
+    <?php
+    $lastFailure = null;
+    foreach (array_reverse($executions) as $execution) {
+        if ($execution['status'] === 'FAILED') {
+            $lastFailure = $execution;
+            break;
+        }
+    }
+    ?>
+    <p role="alert" class="mt-4 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
+        Falha técnica na geração<?= $lastFailure !== null ? ' (passo: ' . View::e($lastFailure['step']) . ')' : '' ?>.
+        <?= $lastFailure !== null && $lastFailure['error_message'] ? View::e($lastFailure['error_message']) : 'Sem detalhe registrado.' ?>
+    </p>
+<?php endif; ?>
+
 <?php if ($article['status'] === 'IN_REVIEW'): ?>
     <section class="mt-5 rounded-lg border border-border bg-surface p-4">
         <h3 class="text-sm font-semibold uppercase tracking-wide text-text-muted">Revisão</h3>

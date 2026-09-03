@@ -25,6 +25,12 @@ final class SyncQueueDriver implements QueueDriver
         ($this->handler)($job->id === '' ? $job->withId('sync-' . bin2hex(random_bytes(6))) : $job);
     }
 
+    /** Não há fila para consumir no driver síncrono — `bin/worker.php` nem chega a chamar isto. */
+    public function reserve(): ?Job
+    {
+        throw new \LogicException('SyncQueueDriver não tem fila para reservar — jobs rodam inline no push().');
+    }
+
     public function name(): string
     {
         return 'sync';

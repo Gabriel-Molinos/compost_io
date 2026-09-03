@@ -5,10 +5,11 @@
     "license": "proprietary",
     "require": {
         "php": ">=8.1",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
-        "ext-openssl": "*",
-        "ext-mbstring": "*"
+        "predis/predis": "^3.6"
     },
     "autoload": {
         "psr-4": {

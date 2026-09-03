@@ -6,7 +6,7 @@ Este README ficou curto de propósito — a documentação completa foi organiza
 
 ## Status atual
 
-- **Última revisão:** 2026-08-26
+- **Última revisão:** 2026-09-01
 - **Stack resumida:** PHP puro (backend + Views) + MySQL + Redis + Tailwind CSS (CLI standalone) — **sem Node.js**.
 - **Mudança mais recente:** o frontend deixou de ser Next.js/React/TypeScript e passou a ser renderizado em PHP puro. Ver [ADR-008](docs/decisions/adr-008-frontend-php-puro.md).
 

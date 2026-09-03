@@ -7,28 +7,72 @@ declare(strict_types=1);
  *
  *   php bin/worker.php
  *
- * Hoje o único driver é `sync`: os jobs rodam inline na própria requisição que
- * os enfileira (Fase 4.3), então NÃO há fila para este worker consumir — ele só
- * informa isso e sai.
+ * Com `QUEUE_DRIVER=sync` (padrão) os jobs rodam inline na própria requisição
+ * que os enfileira — não há fila para este worker consumir, ele só avisa e sai.
  *
- * Quando entrar o `RedisQueueDriver`, este script vira o laço
- * `while (true) { $job = $driver->reserve(); $queue->execute($job); }`
- * rodando sob supervisor (produção) ou manualmente (dev).
+ * Com `QUEUE_DRIVER=redis`, entra no laço `reserve()`/`execute()` de verdade,
+ * bloqueando em BRPOP até haver job (ver `RedisQueueDriver`). Rodar sob
+ * `supervisor` em produção; manualmente (este comando) em dev.
+ *
+ * Handlers: `article.generate`/`article.regenerate` chamam `ArticlePipeline`
+ * de verdade (Fase 9.1b) — a criação da linha do artigo (`prepareGenerate()`/
+ * `prepareRegenerate()`) já rodou no controller antes de despachar; aqui só
+ * roda a parte com IA (`runGenerate()`/`runRegenerate()`). `smoke.echo`
+ * continua existindo pra verificação isolada (ver bin/queue_smoke.php).
  */
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 use App\Config\Env;
+use App\Queue\ArticleJobHandlers;
+use App\Queue\Job;
+use App\Queue\Queue;
+use App\Queue\RetryPolicy;
+use App\Queue\RetryRunner;
+use App\Services\ArticleService;
+use App\Services\Pipeline\ArticlePipeline;
 
 Env::load(dirname(__DIR__) . '/.env');
 
-$driver = Env::get('QUEUE_DRIVER', 'sync');
+$driverName = Env::get('QUEUE_DRIVER', 'sync');
 
-if ($driver === 'sync' || $driver === null) {
+if ($driverName === 'sync' || $driverName === null) {
     fwrite(STDERR, "QUEUE_DRIVER=sync — os jobs rodam inline; não há fila para consumir.\n");
-    fwrite(STDERR, "Configure QUEUE_DRIVER=redis (quando implementado) para usar este worker.\n");
+    fwrite(STDERR, "Configure QUEUE_DRIVER=redis para usar este worker.\n");
     exit(0);
 }
 
-fwrite(STDERR, "Driver '{$driver}' ainda não implementado.\n");
-exit(1);
+$queue = new Queue();
+
+// Rodando em segundo plano: backoff longo entre tentativas (30s→2min→10min em
+// produção) — diferente do backoff curto que o pipeline usa quando roda
+// inline dentro de uma requisição HTTP (ver ProductionController).
+$pipeline = new ArticlePipeline(retry: new RetryRunner(RetryPolicy::default()));
+ArticleJobHandlers::register($queue, $pipeline, new ArticleService());
+
+$queue->register('smoke.echo', function (Job $job): void {
+    $message = $job->payload['message'] ?? '(sem mensagem)';
+    echo "[smoke.echo] job {$job->id}: {$message}\n";
+});
+
+fwrite(STDERR, "Worker no ar (driver: {$queue->driverName()}). Aguardando jobs...\n");
+
+while (true) {
+    try {
+        $job = $queue->reserve();
+    } catch (\Throwable $e) {
+        fwrite(STDERR, 'Falha ao reservar job: ' . $e->getMessage() . "\n");
+        sleep(1);
+        continue;
+    }
+
+    if ($job === null) {
+        continue; // timeout do reserve() sem job disponível — volta a esperar
+    }
+
+    try {
+        $queue->execute($job);
+    } catch (\Throwable $e) {
+        fwrite(STDERR, "Job {$job->id} ({$job->type}) falhou: " . $e->getMessage() . "\n");
+    }
+}

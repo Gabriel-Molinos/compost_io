@@ -28,6 +28,7 @@ final class Labels
             'PUBLISHED'          => 'Publicado',
             'DISCARDED'          => 'Descartado',
             'BLOCKED'            => 'Bloqueado',
+            'ERROR'              => 'Falha técnica',
             default             => $status,
         };
     }

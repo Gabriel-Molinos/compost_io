@@ -99,7 +99,7 @@ Backend (PHP)              Fila (Redis)         AI Provider (Gemini)     Redator
       │                        │                        │      alerta visível   │
 ```
 
-> Cobre o mesmo fluxo descrito em [Processamento assíncrono (seção 26)](../editorial/fluxo-editorial.md#26-processamento-assíncrono), [Política de retry/falha da IA (seção 96)](testes-e-observabilidade.md#96-política-de-retry--falha-da-ia-proposta) e a proposta de [Monitoramento e alertas (seção 94.1)](testes-e-observabilidade.md#941-monitoramento-e-alertas-proposta) — a diferença para a seção 98.1 é que aqui a falha é **técnica** (timeout/erro de API), não uma rejeição humana.
+> Cobre o mesmo fluxo descrito em [Processamento assíncrono (seção 26)](../editorial/fluxo-editorial.md#26-processamento-assíncrono), [Política de retry/falha da IA (seção 96)](testes-e-observabilidade.md#96-política-de-retry--falha-da-ia-proposta) e [Monitoramento e alertas (seção 94.1)](testes-e-observabilidade.md#941-monitoramento-e-alertas) — a diferença para a seção 98.1 é que aqui a falha é **técnica** (timeout/erro de API), não uma rejeição humana.
 
 ## Ver também
 

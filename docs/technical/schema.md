@@ -102,6 +102,7 @@ Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mant
 - `0007` — `schedules.wp_media_ids` (VARCHAR 500, JSON): ids de mídia criados no WordPress por este agendamento, para limpar ao atualizar/retirar. Fase 7.5.
 - `0008` — `articles.review_started_at` / `reviewed_at` (TIMESTAMP nullable): janelas do "tempo médio de revisão" do relatório mensal. Fase 8.1.
 - `0009` — nova tabela **`editorial_insights`**: histórico das análises do Centro de Inteligência Editorial por site (uma chamada paga ao Gemini por geração). Fase 8.3.
+- `0010` — `articles.status`: +`ERROR` no ENUM — falha técnica definitiva do pipeline rodando via fila (retries esgotados). Fase 9.1b.
 
 ### 87.1 Autenticação — sem tabela
 
@@ -113,8 +114,8 @@ Não entraram na migration 0001 — dependem de decisão do responsável:
 
 - **`article_lineages` / `content_slots`** — a Fase 6.2 usa `articles.lineage_id` de forma **auto-referente** (o 1º artigo da cadeia aponta para si; regeneração cria nova linha com o mesmo `lineage_id` e `attempt_number + 1`). Cobre "3 tentativas por linhagem → `BLOCKED`". O conceito de **múltiplas linhagens por slot** ("2 linhagens completas → `BLOCKED`") foi adiado — se for necessário, aí sim modelar Slot → Linhagem → Artigo.
 - **`editorial_memory`** — a Fase 6.3 **não** criou tabela: a "memória editorial" é derivada em tempo de geração do próprio histórico (`feedback` recente do site + artigos já aprovados), injetada no prompt via `PromptBuilder::memoryLayer()`. Uma tabela de "lições curadas/resumidas pela IA" continua possível para a Fase 8 (Inteligência Editorial).
-- **`site_ai_budgets`** — limite de custo de IA por site/mês ([seção 95](testes-e-observabilidade.md#95-controle-de-custo-de-ia-proposta)). O método de cálculo existe; o valor numérico é decisão pendente.
-- **`articles.status = 'ERROR'`** — possível novo estado para falha técnica ([seção 96](testes-e-observabilidade.md#96-política-de-retry--falha-da-ia-proposta)). Seria um `ALTER TABLE` futuro sob a [seção 55](../ai/regras-claude-code.md#55-banco-de-dados--regras-específicas-de-alteração).
+- ~~`site_ai_budgets`~~ — **não precisou** (Fase 9.2): o limite de custo de IA por site/mês ([seção 95](testes-e-observabilidade.md#95-controle-de-custo-de-ia-proposta)) é calculado dinamicamente a cada carregamento (`CostBudgetService`), sem guardar número fixo em tabela.
+- ~~`articles.status = 'ERROR'`~~ — **implementado** (Fase 9.1b, migration `0010`): estado para falha técnica definitiva do pipeline rodando via fila ([seção 96](testes-e-observabilidade.md#96-política-de-retry--falha-da-ia-proposta)). Motivo vem de `ai_executions.error_message`, sem coluna nova.
 
 ### 87.3 Tabela `accounts` — legado, ignorar
 

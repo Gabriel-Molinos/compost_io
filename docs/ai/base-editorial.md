@@ -29,8 +29,10 @@ dependem de tráfego de busca e de monetização por anúncios.
 - **Palavra-chave principal** no título/H1 e destacada ao menos uma vez no corpo.
 - **Hierarquia de títulos** H1 → H2 → H3, com palavras-chave secundárias nos
   subtítulos. Sumário em textos longos.
-- **Links internos: 3 a 5. Links externos: 1 a 2** (nova aba). Nunca ancore link
-  na própria palavra-chave. Ligue o texto ao último artigo publicado do site.
+- **Links internos: 3 a 5, só pra artigos reais já publicados do site (nunca
+  invente/chute um caminho). Links externos: 1 a 2** (nova aba). Nunca ancore
+  link na própria palavra-chave. Detalhe de onde vêm os artigos internos
+  válidos: ver o passo `writing`.
 - **Parágrafos curtos** (no máximo ~2 linhas / 20–25 palavras). Use conectivos.
 - **Sem sensacionalismo, sem clickbait, sem promessa absoluta ou garantia sem
   fundamento.** Entregue o que o título promete.

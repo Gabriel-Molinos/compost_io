@@ -28,6 +28,7 @@ final class PromptBuilder
     private EditorialRuleService $rules;
     private CategoryService $categories;
     private GoalService $goals;
+    private ArticleService $articles;
 
     /** Texto de "memória editorial" injetado pelo pipeline (regeneração — Fase 6, feedback da linhagem). */
     private ?string $editorialContext = null;
@@ -39,6 +40,7 @@ final class PromptBuilder
         $this->rules = new EditorialRuleService();
         $this->categories = new CategoryService();
         $this->goals = new GoalService();
+        $this->articles = new ArticleService();
     }
 
     /**
@@ -78,6 +80,9 @@ final class PromptBuilder
         $layers[] = $this->briefLayer($brief);
         $layers[] = $this->draftLayer($draft);
         $layers[] = $this->memoryLayer();
+        if ($step === 'writing') {
+            $layers[] = $this->internalLinksLayer($siteId, (string) ($site['wordpress_url'] ?? ''));
+        }
 
         $layers = array_values(array_filter($layers, static fn (string $l): bool => trim($l) !== ''));
 
@@ -238,6 +243,38 @@ final class PromptBuilder
         return $this->editorialContext === null
             ? ''
             : "# MEMÓRIA EDITORIAL\n\n" . $this->editorialContext;
+    }
+
+    /**
+     * Alvos reais de link interno (Fase 9): sem isso, o passo `writing` era
+     * instruído a linkar artigos internos "chutando" um slug — o
+     * `InternalLinkResolver` já limpa o `<a>` na publicação se não bater com
+     * nada no WordPress, mas o resultado prático era quase nenhum link
+     * interno sobrevivendo. Usa `?p=ID`, formato de permalink que funciona em
+     * qualquer WordPress independente da estrutura de URL configurada — não
+     * precisa de resolução posterior.
+     */
+    private function internalLinksLayer(int $siteId, string $wordpressUrl): string
+    {
+        $wordpressUrl = rtrim($wordpressUrl, '/');
+        if ($wordpressUrl === '') {
+            return '';
+        }
+
+        $recent = $this->articles->recentPublishedForLinking($siteId);
+        if ($recent === []) {
+            return "# ARTIGOS JÁ PUBLICADOS NESTE SITE\n\n(Nenhum ainda — não há artigo interno pra linkar. Não invente.)";
+        }
+
+        $lines = array_map(
+            fn (array $a): string => '- ' . $this->val($a['title']) . ': ' . $wordpressUrl . '/?p=' . $a['wordpress_post_id'],
+            $recent
+        );
+
+        return "# ARTIGOS JÁ PUBLICADOS NESTE SITE\n\n"
+            . "Únicos alvos válidos pra link interno — use a URL exata de um destes se algum for relevante ao tema. "
+            . "Não existe nenhum outro artigo além dos listados aqui.\n\n"
+            . implode("\n", $lines);
     }
 
     private function val(mixed $value): string

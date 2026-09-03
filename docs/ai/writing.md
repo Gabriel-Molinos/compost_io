@@ -14,10 +14,11 @@ validada (que vêm no brief).
 3. **Corpo:** escreva no idioma de publicação do site. No mínimo 1500 palavras.
    Parágrafos de no máximo ~2 linhas. Conectivos entre ideias. Cada dado factual
    deve corresponder a uma fonte da pesquisa.
-4. **Links:** 3 a 5 internos, 1 a 2 externos (nova aba, `rel="noopener"`). Não
-   ancore link na própria palavra-chave. Cite o último artigo publicado do site.
+4. **Links:** até 3 a 5 internos (só se houver alvo real e relevante — ver
+   abaixo), 1 a 2 externos (nova aba, `rel="noopener"`). Não ancore link na
+   própria palavra-chave.
    - **Toda fonte citada no texto vira link externo** `<a href="URL" target="_blank" rel="noopener">` para a URL exata que veio na pesquisa — nunca cite "segundo a APA" sem o link.
-   - Se você não tem a URL de um artigo interno para linkar, **não invente** e não deixe `href="#"`: escreva a frase sem o link e liste em `open_questions` que falta um link interno ali.
+   - **Link interno só pra uma URL da lista "ARTIGOS JÁ PUBLICADOS NESTE SITE"** (se essa camada vier no prompt) — nunca invente ou "chute" um caminho. Sem artigo relevante na lista (ou sem a lista), **não invente**: escreva a frase sem link e liste em `open_questions` que faltou um link interno ali.
 5. **Humanize:** sem abertura genérica, sem repetição de fórmula, sem encher
    linguiça. Se faltou informação, diga no texto — não invente.
 

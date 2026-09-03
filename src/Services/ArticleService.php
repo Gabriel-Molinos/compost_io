@@ -33,6 +33,34 @@ final class ArticleService
         return $stmt->fetchAll();
     }
 
+    /**
+     * Artigos já publicados de verdade no site (com post real no WordPress) —
+     * dá ao `PromptBuilder` alvos reais pra link interno no passo `writing`,
+     * em vez da IA "chutar" um slug que talvez não exista (fluxo-editorial
+     * §24, docs/ai/writing.md). Mais recentes primeiro.
+     *
+     * @return list<array{title: string, wordpress_post_id: int}>
+     */
+    public function recentPublishedForLinking(int $siteId, int $limit = 15): array
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT a.title, s.wordpress_post_id
+             FROM articles a
+             JOIN schedules s ON s.article_id = a.id AND s.status = 'PUBLISHED' AND s.wordpress_post_id IS NOT NULL
+             WHERE a.site_id = :s AND a.status = 'PUBLISHED' AND a.deleted_at IS NULL
+             ORDER BY a.updated_at DESC
+             LIMIT :lim"
+        );
+        $stmt->bindValue('s', $siteId, \PDO::PARAM_INT);
+        $stmt->bindValue('lim', $limit, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map(
+            static fn (array $r): array => ['title' => (string) $r['title'], 'wordpress_post_id' => (int) $r['wordpress_post_id']],
+            $stmt->fetchAll()
+        );
+    }
+
     /** @return array<string, mixed>|null */
     public function find(int $siteId, int $id): ?array
     {

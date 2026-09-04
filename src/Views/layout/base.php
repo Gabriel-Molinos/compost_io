@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Services\AuthService;
+use App\Services\SiteService;
 use App\Support\Csrf;
 use App\Support\Session;
 use App\View;
@@ -41,6 +42,20 @@ $isActive = static fn (string $href): bool => $href === $currentPath
     || ($href !== '/' && $href !== '/sites' && str_starts_with($currentPath, $href));
 
 $hasSiteNav = $authUser !== null && $site !== null && $tabs !== null;
+
+// Fora do contexto de um site, a sidebar mostra um atalho pros sites do
+// usuário (igual "Meus sites" que já existia em home/index.php, só que
+// visível em qualquer tela) — com cap (§97 performance, plataforma pensada
+// pra 60+ sites) e link "Ver todos" quando passar do cap, em vez de listar
+// tudo de uma vez.
+$quickSites = [];
+$quickSitesTotal = 0;
+if ($authUser !== null && !$hasSiteNav) {
+    $sites = new SiteService();
+    $isAdmin = $authUser['role'] === 'ADMIN';
+    $quickSites = $sites->recentForSidebar((int) $authUser['id'], $isAdmin);
+    $quickSitesTotal = $isAdmin ? $sites->countAll() : $sites->countForUser((int) $authUser['id']);
+}
 ?>
 <!doctype html>
 <html lang="pt-BR">
@@ -82,9 +97,9 @@ $hasSiteNav = $authUser !== null && $site !== null && $tabs !== null;
     <div class="flex min-h-screen">
         <!-- Sidebar fixa (telas ≥ lg) -->
         <aside class="hidden w-64 shrink-0 flex-col border-r border-border bg-surface/60 px-4 py-6 lg:flex">
-            <a href="/" class="flex items-center gap-3 px-2">
-                <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-8 w-8">
-                <img src="/assets/brand/wordmark.png" alt="COMPOST" class="h-5 w-auto">
+            <a href="/" class="flex items-center gap-2.5 px-2">
+                <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-6 w-6 shrink-0">
+                <img src="/assets/brand/wordmark.png" alt="COMPOST" class="h-4 w-auto">
             </a>
 
             <div class="mt-8 flex-1 overflow-y-auto">
@@ -108,8 +123,8 @@ $hasSiteNav = $authUser !== null && $site !== null && $tabs !== null;
         <div class="flex min-w-0 flex-1 flex-col">
             <!-- Topo compacto (telas < lg) — a navegação mora num <details>, sem depender de JS. -->
             <header class="flex items-center justify-between gap-4 border-b border-border px-4 py-3 lg:hidden">
-                <a href="/" class="flex items-center gap-3">
-                    <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-7 w-7">
+                <a href="/" class="flex items-center gap-2.5">
+                    <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-6 w-6 shrink-0">
                     <img src="/assets/brand/wordmark.png" alt="COMPOST" class="h-4 w-auto">
                 </a>
                 <?php if ($authUser !== null): ?>

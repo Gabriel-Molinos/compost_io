@@ -68,9 +68,43 @@ final class Labels
     /** Badge pronta (HTML) pro status de um artigo — texto + cor, nunca só cor (R-UI-07). */
     public static function articleStatusBadge(string $status): string
     {
-        $tone = self::articleStatusTone($status);
-        $label = self::articleStatus($status);
+        return self::badge(self::articleStatus($status), self::articleStatusTone($status));
+    }
 
+    public static function scheduleStatus(string $status): string
+    {
+        return match ($status) {
+            'PENDING'   => 'Agendado',
+            'PUBLISHED' => 'Publicado',
+            'FAILED'    => 'Falhou',
+            default     => $status,
+        };
+    }
+
+    private static function scheduleStatusTone(string $status): string
+    {
+        return match ($status) {
+            'PUBLISHED' => 'success',
+            'FAILED'    => 'danger',
+            default     => 'cyan', // PENDING
+        };
+    }
+
+    /** Badge pronta (HTML) pro status de um agendamento — mesmo formato de articleStatusBadge(). */
+    public static function scheduleStatusBadge(string $status): string
+    {
+        return self::badge(self::scheduleStatus($status), self::scheduleStatusTone($status));
+    }
+
+    /** Badge pronta (HTML) pra um booleano ativo/inativo — mesmo formato das outras badges. */
+    public static function activeBadge(bool $active): string
+    {
+        return self::badge($active ? 'Ativo' : 'Inativo', $active ? 'success' : 'muted');
+    }
+
+    /** Monta o HTML comum de badge (bolinha + texto) — usado por todas as badges acima. */
+    private static function badge(string $label, string $tone): string
+    {
         return '<span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ' . self::toneClasses($tone) . '">'
             . '<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-current"></span>'
             . htmlspecialchars($label, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')

@@ -31,6 +31,51 @@ final class SiteService
         return $stmt->fetchAll();
     }
 
+    /**
+     * Sites em destaque pra sidebar fora do contexto de um site (atalho de
+     * navegação) — com cap, pra não listar 60+ links de uma vez quando a
+     * plataforma escalar (§97 performance). Combinar com count*() abaixo
+     * pra saber se "Ver todos" precisa aparecer.
+     *
+     * @return list<array{id: int, name: string}>
+     */
+    public function recentForSidebar(int $userId, bool $isAdmin, int $limit = 8): array
+    {
+        $limit = max(1, min(50, $limit));
+        $pdo = Connection::get();
+
+        if ($isAdmin) {
+            return $pdo->query("SELECT id, name FROM sites ORDER BY name LIMIT {$limit}")->fetchAll();
+        }
+
+        $stmt = $pdo->prepare(
+            "SELECT s.id, s.name
+             FROM sites s
+             JOIN user_site us ON us.site_id = s.id
+             WHERE us.user_id = :id
+             ORDER BY s.name
+             LIMIT {$limit}"
+        );
+        $stmt->execute(['id' => $userId]);
+
+        return $stmt->fetchAll();
+    }
+
+    public function countAll(): int
+    {
+        return (int) Connection::get()->query('SELECT COUNT(*) FROM sites')->fetchColumn();
+    }
+
+    public function countForUser(int $userId): int
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT COUNT(*) FROM sites s JOIN user_site us ON us.site_id = s.id WHERE us.user_id = :id'
+        );
+        $stmt->execute(['id' => $userId]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
     /** @return array<string, mixed>|null */
     public function find(int $id): ?array
     {

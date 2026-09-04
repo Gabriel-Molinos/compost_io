@@ -172,6 +172,6 @@
      em qualquer ordem, já que seletor de classe CSS não olha pra ordem). */
   .rounded-lg.border.border-border.bg-surface {
     position: relative;
-    background-image: linear-gradient(180deg, rgba(240, 248, 255, .025), transparent 55%);
+    background-image: linear-gradient(180deg, rgb(240 248 255 / 14%), transparent 55%);
   }
 }

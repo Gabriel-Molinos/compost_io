@@ -86,7 +86,7 @@ require __DIR__ . '/../_tabs.php';
                 <label class="text-sm">
                     <span class="block font-medium text-text-secondary">Motivo da rejeição</span>
                     <select name="reason" required
-                            class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+                            class="mt-1 w-full">
                         <?php foreach (ArticleReviewService::REJECT_REASONS as $value => $label): ?>
                             <option value="<?= View::e($value) ?>"><?= View::e($label) ?></option>
                         <?php endforeach; ?>
@@ -155,7 +155,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
                 <label class="text-sm">
                     <span class="block font-medium text-text-secondary">Autor</span>
                     <select name="author_id" required
-                            class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+                            class="mt-1 w-full">
                         <?= $authorOptions($authors, 0) ?>
                     </select>
                 </label>
@@ -199,7 +199,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
                     <label class="text-sm">
                         <span class="block font-medium text-text-secondary">Autor</span>
                         <select name="author_id" required
-                                class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+                                class="mt-1 w-full">
                             <?= $authorOptions($authors, (int) $schedule['author_id']) ?>
                         </select>
                     </label>

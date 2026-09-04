@@ -28,7 +28,7 @@ require __DIR__ . '/../_tabs.php';
 
     <label class="text-sm">
         <span class="block font-medium text-text-secondary">Passo</span>
-        <select name="step" class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+        <select name="step" class="mt-1 w-full">
             <?php foreach ($steps as $s): ?>
                 <option value="<?= $s ?>" <?= $input['step'] === $s ? 'selected' : '' ?>><?= $s ?></option>
             <?php endforeach; ?>
@@ -37,7 +37,7 @@ require __DIR__ . '/../_tabs.php';
 
     <label class="text-sm">
         <span class="block font-medium text-text-secondary">Meta (opcional)</span>
-        <select name="goal_id" class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+        <select name="goal_id" class="mt-1 w-full">
             <option value="">—</option>
             <?php foreach ($goals as $g): ?>
                 <option value="<?= View::e($g['id']) ?>" <?= $input['goal_id'] === (string) $g['id'] ? 'selected' : '' ?>>
@@ -49,7 +49,7 @@ require __DIR__ . '/../_tabs.php';
 
     <label class="text-sm">
         <span class="block font-medium text-text-secondary">Categoria (opcional)</span>
-        <select name="category_id" class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+        <select name="category_id" class="mt-1 w-full">
             <option value="">—</option>
             <?php foreach ($categories as $c): ?>
                 <option value="<?= View::e($c['id']) ?>" <?= $input['category_id'] === (string) $c['id'] ? 'selected' : '' ?>>

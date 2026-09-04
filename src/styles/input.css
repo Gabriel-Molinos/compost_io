@@ -49,47 +49,123 @@
     transition-timing-function: ease;
   }
 
-  /* Glow suave de foco em todo campo de formulário — some com o do teclado
-     (:focus-visible acima), soma na interação de mouse/toque. */
-  input:focus, select:focus, textarea:focus {
+  /* Glow suave de foco em input/textarea — select tem o próprio tratamento
+     de foco (mais abaixo), com :focus sutil e :focus-visible mais forte só
+     pro teclado, então fica de fora desta regra genérica. */
+  input:focus, textarea:focus {
     box-shadow: 0 0 0 3px rgba(0, 208, 240, .15);
   }
 
-  /* Select — a caixa em si (border/bg/padding) era idêntica a um <input> de
-     texto, sem nenhuma identidade própria de "isto é uma escolha, não uma
-     digitação". A pastilha ciano atrás da seta já ajuda, mas o que faltava
-     era a MOLDURA: borda com tom ciano (não mais o cinza neutro genérico de
-     border-border), fundo com leve profundidade (sombra interna). Os
-     seletores `select.border-border`/`select.px-3` — elemento+classe,
-     especificidade (0,0,1,1) — vencem a classe sozinha do Tailwind
-     (0,0,1,0) sem precisar de !important; só o padding-right (que a MESMA
-     classe px-3 já define pro lado esquerdo também) segue precisando. */
+  /* =====================================================================
+     Select — componente completo, não só a seta.
+     Pedido: parar de tratar o <select> como "um <input> de texto com uma
+     seta a mais" e desenhar o controle inteiro — altura, padding, tipo-
+     grafia, e principalmente uma "zona da seta" com fundo e divisória
+     próprios (lê como área clicável separada, um padrão comum em selects
+     premium tipo Linear/Notion), além dos 6 estados que faltavam por
+     completo (hover, focus, focus-visible, active, disabled, erro).
+
+     Estilizado no elemento puro (zero classe nova em cada View, mesmo
+     padrão zero-config de input/tbody tr/summary acima — R-UI-02/R-UI-03).
+     Isso exigiu remover das 8 Views que usam <select> as utilities que
+     descreviam a MESMA caixa por outro caminho (border-border, bg-
+     surface-2, px-3/py-2, rounded-md, text-text-primary, focus:border-cyan,
+     focus:outline-none) — cada propriedade abaixo já define o valor final
+     direto na tag, então manter as utilities coexistindo só criava a
+     armadilha de especificidade já documentada (classe Tailwind, 0,0,1,0,
+     vence elemento puro, 0,0,0,1, na ordem de origem) e deixava duas fontes
+     de verdade pro mesmo visual. `mt-1`/`w-full` (puro layout, varia por
+     contexto) continuam nas Views.
+
+     Erro usa `[aria-invalid="true"]` — o mesmo atributo que Form::text()/
+     textarea()/file() já usa (docs/technical/ui-ux-frontend.md §104),
+     então o <select> de perfil em users/form.php passou a usar o mesmo
+     padrão em vez do border-danger condicional que só mudava a cor sem
+     marcar o campo como inválido pra leitor de tela. */
   select {
+    display: block;
+    min-height: 2.375rem;
+    padding: .5625rem 2.5rem .5625rem .75rem;
+    border-radius: .375rem;
+    border: 1px solid rgba(0, 208, 240, .30);
+    background-color: #0A2647;
+    color: #F0F8FF;
+    font-family: inherit;
+    font-size: .875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(240, 248, 255, .05);
+    transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
-    background-color: #0A2647;
-    box-shadow: inset 0 1px 0 rgba(240, 248, 255, .04);
+    /* 3 camadas, sempre na mesma ordem nas 3 propriedades abaixo:
+       1) seta (ícone svg)  2) linha divisória  3) fundo da "zona da seta". */
+    background-repeat: no-repeat, no-repeat, no-repeat;
+    background-position: right .9rem center, right 2.5rem top 0, right center;
+    background-size: 13px, 1px 100%, 2.5rem 100%;
     background-image:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300D0F0' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
-      radial-gradient(circle, rgba(0, 208, 240, .22) 0%, rgba(0, 208, 240, .22) 60%, transparent 62%);
-    background-repeat: no-repeat, no-repeat;
-    background-position: right .55rem center, right .05rem center;
-    background-size: 16px, 30px 30px;
-    cursor: pointer;
-    transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238FA6BC' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+      linear-gradient(rgba(61, 82, 102, .55), rgba(61, 82, 102, .55)),
+      linear-gradient(rgba(0, 208, 240, .07), rgba(0, 208, 240, .07));
   }
-  select.border-border {
-    border-color: rgba(0, 208, 240, .38);
-  }
-  select.px-3 {
-    padding-right: 2.75rem;
-  }
-  select.border-border:hover {
-    border-color: rgba(127, 232, 255, .7);
+
+  /* Hover e :focus por mouse/toque compartilham o mesmo realce — sutil,
+     só a moldura e a zona da seta clareiam (nada de anel grosso aqui,
+     isso fica reservado pro :focus-visible do teclado, abaixo). */
+  select:hover:not(:disabled),
+  select:focus {
+    border-color: rgba(0, 208, 240, .55);
     background-image:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237FE8FF' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
-      radial-gradient(circle, rgba(0, 208, 240, .34) 0%, rgba(0, 208, 240, .34) 60%, transparent 62%);
+      linear-gradient(rgba(127, 232, 255, .5), rgba(127, 232, 255, .5)),
+      linear-gradient(rgba(0, 208, 240, .13), rgba(0, 208, 240, .13));
+  }
+  select:focus {
+    outline: none;
+  }
+  /* Anel perceptível só pra navegação por teclado (Tab) — clique de mouse
+     já ganhou feedback (acima) sem precisar do anel também, evita o "flash"
+     de foco em todo clique que a maioria dos SaaS evita hoje. */
+  select:focus-visible {
+    box-shadow: inset 0 1px 0 rgba(240, 248, 255, .05), 0 0 0 3px rgba(0, 208, 240, .28);
+  }
+  select:active:not(:disabled) {
+    background-color: #08213D;
+  }
+
+  select:disabled {
+    cursor: not-allowed;
+    opacity: .5;
+    border-color: rgba(61, 82, 102, .6);
+    background-color: #061830;
+    box-shadow: none;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237B8FA1' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+      linear-gradient(rgba(61, 82, 102, .35), rgba(61, 82, 102, .35)),
+      transparent;
+  }
+
+  /* Erro — mesmo padrão de cor de Form::text()/textarea() (border-danger),
+     mas dirigido por [aria-invalid] em vez de uma classe condicional. */
+  select[aria-invalid="true"] {
+    border-color: rgba(255, 92, 122, .55);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FF5C7A' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+      linear-gradient(rgba(255, 92, 122, .4), rgba(255, 92, 122, .4)),
+      linear-gradient(rgba(255, 92, 122, .08), rgba(255, 92, 122, .08));
+  }
+  select[aria-invalid="true"]:hover:not(:disabled),
+  select[aria-invalid="true"]:focus {
+    border-color: rgba(255, 92, 122, .8);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FF5C7A' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+      linear-gradient(rgba(255, 92, 122, .6), rgba(255, 92, 122, .6)),
+      linear-gradient(rgba(255, 92, 122, .14), rgba(255, 92, 122, .14));
+  }
+  select[aria-invalid="true"]:focus-visible {
+    box-shadow: inset 0 1px 0 rgba(240, 248, 255, .05), 0 0 0 3px rgba(255, 92, 122, .28);
   }
 
   /* Realce de linha em qualquer tabela do app — sem precisar de classe extra. */

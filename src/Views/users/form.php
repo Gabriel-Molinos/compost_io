@@ -79,13 +79,13 @@ $role = $user['role'] ?? 'REDATOR_CHEFE';
                 <label for="f_role" class="block text-sm font-medium text-text-secondary">
                     Perfil <span class="text-danger" aria-hidden="true">*</span>
                 </label>
-                <select id="f_role" name="role" data-role-select
-                        class="mt-1 w-full rounded-md border <?= isset($errors['role']) ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-surface-2 px-3 py-2 text-text-primary focus:outline-none">
+                <select id="f_role" name="role" data-role-select class="mt-1 w-full"
+                        <?= isset($errors['role']) ? 'aria-invalid="true" aria-describedby="f_role_err"' : '' ?>>
                     <option value="REDATOR_CHEFE" <?= $role === 'REDATOR_CHEFE' ? 'selected' : '' ?>>Redator-Chefe</option>
                     <option value="ADMIN" <?= $role === 'ADMIN' ? 'selected' : '' ?>>Administrador</option>
                 </select>
                 <?php if (isset($errors['role'])): ?>
-                    <p class="mt-1 text-sm text-danger"><?= View::e($errors['role']) ?></p>
+                    <p id="f_role_err" class="mt-1 text-sm text-danger"><?= View::e($errors['role']) ?></p>
                 <?php endif; ?>
             </div>
 

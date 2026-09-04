@@ -40,7 +40,7 @@ $statBar = static function (array $cols, string $gridCols): void {
     foreach ($cols as [$label, $value, $sub]) {
         echo '<div class="bg-surface p-4">';
         echo '<dt class="text-xs font-semibold uppercase tracking-wide text-text-muted">' . View::e($label) . '</dt>';
-        echo '<dd class="mt-1 font-display text-2xl font-semibold text-text-primary">' . View::e($value) . '</dd>';
+        echo '<dd class="mt-1 font-mono text-2xl font-semibold text-text-primary">' . View::e($value) . '</dd>';
         if ($sub !== null) {
             echo '<p class="mt-0.5 text-xs text-text-muted">' . View::e($sub) . '</p>';
         }

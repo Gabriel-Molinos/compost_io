@@ -62,7 +62,7 @@ $statusLabel = static fn (string $status): string => mb_strtolower(Labels::sched
                         $items = $byDay[$ymd] ?? [];
                         ?>
                         <td data-calendar-day="<?= View::e($ymd) ?>"
-                            class="h-28 border border-border p-1 align-top transition-colors <?= $inMonth ? '' : 'bg-surface/40 text-text-muted' ?>">
+                            class="h-28 border border-border p-1 align-top transition-colors <?= $inMonth ? 'hover:bg-surface-2/50' : 'bg-surface/40 text-text-muted' ?>">
                             <div class="flex items-center justify-between">
                                 <span class="text-xs <?= $ymd === $todayYmd ? 'rounded bg-cyan px-1.5 font-semibold text-[#050B0F]' : 'text-text-muted' ?>">
                                     <?= (int) $day->format('j') ?>
@@ -73,7 +73,7 @@ $statusLabel = static fn (string $status): string => mb_strtolower(Labels::sched
                                     <?php $pending = $it['status'] === 'PENDING'; ?>
                                     <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($it['article_id']) ?>#agendar"
                                        <?php if ($pending): ?>data-schedule-article="<?= View::e($it['article_id']) ?>"<?php endif; ?>
-                                       class="block truncate rounded px-1 py-0.5 text-xs <?= $badge((string) $it['status']) ?> <?= $pending ? 'cursor-grab active:cursor-grabbing' : '' ?>"
+                                       class="block truncate rounded px-1 py-0.5 text-xs transition-all hover:brightness-125 hover:shadow-[0_0_0_1px_currentColor] <?= $badge((string) $it['status']) ?> <?= $pending ? 'cursor-grab active:cursor-grabbing' : '' ?>"
                                        title="<?= View::e($it['title'] ?: 'Rascunho #' . $it['article_id']) ?> — <?= View::e(substr((string) $it['scheduled_date'], 11, 5)) ?> · <?= View::e($statusLabel((string) $it['status'])) ?><?= $it['author_name'] ? ' · ' . View::e($it['author_name']) : '' ?><?= $pending ? ' · arraste pra outro dia pra reagendar' : '' ?>">
                                         <?= View::e(substr((string) $it['scheduled_date'], 11, 5)) ?>
                                         <?= View::e($it['title'] ?: 'Rascunho #' . $it['article_id']) ?>

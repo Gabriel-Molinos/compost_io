@@ -27,7 +27,7 @@ final class SvgChart
         string $color = '#00D0F0', // cyan.DEFAULT (docs/product/identidade-visual.md)
         ?callable $format = null,
         int $width = 640,
-        int $height = 160,
+        int $height = 180,
     ): string {
         $n = count($values);
         if ($n === 0) {
@@ -38,13 +38,17 @@ final class SvgChart
         $max = max([...$values, 0]);
         $max = $max > 0 ? $max : 1;
 
-        $padTop = 22;    // espaço pro valor acima da barra
-        $padBottom = 20; // espaço pro rótulo do mês
+        $padTop = 28;    // espaço pro valor acima da barra (fonte maior que antes — legibilidade)
+        $padBottom = 24; // espaço pro rótulo do mês
         $chartHeight = $height - $padTop - $padBottom;
         $gap = 10;
         $barWidth = ($width - $gap * ($n + 1)) / $n;
 
-        $bars = '';
+        // Linha de base (eixo) — dá referência visual de "zero" que faltava.
+        $bars = sprintf(
+            '<line x1="0" y1="%d" x2="%d" y2="%d" stroke="#3D5266" stroke-width="1" />',
+            $padTop + $chartHeight, $width, $padTop + $chartHeight
+        );
         foreach (array_values($values) as $i => $v) {
             $barHeight = ((float) $v / $max) * $chartHeight;
             $x = $gap + $i * ($barWidth + $gap);
@@ -52,16 +56,18 @@ final class SvgChart
             $label = $labels[$i] ?? '';
 
             $bars .= sprintf(
-                '<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="2" fill="%s" />',
+                '<rect x="%.1f" y="%.1f" width="%.1f" height="%.1f" rx="3" fill="%s" />',
                 $x, $y, $barWidth, max($barHeight, 0.0), $color
             );
+            // Valor acima da barra: texto de destaque (branco, semi-negrito, maior) —
+            // é o dado que o usuário veio ler, não pode ter o mesmo peso do rótulo do mês.
             $bars .= sprintf(
-                '<text x="%.1f" y="%d" text-anchor="middle" font-size="10" fill="#7B8FA1">%s</text>',
-                $x + $barWidth / 2, $padTop - 6, htmlspecialchars($format($v), ENT_QUOTES)
+                '<text x="%.1f" y="%d" text-anchor="middle" font-size="13" font-weight="600" fill="#F0F8FF">%s</text>',
+                $x + $barWidth / 2, $padTop - 10, htmlspecialchars($format($v), ENT_QUOTES)
             );
             $bars .= sprintf(
-                '<text x="%.1f" y="%d" text-anchor="middle" font-size="10" fill="#7B8FA1">%s</text>',
-                $x + $barWidth / 2, $height - 4, htmlspecialchars((string) $label, ENT_QUOTES)
+                '<text x="%.1f" y="%d" text-anchor="middle" font-size="11" fill="#8FA6BC">%s</text>',
+                $x + $barWidth / 2, $height - 6, htmlspecialchars((string) $label, ENT_QUOTES)
             );
         }
 

@@ -75,8 +75,8 @@ $isAdmin = $user !== null && $user['role'] === 'ADMIN';
                 <span aria-hidden="true" class="status-dot">●</span><span>Conectado ao MySQL (SSL)</span>
             </p>
             <dl class="mt-4 grid grid-cols-2 gap-4">
-                <div><dt class="text-xs text-text-muted">Tabelas</dt><dd class="font-display text-2xl font-semibold text-text-primary"><?= View::e($db['tables'] ?? 0) ?></dd></div>
-                <div><dt class="text-xs text-text-muted">Usuários</dt><dd class="font-display text-2xl font-semibold text-text-primary"><?= View::e($db['users'] ?? 0) ?></dd></div>
+                <div><dt class="text-xs text-text-muted">Tabelas</dt><dd class="font-mono text-2xl font-semibold text-text-primary"><?= View::e($db['tables'] ?? 0) ?></dd></div>
+                <div><dt class="text-xs text-text-muted">Usuários</dt><dd class="font-mono text-2xl font-semibold text-text-primary"><?= View::e($db['users'] ?? 0) ?></dd></div>
             </dl>
         <?php else: ?>
             <p class="mt-3 flex items-center gap-2 text-sm text-danger">

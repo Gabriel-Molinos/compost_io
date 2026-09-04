@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Services\ArticleReviewService;
 use App\Support\Csrf;
+use App\Support\Icon;
 use App\Support\Labels;
 use App\View;
 
@@ -22,13 +23,16 @@ $base = '/sites/' . $site['id'] . '/memory';
 </p>
 
 <section class="mt-8" aria-labelledby="h-nova">
-    <h2 id="h-nova" class="font-display text-lg font-semibold text-text-primary">Nova lição</h2>
-    <form method="post" action="<?= $base ?>" class="mt-3 grid gap-3 sm:max-w-xl">
+    <h2 id="h-nova" class="flex items-center gap-2 font-display text-lg font-semibold text-text-primary">
+        <span class="text-cyan"><?= Icon::nav('memory') ?></span> Nova lição
+    </h2>
+    <form method="post" action="<?= $base ?>"
+          class="mt-3 grid gap-3 rounded-lg border border-border bg-surface p-5 sm:max-w-xl">
         <?= Csrf::field() ?>
         <label class="text-sm">
             <span class="sr-only">Lição</span>
             <textarea name="lesson" rows="3" required placeholder="Ex.: Este site nunca usa títulos em formato de pergunta."
-                      class="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none"></textarea>
+                      class="w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary placeholder:text-text-muted focus:border-cyan focus:outline-none"></textarea>
         </label>
         <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
             Adicionar à memória
@@ -47,10 +51,12 @@ $base = '/sites/' . $site['id'] . '/memory';
             </p>
             <ul class="mt-3 space-y-2">
                 <?php foreach ($recentFeedback as $f): ?>
-                    <li class="flex items-center justify-between gap-4 rounded-lg border border-border bg-surface px-4 py-3">
+                    <li class="flex items-center justify-between gap-4 rounded-lg border-l-2 border-l-warning border-y border-r border-border bg-surface px-4 py-3">
                         <div>
                             <p class="text-sm text-text-primary">
-                                <span class="text-text-muted">[<?= View::e(ArticleReviewService::REJECT_REASONS[$f['reason']] ?? $f['reason']) ?>]</span>
+                                <span class="rounded bg-warning/10 px-1.5 py-0.5 text-xs font-medium text-warning">
+                                    <?= View::e(ArticleReviewService::REJECT_REASONS[$f['reason']] ?? $f['reason']) ?>
+                                </span>
                                 <?= View::e($f['justification']) ?>
                             </p>
                         </div>
@@ -69,13 +75,15 @@ $base = '/sites/' . $site['id'] . '/memory';
 <?php endif; ?>
 
 <section class="mt-8" aria-labelledby="h-licoes">
-    <h2 id="h-licoes" class="font-display text-lg font-semibold text-text-primary">Lições (<?= count($lessons) ?>)</h2>
+    <h2 id="h-licoes" class="flex items-center gap-2 font-display text-lg font-semibold text-text-primary">
+        <span class="text-cyan"><?= Icon::nav('memory') ?></span> Lições (<?= count($lessons) ?>)
+    </h2>
     <?php if ($lessons === []): ?>
         <p class="mt-2 text-sm text-text-secondary">Nenhuma lição ainda.</p>
     <?php else: ?>
         <ul class="mt-3 space-y-2">
             <?php foreach ($lessons as $l): ?>
-                <li class="rounded-lg border <?= $l['active'] ? 'border-border' : 'border-border opacity-60' ?> bg-surface p-4">
+                <li class="rounded-lg border-l-2 <?= $l['active'] ? 'border-l-cyan border-y border-r border-border' : 'border-l-border border-y border-r border-border opacity-60' ?> bg-surface p-4">
                     <div class="flex items-start justify-between gap-4">
                         <p class="text-sm text-text-primary"><?= nl2br(View::e($l['lesson'])) ?></p>
                         <span class="shrink-0"><?= Labels::activeBadge((bool) $l['active'], feminine: true) ?></span>

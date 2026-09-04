@@ -50,6 +50,13 @@ use App\Services\WordPressPublishService;
 
 Env::load(dirname(__DIR__) . '/.env');
 
+// Mesma linha que public/index.php já tinha — faltava aqui. Sem isso, todo
+// date()/DateTimeImmutable('now') deste processo roda no fuso padrão do
+// servidor (UTC), não no do site (APP_TIMEZONE) — "sempre 9h" do agendamento
+// automático viraria 9h UTC (6h em São Paulo), e o recorte "mês atual" da
+// geração automática podia cair no mês errado perto da virada.
+date_default_timezone_set(Env::get('APP_TIMEZONE') ?: 'America/Sao_Paulo');
+
 $driverName = Env::get('QUEUE_DRIVER', 'sync');
 
 if ($driverName === 'sync' || $driverName === null) {

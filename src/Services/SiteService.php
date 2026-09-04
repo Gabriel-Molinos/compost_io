@@ -12,7 +12,8 @@ final class SiteService
     public function all(): array
     {
         return Connection::get()
-            ->query('SELECT id, name, logo_path, niche, language, is_active FROM sites ORDER BY name')
+            ->query('SELECT id, name, logo_path, niche, language, target_audience, tone, wordpress_url, is_active
+                      FROM sites ORDER BY name')
             ->fetchAll();
     }
 
@@ -20,7 +21,7 @@ final class SiteService
     public function forUser(int $userId): array
     {
         $stmt = Connection::get()->prepare(
-            'SELECT s.id, s.name, s.logo_path, s.niche, s.language, s.is_active
+            'SELECT s.id, s.name, s.logo_path, s.niche, s.language, s.target_audience, s.tone, s.wordpress_url, s.is_active
              FROM sites s
              JOIN user_site us ON us.site_id = s.id
              WHERE us.user_id = :id

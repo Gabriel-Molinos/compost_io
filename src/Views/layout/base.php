@@ -34,8 +34,11 @@ if ($authUser !== null) {
     $globalNav[] = ['/sites', 'Sites', 'sites'];
 }
 
+// "/sites" só ativo na lista em si (match exato) — dentro de um site
+// (/sites/{id}/...) quem mostra onde você está é a seção do site logo
+// abaixo; com prefixo teria os dois marcados ao mesmo tempo, confuso.
 $isActive = static fn (string $href): bool => $href === $currentPath
-    || ($href !== '/' && str_starts_with($currentPath, $href));
+    || ($href !== '/' && $href !== '/sites' && str_starts_with($currentPath, $href));
 
 $hasSiteNav = $authUser !== null && $site !== null && $tabs !== null;
 ?>

@@ -12,8 +12,15 @@ namespace App\Support;
  */
 final class Icon
 {
-    private const VIEWBOX_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" '
-        . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-[18px] w-[18px] shrink-0">';
+    /**
+     * Tamanho via atributos SVG (`width`/`height`) + `style` inline, não classes
+     * Tailwind — este arquivo fica fora de `src/Views/`, então o scanner de
+     * conteúdo do Tailwind (`tailwind.config.js`) nunca o lê; uma classe daqui
+     * some silenciosamente do CSS compilado (foi exatamente o bug: os ícones
+     * saíam do tamanho padrão do navegador, gigantes, espremendo o rótulo).
+     */
+    private const VIEWBOX_OPEN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" '
+        . 'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0">';
 
     private const PATHS = [
         // --- navegação global ---

@@ -2,7 +2,11 @@
 // Paleta e tipografia: docs/product/identidade-visual.md (identidade final, 2026-08-28;
 // migrada no código na fase de acabamento, 2026-09-03).
 module.exports = {
-  content: ['./src/Views/**/*.php', './public/**/*.php'],
+  // src/Support incluído porque Labels::toneClasses() monta classes Tailwind
+  // em PHP fora de src/Views — sem isso, o scanner de conteúdo não as vê e
+  // elas somem do CSS compilado sem aviso nenhum (bug real: Icon.php usava
+  // classes Tailwind pra tamanho e saíam gigantes, sem CSS nenhum aplicado).
+  content: ['./src/Views/**/*.php', './src/Support/**/*.php', './public/**/*.php'],
   theme: {
     extend: {
       colors: {

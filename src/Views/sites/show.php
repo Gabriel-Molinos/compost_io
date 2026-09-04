@@ -75,7 +75,7 @@ require __DIR__ . '/_tabs.php';
     </div>
 </div>
 
-<div class="mt-4 grid gap-4 sm:grid-cols-3">
+<div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     <a href="/sites/<?= View::e($site['id']) ?>/categories"
        class="hover-card rounded-lg border border-border bg-surface p-4 hover:border-cyan">
         <p class="text-xs uppercase tracking-wide text-text-muted">Categorias</p>

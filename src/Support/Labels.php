@@ -81,7 +81,7 @@ final class Labels
         };
     }
 
-    private static function scheduleStatusTone(string $status): string
+    public static function scheduleStatusTone(string $status): string
     {
         return match ($status) {
             'PUBLISHED' => 'success',

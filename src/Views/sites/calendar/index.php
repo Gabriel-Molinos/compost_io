@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Labels;
 use App\View;
 
 /** @var array<string,mixed> $site */
@@ -20,19 +21,12 @@ $meses = [1 => 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
 $monthLabel = $meses[(int) $month->format('n')] . ' ' . $month->format('Y');
 $monthNum = $month->format('m');
 
-$badge = static function (string $status): string {
-    return match ($status) {
-        'PUBLISHED' => 'bg-success/15 text-success',
-        'FAILED'    => 'bg-danger/15 text-danger',
-        default     => 'bg-cyan/15 text-cyan', // PENDING
-    };
-};
-$statusLabel = static fn (string $s): string => match ($s) {
-    'PENDING'   => 'agendado',
-    'PUBLISHED' => 'publicado',
-    'FAILED'    => 'falhou',
-    default     => strtolower($s),
-};
+// Cada item do calendário é um link compacto colorido, não a badge padrão
+// (não cabe pílula+ponto numa célula de ~4rem) — mas o tom vem de
+// Labels::scheduleStatusTone(), mesma fonte de verdade da badge usada em
+// Produção, pra não ter dois mapas de cor divergentes pro mesmo status.
+$badge = static fn (string $status): string => Labels::toneClasses(Labels::scheduleStatusTone($status));
+$statusLabel = static fn (string $status): string => mb_strtolower(Labels::scheduleStatus($status));
 ?>
 <div class="flex flex-wrap items-center justify-between gap-3">
     <h2 class="font-display text-lg font-semibold text-text-primary">Calendário editorial</h2>

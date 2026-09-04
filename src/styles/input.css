@@ -55,28 +55,41 @@
     box-shadow: 0 0 0 3px rgba(0, 208, 240, .15);
   }
 
-  /* Select — a seta nativa do navegador (cinza clara, genérica, muda de
-     estilo por SO/browser) nunca combinava com o tema escuro; toda tela do
-     app repete a mesma classe base (`border border-border bg-surface-2`)
-     nos <select>, então dá pra resolver aqui uma vez só, sem view por view.
-     `padding-right` força espaço pra seta mesmo com `px-3` do Tailwind —
-     mesma especificidade (0,0,1,0) que uma regra de elemento puro perde por
-     ordem no CSS compilado, daí o !important aqui (só nisso, escopado). */
+  /* Select — a caixa em si (border/bg/padding) era idêntica a um <input> de
+     texto, sem nenhuma identidade própria de "isto é uma escolha, não uma
+     digitação". A pastilha ciano atrás da seta já ajuda, mas o que faltava
+     era a MOLDURA: borda com tom ciano (não mais o cinza neutro genérico de
+     border-border), fundo com leve profundidade (sombra interna). Os
+     seletores `select.border-border`/`select.px-3` — elemento+classe,
+     especificidade (0,0,1,1) — vencem a classe sozinha do Tailwind
+     (0,0,1,0) sem precisar de !important; só o padding-right (que a MESMA
+     classe px-3 já define pro lado esquerdo também) segue precisando. */
   select {
     appearance: none;
     -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237B8FA1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right .65rem center;
-    background-size: 18px;
-    padding-right: 2.25rem !important;
+    -moz-appearance: none;
+    background-color: #0A2647;
+    box-shadow: inset 0 1px 0 rgba(240, 248, 255, .04);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300D0F0' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+      radial-gradient(circle, rgba(0, 208, 240, .22) 0%, rgba(0, 208, 240, .22) 60%, transparent 62%);
+    background-repeat: no-repeat, no-repeat;
+    background-position: right .55rem center, right .05rem center;
+    background-size: 16px, 30px 30px;
     cursor: pointer;
+    transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
   }
-  select:hover {
-    border-color: #4A6076; /* border-strong */
+  select.border-border {
+    border-color: rgba(0, 208, 240, .38);
   }
-  select:focus {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300D0F0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  select.px-3 {
+    padding-right: 2.75rem;
+  }
+  select.border-border:hover {
+    border-color: rgba(127, 232, 255, .7);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237FE8FF' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+      radial-gradient(circle, rgba(0, 208, 240, .34) 0%, rgba(0, 208, 240, .34) 60%, transparent 62%);
   }
 
   /* Realce de linha em qualquer tabela do app — sem precisar de classe extra. */

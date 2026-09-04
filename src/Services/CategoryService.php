@@ -12,7 +12,9 @@ final class CategoryService
     public function allForSite(int $siteId): array
     {
         $stmt = Connection::get()->prepare(
-            'SELECT id, site_id, name, guidelines FROM categories WHERE site_id = :s ORDER BY name'
+            'SELECT c.id, c.site_id, c.name, c.guidelines, c.wordpress_category_id,
+                    (SELECT COUNT(*) FROM articles a WHERE a.category_id = c.id) AS article_count
+             FROM categories c WHERE c.site_id = :s ORDER BY c.name'
         );
         $stmt->execute(['s' => $siteId]);
 

@@ -21,10 +21,19 @@ final class Avatar
         string $size = 'h-10 w-10',
         string $radius = 'rounded-lg',
         string $textSize = 'text-base',
+        string $fit = 'cover',
     ): string {
         if ($path !== null && $path !== '' && is_file(dirname(__DIR__, 2) . '/public/' . $path)) {
             $src = View::e(View::asset($path));
-            return "<img src=\"{$src}\" alt=\"\" class=\"{$size} {$radius} shrink-0 object-cover\">";
+            // Classe "object-*" sempre literal (nunca montada por interpolação)
+            // — é a mesma pegadinha do bug dos ícones: o scanner de conteúdo do
+            // Tailwind só enxerga texto literal no arquivo, não o resultado em
+            // runtime de uma string PHP montada com variável.
+            $objectFit = $fit === 'contain' ? 'object-contain' : 'object-cover';
+            // bg-surface-2 embaixo: some no "cover" (a imagem preenche tudo),
+            // mas no "contain" (logo não-quadrado numa moldura larga) vira o
+            // fundo das sobras — a logo inteira aparece, sem esticar/cortar.
+            return "<img src=\"{$src}\" alt=\"\" class=\"{$size} {$radius} shrink-0 bg-surface-2 {$objectFit}\">";
         }
 
         $label = trim($label);

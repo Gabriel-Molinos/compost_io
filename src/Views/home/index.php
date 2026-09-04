@@ -94,28 +94,28 @@ $firstName = $user !== null ? explode(' ', trim((string) $user['name']))[0] : nu
                     : 'Nenhum site vinculado ao seu usuário ainda. Peça ao administrador para te vincular a um site.' ?>
             </p>
         <?php else: ?>
-            <div class="relative mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div class="relative mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 <?php foreach ($sites as $site): ?>
                     <?php $active = (int) $site['is_active'] === 1; ?>
                     <a href="/sites/<?= View::e($site['id']) ?>"
-                       class="group flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 pb-3
+                       class="group flex flex-col gap-2 rounded-lg border border-border bg-surface p-2
                               transition-colors hover:border-border-strong">
-                        <span class="flex items-start justify-between gap-2">
-                            <?= Avatar::html($site['logo_path'] ?? null, (string) $site['name'], size: 'h-11 w-11', textSize: 'text-base') ?>
-                            <span class="flex items-center gap-1.5 text-xs text-text-muted" title="<?= $active ? 'Ativo' : 'Inativo' ?>">
+                        <?= Avatar::html($site['logo_path'] ?? null, (string) $site['name'], size: 'h-20 w-full', radius: 'rounded-md', textSize: 'text-2xl', fit: 'contain') ?>
+                        <span class="flex items-start justify-between gap-2 px-1">
+                            <span class="min-w-0 flex-1">
+                                <span class="block truncate font-display text-sm font-semibold text-text-primary">
+                                    <?= View::e($site['name']) ?>
+                                </span>
+                                <span class="mt-0.5 inline-block max-w-full truncate rounded-full bg-surface-2 px-2 py-0.5 text-[11px] text-text-secondary">
+                                    <?= View::e($site['niche'] ?? 'Sem nicho definido') ?>
+                                </span>
+                            </span>
+                            <span class="mt-1.5 flex shrink-0" title="<?= $active ? 'Ativo' : 'Inativo' ?>">
                                 <span aria-hidden="true" class="h-1.5 w-1.5 rounded-full <?= $active ? 'bg-success status-dot' : 'bg-text-muted' ?>"></span>
-                                <?= $active ? 'ativo' : 'inativo' ?>
+                                <span class="sr-only"><?= $active ? 'Ativo' : 'Inativo' ?></span>
                             </span>
                         </span>
-                        <span class="min-w-0">
-                            <span class="block truncate font-display text-base font-semibold text-text-primary">
-                                <?= View::e($site['name']) ?>
-                            </span>
-                            <span class="mt-1 inline-block max-w-full truncate rounded-full bg-surface-2 px-2 py-0.5 text-xs text-text-secondary">
-                                <?= View::e($site['niche'] ?? 'Sem nicho definido') ?>
-                            </span>
-                        </span>
-                        <span class="-mx-4 -mb-3 mt-1 h-0.5 rounded-b-lg bg-border transition-colors group-hover:bg-cyan"></span>
+                        <span class="-mx-2 -mb-2 mt-0.5 h-0.5 rounded-b-lg bg-border transition-colors group-hover:bg-cyan"></span>
                     </a>
                 <?php endforeach; ?>
             </div>

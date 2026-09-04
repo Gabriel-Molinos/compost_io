@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Support\Avatar;
+use App\Support\Icon;
+use App\Support\Labels;
 use App\Support\SvgChart;
 use App\View;
 
@@ -23,11 +25,10 @@ require __DIR__ . '/_tabs.php';
         <?= Avatar::html($site['logo_path'] ?? null, (string) $site['name'], size: 'h-14 w-14', radius: 'rounded-lg', textSize: 'text-xl', bg: 'bg-white') ?>
         <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-text-muted">Visão geral</p>
-            <h1 class="font-display text-2xl font-bold text-text-primary"><?= View::e($site['name']) ?></h1>
-            <p class="mt-0.5 text-sm text-text-secondary">
-                <?= View::e($site['niche'] ?? 'Sem nicho definido') ?>
-                <?= !empty($site['language']) ? ' · ' . View::e($site['language']) : '' ?>
-            </p>
+            <div class="flex items-center gap-2">
+                <h1 class="font-display text-2xl font-bold text-text-primary"><?= View::e($site['name']) ?></h1>
+                <?= Labels::activeBadge((int) $site['is_active'] === 1) ?>
+            </div>
         </div>
     </div>
     <a href="/sites/<?= View::e($site['id']) ?>/production"
@@ -67,41 +68,67 @@ require __DIR__ . '/_tabs.php';
     </p>
 <?php endif; ?>
 
-<div class="mt-8 grid gap-4 sm:grid-cols-2">
-    <div class="rounded-lg border border-border bg-surface p-4">
-        <dt class="text-xs font-semibold uppercase tracking-wide text-text-muted">Nicho</dt>
-        <dd class="mt-1 text-sm text-text-primary"><?= View::e($site['niche'] ?? '—') ?></dd>
-    </div>
-    <div class="rounded-lg border border-border bg-surface p-4">
-        <dt class="text-xs font-semibold uppercase tracking-wide text-text-muted">Idioma · Tom</dt>
-        <dd class="mt-1 text-sm text-text-primary">
-            <?= View::e($site['language']) ?><?= $site['tone'] ? ' · ' . View::e($site['tone']) : '' ?>
-        </dd>
-    </div>
-</div>
+<section class="mt-8">
+    <h2 class="font-display text-lg font-semibold text-text-primary">Identidade editorial</h2>
+    <p class="mt-1 text-sm text-text-secondary">O que orienta a IA em toda geração de conteúdo pra este site.</p>
 
-<div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-    <a href="/sites/<?= View::e($site['id']) ?>/categories"
-       class="hover-card rounded-lg border border-border bg-surface p-4 hover:border-cyan">
-        <p class="text-xs font-semibold uppercase tracking-wide text-text-muted">Categorias</p>
-        <p class="mt-1 font-mono text-2xl font-semibold text-text-primary"><?= count($categories) ?></p>
-    </a>
-    <a href="/sites/<?= View::e($site['id']) ?>/rules"
-       class="hover-card rounded-lg border border-border bg-surface p-4 hover:border-cyan">
-        <p class="text-xs font-semibold uppercase tracking-wide text-text-muted">Interesses</p>
-        <p class="mt-1 font-mono text-2xl font-semibold text-text-primary"><?= View::e($ruleCounts['INTEREST']) ?></p>
-    </a>
-    <a href="/sites/<?= View::e($site['id']) ?>/rules"
-       class="hover-card rounded-lg border border-border bg-surface p-4 hover:border-cyan">
-        <p class="text-xs font-semibold uppercase tracking-wide text-text-muted">Não-interesses</p>
-        <p class="mt-1 font-mono text-2xl font-semibold text-text-primary"><?= View::e($ruleCounts['NON_INTEREST']) ?></p>
-    </a>
-    <a href="/sites/<?= View::e($site['id']) ?>/goals"
-       class="hover-card rounded-lg border border-border bg-surface p-4 hover:border-cyan">
-        <p class="text-xs font-semibold uppercase tracking-wide text-text-muted">Metas</p>
-        <p class="mt-1 font-mono text-2xl font-semibold text-text-primary"><?= View::e($goalCount) ?></p>
-    </a>
-</div>
+    <dl class="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4">
+        <div class="bg-surface p-4">
+            <dt class="text-xs font-semibold uppercase tracking-wide text-text-muted">Nicho</dt>
+            <dd class="mt-1 truncate text-sm text-text-primary"><?= View::e($site['niche'] ?? '—') ?></dd>
+        </div>
+        <div class="bg-surface p-4">
+            <dt class="text-xs font-semibold uppercase tracking-wide text-text-muted">Idioma</dt>
+            <dd class="mt-1 font-mono text-sm text-text-primary"><?= View::e($site['language']) ?></dd>
+        </div>
+        <div class="bg-surface p-4">
+            <dt class="text-xs font-semibold uppercase tracking-wide text-text-muted">Tom</dt>
+            <dd class="mt-1 truncate text-sm text-text-primary"><?= View::e($site['tone'] ?? '—') ?></dd>
+        </div>
+        <div class="bg-surface p-4">
+            <dt class="text-xs font-semibold uppercase tracking-wide text-text-muted">Público</dt>
+            <dd class="mt-1 truncate text-sm text-text-primary"><?= View::e($site['target_audience'] ?? '—') ?></dd>
+        </div>
+    </dl>
+</section>
+
+<section class="mt-8">
+    <h2 class="font-display text-lg font-semibold text-text-primary">Configuração editorial</h2>
+    <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <a href="/sites/<?= View::e($site['id']) ?>/categories"
+           class="hover-card group flex items-start gap-3 rounded-lg border border-border bg-surface p-4 hover:border-cyan">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan"><?= Icon::nav('categories') ?></span>
+            <span>
+                <span class="block text-xs font-semibold uppercase tracking-wide text-text-muted">Categorias</span>
+                <span class="mt-0.5 block font-mono text-xl font-semibold text-text-primary"><?= count($categories) ?></span>
+            </span>
+        </a>
+        <a href="/sites/<?= View::e($site['id']) ?>/rules"
+           class="hover-card group flex items-start gap-3 rounded-lg border border-border bg-surface p-4 hover:border-cyan">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan"><?= Icon::nav('rules') ?></span>
+            <span>
+                <span class="block text-xs font-semibold uppercase tracking-wide text-text-muted">Interesses</span>
+                <span class="mt-0.5 block font-mono text-xl font-semibold text-text-primary"><?= View::e($ruleCounts['INTEREST']) ?></span>
+            </span>
+        </a>
+        <a href="/sites/<?= View::e($site['id']) ?>/rules"
+           class="hover-card group flex items-start gap-3 rounded-lg border border-border bg-surface p-4 hover:border-cyan">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-warning/10 text-warning"><?= Icon::nav('rules') ?></span>
+            <span>
+                <span class="block text-xs font-semibold uppercase tracking-wide text-text-muted">Não-interesses</span>
+                <span class="mt-0.5 block font-mono text-xl font-semibold text-text-primary"><?= View::e($ruleCounts['NON_INTEREST']) ?></span>
+            </span>
+        </a>
+        <a href="/sites/<?= View::e($site['id']) ?>/goals"
+           class="hover-card group flex items-start gap-3 rounded-lg border border-border bg-surface p-4 hover:border-cyan">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan"><?= Icon::nav('goals') ?></span>
+            <span>
+                <span class="block text-xs font-semibold uppercase tracking-wide text-text-muted">Metas</span>
+                <span class="mt-0.5 block font-mono text-xl font-semibold text-text-primary"><?= View::e($goalCount) ?></span>
+            </span>
+        </a>
+    </div>
+</section>
 
 <?php if (array_sum($trend['produced']) > 0): ?>
     <?php

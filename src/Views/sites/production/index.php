@@ -52,18 +52,18 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
           class="flex flex-wrap items-end gap-3 p-5"
           onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Gerando… (pode levar 1–2 min)';">
         <?= Csrf::field() ?>
-        <label class="text-sm">
+        <label class="min-w-[11rem] text-sm">
             <span class="block font-medium text-text-secondary">Meta</span>
-            <select name="goal_id" class="mt-1 rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+            <select name="goal_id" class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
                 <option value="">— (sem meta)</option>
                 <?php foreach ($goals as $g): ?>
                     <option value="<?= View::e($g['id']) ?>"><?= View::e($g['period']) ?></option>
                 <?php endforeach; ?>
             </select>
         </label>
-        <label class="text-sm">
+        <label class="min-w-[11rem] text-sm">
             <span class="block font-medium text-text-secondary">Categoria</span>
-            <select name="category_id" class="mt-1 rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
+            <select name="category_id" class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
                 <option value="">— (a IA escolhe)</option>
                 <?php foreach ($categories as $c): ?>
                     <option value="<?= View::e($c['id']) ?>"><?= View::e($c['name']) ?></option>

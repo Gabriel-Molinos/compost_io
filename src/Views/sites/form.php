@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Support\Avatar;
 use App\Support\Csrf;
 use App\Support\Form;
+use App\Support\Icon;
+use App\Support\Labels;
 use App\View;
 
 /** @var array<string, mixed> $site */
@@ -17,19 +19,22 @@ $backHref = $isEdit ? '/sites/' . $site['id'] : '/sites';
 if ($isEdit) {
     $activeTab = 'config';
     require __DIR__ . '/_tabs.php';
-} else {
-    ?>
-    <div class="flex items-center gap-3">
-        <a href="/sites" class="text-sm text-text-secondary hover:text-text-primary">← Sites</a>
-    </div>
-    <h1 class="font-display mt-2 text-2xl font-bold text-text-primary">Novo site</h1>
-    <p class="mt-1 text-sm text-text-secondary">Identidade e voz editorial — a IA usa isso em toda geração de conteúdo.</p>
-    <?php
 }
+?>
+<a href="<?= View::e($backHref) ?>" class="text-sm text-text-secondary hover:text-text-primary">← <?= $isEdit ? View::e($site['name']) : 'Sites' ?></a>
 
-if ($isEdit): ?>
-    <h2 class="font-display text-lg font-semibold text-text-primary">Configuração do site</h2>
-<?php endif; ?>
+<div class="mt-2 flex flex-wrap items-start justify-between gap-3">
+    <div class="flex items-start gap-3">
+        <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan"><?= Icon::nav('config') ?></span>
+        <div>
+            <h1 class="font-display text-2xl font-bold text-text-primary"><?= $isEdit ? 'Configuração do site' : 'Novo site' ?></h1>
+            <p class="mt-1 text-sm text-text-secondary">Identidade e voz editorial — a IA usa isso em toda geração de conteúdo.</p>
+        </div>
+    </div>
+    <?php if ($isEdit): ?>
+        <?= Labels::activeBadge(!empty($site['is_active'])) ?>
+    <?php endif; ?>
+</div>
 
 <?php if ($errors !== []): ?>
     <p role="alert" class="mt-4 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">

@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Support\Avatar;
 use App\Support\Csrf;
 use App\Support\Form;
+use App\Support\Icon;
+use App\Support\Labels;
 use App\View;
 
 /** @var array<string, mixed> $user */
@@ -17,13 +19,25 @@ use App\View;
 $isEdit = !empty($user['id']);
 $role = $user['role'] ?? 'REDATOR_CHEFE';
 ?>
-<div class="flex items-center gap-3">
-    <a href="/users" class="text-sm text-text-secondary hover:text-text-primary">← Usuários</a>
+<a href="/users" class="text-sm text-text-secondary hover:text-text-primary">← Usuários</a>
+
+<div class="mt-2 flex flex-wrap items-start justify-between gap-3">
+    <div class="flex items-start gap-3">
+        <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan"><?= Icon::nav('users') ?></span>
+        <div>
+            <h1 class="font-display text-2xl font-bold text-text-primary"><?= $isEdit ? 'Editar usuário' : 'Novo usuário' ?></h1>
+            <p class="mt-1 text-sm text-text-secondary">
+                <?= $isEdit ? 'Dados de acesso, permissões e sites vinculados.' : 'Cadastre um administrador ou redator-chefe e vincule aos sites certos.' ?>
+            </p>
+        </div>
+    </div>
+    <?php if ($isEdit): ?>
+        <div class="flex items-center gap-2">
+            <?= Labels::roleBadge((string) $role) ?>
+            <?= Labels::activeBadge(!empty($user['is_active'])) ?>
+        </div>
+    <?php endif; ?>
 </div>
-<h1 class="font-display mt-2 text-2xl font-bold text-text-primary"><?= $isEdit ? 'Editar usuário' : 'Novo usuário' ?></h1>
-<p class="mt-1 text-sm text-text-secondary">
-    <?= $isEdit ? 'Dados de acesso, permissões e sites vinculados.' : 'Cadastre um administrador ou redator-chefe e vincule aos sites certos.' ?>
-</p>
 
 <?php if ($errors !== []): ?>
     <p role="alert" class="mt-4 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">

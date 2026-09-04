@@ -57,10 +57,10 @@ $formData = [
     </p>
 
     <div class="flex flex-wrap gap-3 pt-2">
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-bright">
+        <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
             Salvar
         </button>
-        <a href="/sites/<?= View::e($site['id']) ?>" class="rounded-md border border-border px-4 py-2 text-text-secondary hover:text-text-primary">
+        <a href="/sites/<?= View::e($site['id']) ?>" class="rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
             Voltar
         </a>
     </div>
@@ -95,19 +95,19 @@ $formData = [
         </p>
 
         <?php if ($syncCounts !== null): ?>
-            <dl class="mt-4 grid gap-3 sm:grid-cols-2">
-                <div class="rounded-lg border border-border bg-surface p-3">
-                    <dt class="text-xs uppercase tracking-wide text-text-muted">Autores</dt>
-                    <dd class="mt-1 text-text-primary">
+            <dl class="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
+                <div class="bg-surface p-4">
+                    <dt class="text-xs font-semibold uppercase tracking-wide text-text-muted">Autores</dt>
+                    <dd class="mt-1 text-sm text-text-primary">
                         <?= View::e($syncCounts['authors_active']) ?> ativo(s)<?php
                         if ($syncCounts['authors_inactive'] > 0): ?>,
                         <span class="text-text-muted"><?= View::e($syncCounts['authors_inactive']) ?> inativo(s)</span>
                         <?php endif; ?>
                     </dd>
                 </div>
-                <div class="rounded-lg border border-border bg-surface p-3">
-                    <dt class="text-xs uppercase tracking-wide text-text-muted">Categorias vinculadas ao WP</dt>
-                    <dd class="mt-1 text-text-primary">
+                <div class="bg-surface p-4">
+                    <dt class="text-xs font-semibold uppercase tracking-wide text-text-muted">Categorias vinculadas ao WP</dt>
+                    <dd class="mt-1 text-sm text-text-primary">
                         <?= View::e($syncCounts['categories_linked']) ?> de <?= View::e($syncCounts['categories_total']) ?>
                     </dd>
                 </div>
@@ -117,13 +117,13 @@ $formData = [
         <div class="mt-4 flex flex-wrap gap-3">
             <form method="post" action="/sites/<?= View::e($site['id']) ?>/wordpress/sync-authors">
                 <?= Csrf::field() ?>
-                <button type="submit" class="rounded-md border border-border px-4 py-2 text-sm font-semibold text-text-primary hover:border-cyan">
+                <button type="submit" class="rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
                     Sincronizar autores
                 </button>
             </form>
             <form method="post" action="/sites/<?= View::e($site['id']) ?>/wordpress/sync-categories">
                 <?= Csrf::field() ?>
-                <button type="submit" class="rounded-md border border-border px-4 py-2 text-sm font-semibold text-text-primary hover:border-cyan">
+                <button type="submit" class="rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
                     Sincronizar categorias agora
                 </button>
             </form>

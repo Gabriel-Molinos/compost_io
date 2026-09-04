@@ -60,7 +60,7 @@ require __DIR__ . '/../_tabs.php';
     </label>
 
     <div class="flex items-end">
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-bright">
+        <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
             Rodar
         </button>
     </div>

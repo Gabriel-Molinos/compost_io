@@ -63,7 +63,7 @@ $describedBy = $error !== null ? 'login-error' : null;
     </div>
 
     <button type="submit"
-            class="w-full rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] transition-colors
+            class="w-full rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] transition-colors
                    hover:bg-cyan-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
         Entrar
     </button>

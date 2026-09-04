@@ -34,7 +34,7 @@ require __DIR__ . '/../_tabs.php';
 </style>
 <a href="/sites/<?= View::e($site['id']) ?>/production" class="text-sm text-text-secondary hover:text-text-primary">← Produção</a>
 <div class="mt-2 flex flex-wrap items-center gap-3">
-    <h2 class="font-display text-xl font-bold text-text-primary"><?= View::e($article['title'] ?: 'Rascunho #' . $article['id']) ?></h2>
+    <h2 class="font-display text-lg font-semibold text-text-primary"><?= View::e($article['title'] ?: 'Rascunho #' . $article['id']) ?></h2>
     <?= Labels::articleStatusBadge((string) $article['status']) ?>
 </div>
 <p class="mt-1 text-sm text-text-muted">
@@ -68,7 +68,7 @@ require __DIR__ . '/../_tabs.php';
 <?php endif; ?>
 
 <?php if ($article['status'] === 'IN_REVIEW'): ?>
-    <section class="mt-5 rounded-lg border border-border bg-surface p-4">
+    <section class="mt-8 rounded-lg border border-border bg-surface p-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Revisão</h3>
         <p class="mt-1 text-sm text-text-secondary">Aprovar libera o agendamento. Rejeitar registra o motivo e permite regenerar.</p>
         <div class="mt-3 flex flex-wrap items-start gap-6">
@@ -127,7 +127,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
 ?>
 
 <?php if ($article['status'] === 'APPROVED'): ?>
-    <section id="agendar" class="mt-5 rounded-lg border border-border bg-surface p-4">
+    <section id="agendar" class="mt-8 rounded-lg border border-border bg-surface p-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Agendar publicação</h3>
         <?php if ($authors === []): ?>
             <p class="mt-1 text-sm text-text-secondary">
@@ -163,7 +163,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
     </section>
 <?php elseif ($article['status'] === 'SCHEDULED' && $schedule !== null): ?>
     <?php $imageIdForForm = $featuredSelected['id'] ?? $schedule['image_id']; ?>
-    <section id="agendar" class="mt-5 rounded-lg border border-cyan/40 bg-surface p-4">
+    <section id="agendar" class="mt-8 rounded-lg border border-cyan/40 bg-surface p-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Agendado</h3>
         <p class="mt-1 text-sm text-text-primary">
             <strong><?= View::e(date('d/m/Y H:i', strtotime((string) $schedule['scheduled_date']))) ?></strong>
@@ -220,7 +220,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
         </div>
     </section>
 <?php elseif ($article['status'] === 'SCHEDULED' && $schedule === null): ?>
-    <section id="agendar" class="mt-5 rounded-lg border border-danger/40 bg-danger/10 p-4">
+    <section id="agendar" class="mt-8 rounded-lg border border-danger/40 bg-danger/10 p-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-danger">Falha no envio ao WordPress</h3>
         <p role="alert" class="mt-1 text-sm text-text-secondary">
             <?php if ($lastSchedule !== null): ?>
@@ -242,7 +242,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
     </section>
 <?php elseif ($article['status'] === 'PUBLISHED' && $lastSchedule !== null && !empty($lastSchedule['wordpress_post_id'])): ?>
     <?php $postUrl = rtrim((string) ($site['wordpress_url'] ?? ''), '/') . '/?p=' . (int) $lastSchedule['wordpress_post_id']; ?>
-    <section id="agendar" class="mt-5 rounded-lg border border-success/40 bg-surface p-4">
+    <section id="agendar" class="mt-8 rounded-lg border border-success/40 bg-surface p-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Publicado</h3>
         <p class="mt-1 text-sm text-text-primary">
             Post #<?= View::e($lastSchedule['wordpress_post_id']) ?> no WordPress
@@ -282,7 +282,7 @@ $attempt = (int) ($article['attempt_number'] ?? 1);
 $maxAttempts = 3;
 ?>
 <?php if ($article['status'] === 'REVISION_REQUESTED'): ?>
-    <section class="mt-5 rounded-lg border border-border bg-surface p-4">
+    <section class="mt-8 rounded-lg border border-border bg-surface p-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Regeneração</h3>
         <p class="mt-1 text-sm text-text-secondary">
             Tentativa <?= $attempt ?> de <?= $maxAttempts ?>.
@@ -302,7 +302,7 @@ $maxAttempts = 3;
         </form>
     </section>
 <?php elseif ($article['status'] === 'ERROR'): ?>
-    <section class="mt-5 rounded-lg border border-border bg-surface p-4">
+    <section class="mt-8 rounded-lg border border-border bg-surface p-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Tentar de novo</h3>
         <p class="mt-1 text-sm text-text-secondary">
             Tentativa <?= $attempt ?> de <?= $maxAttempts ?> — a falha foi técnica (ver acima), não uma rejeição do
@@ -323,7 +323,7 @@ $maxAttempts = 3;
         </form>
     </section>
 <?php elseif ($article['status'] === 'BLOCKED'): ?>
-    <section class="mt-5 rounded-lg border border-danger/40 bg-danger/10 p-4">
+    <section class="mt-8 rounded-lg border border-danger/40 bg-danger/10 p-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-danger">Bloqueado</h3>
         <p class="mt-1 text-sm text-text-secondary">
             O limite de <?= $maxAttempts ?> tentativas nesta linhagem foi atingido (rejeição e/ou falha técnica), sem aprovação. Decida o próximo passo — descartar, ou revisar a meta/diretrizes do site antes de tentar um novo tema.
@@ -332,7 +332,7 @@ $maxAttempts = 3;
 <?php endif; ?>
 
 <?php if (!empty($feedback)): ?>
-    <section class="mt-5 rounded-lg border border-border bg-surface p-4">
+    <section class="mt-8 rounded-lg border border-border bg-surface p-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Feedback de rejeição (<?= count($feedback) ?>)</h3>
         <ul class="mt-2 space-y-3 text-sm">
             <?php foreach ($feedback as $f): ?>
@@ -351,39 +351,47 @@ $maxAttempts = 3;
     </section>
 <?php endif; ?>
 
-<section class="mt-6">
-    <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Passos da IA</h3>
-    <ul class="mt-2 divide-y divide-border rounded-lg border border-border bg-surface text-sm">
-        <?php foreach ($executions as $e): ?>
-            <li class="flex items-center justify-between gap-4 px-4 py-2">
-                <span class="text-text-primary"><?= View::e($e['step']) ?></span>
-                <span class="flex items-center gap-3 text-xs text-text-muted">
-                    <?php if ((int) $e['retry_count'] > 0): ?><span><?= View::e($e['retry_count']) ?> retry</span><?php endif; ?>
-                    <span>US$ <?= number_format((float) $e['cost'], 4) ?></span>
-                    <span class="<?= $e['status'] === 'SUCCESS' ? 'text-success' : ($e['status'] === 'FAILED' ? 'text-danger' : 'text-text-muted') ?>">
-                        <?= View::e($e['status']) ?>
+<section class="mt-8">
+    <details>
+        <summary class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">
+            Passos da IA (<?= count($executions) ?>)
+        </summary>
+        <ul class="mt-2 divide-y divide-border rounded-lg border border-border bg-surface text-sm">
+            <?php foreach ($executions as $e): ?>
+                <li class="flex items-center justify-between gap-4 px-4 py-2">
+                    <span class="text-text-primary"><?= View::e($e['step']) ?></span>
+                    <span class="flex items-center gap-3 text-xs text-text-muted">
+                        <?php if ((int) $e['retry_count'] > 0): ?><span><?= View::e($e['retry_count']) ?> retry</span><?php endif; ?>
+                        <span>US$ <?= number_format((float) $e['cost'], 4) ?></span>
+                        <span class="<?= $e['status'] === 'SUCCESS' ? 'text-success' : ($e['status'] === 'FAILED' ? 'text-danger' : 'text-text-muted') ?>">
+                            <?= View::e($e['status']) ?>
+                        </span>
                     </span>
-                </span>
-            </li>
-            <?php if (!empty($e['error_message'])): ?>
-                <li class="px-4 py-2 text-xs text-danger"><?= View::e($e['error_message']) ?></li>
-            <?php endif; ?>
-        <?php endforeach; ?>
-    </ul>
+                </li>
+                <?php if (!empty($e['error_message'])): ?>
+                    <li class="px-4 py-2 text-xs text-danger"><?= View::e($e['error_message']) ?></li>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </ul>
+    </details>
 </section>
 
 <?php if ($sources !== []): ?>
-    <section class="mt-6">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Fontes (<?= count($sources) ?>)</h3>
-        <ul class="mt-2 space-y-1 text-sm">
-            <?php foreach ($sources as $s): ?>
-                <li>
-                    <a href="<?= View::e($s['url']) ?>" target="_blank" rel="noopener"
-                       class="text-cyan hover:text-cyan-bright"><?= View::e($s['title'] ?: $s['url']) ?></a>
-                    <?php if (!empty($s['publisher'])): ?><span class="text-text-muted"> — <?= View::e($s['publisher']) ?></span><?php endif; ?>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+    <section class="mt-8">
+        <details>
+            <summary class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">
+                Fontes (<?= count($sources) ?>)
+            </summary>
+            <ul class="mt-2 space-y-1 text-sm">
+                <?php foreach ($sources as $s): ?>
+                    <li>
+                        <a href="<?= View::e($s['url']) ?>" target="_blank" rel="noopener"
+                           class="text-cyan hover:text-cyan-bright"><?= View::e($s['title'] ?: $s['url']) ?></a>
+                        <?php if (!empty($s['publisher'])): ?><span class="text-text-muted"> — <?= View::e($s['publisher']) ?></span><?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+        </details>
     </section>
 <?php endif; ?>
 
@@ -400,7 +408,7 @@ $maxAttempts = 3;
         echo '</form>';
     };
     ?>
-    <section id="imagens" class="mt-6">
+    <section id="imagens" class="mt-8">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">
             Imagens (<?= count($images) ?>)
         </h3>
@@ -456,7 +464,7 @@ $seo = $notes['seo'] ?? null;
 $compliance = $notes['compliance'] ?? null;
 ?>
 <?php if ($review !== null): ?>
-    <section class="mt-6 rounded-lg border border-border bg-surface p-4">
+    <section class="mt-8 rounded-lg border border-border bg-surface p-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Parecer da IA (pré-revisão humana)</h3>
         <p class="mt-2 text-sm text-text-primary">
             <strong><?= View::e($review['recommendation'] ?? '?') ?></strong> — <?= View::e($review['summary'] ?? '') ?>

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Avatar;
 use App\Support\Csrf;
 use App\Support\Form;
 use App\View;
@@ -35,8 +36,22 @@ if ($isEdit): ?>
     </p>
 <?php endif; ?>
 
-<form method="post" action="<?= View::e($action) ?>" class="mt-6 max-w-xl space-y-5" novalidate>
+<form method="post" action="<?= View::e($action) ?>" enctype="multipart/form-data" class="mt-6 max-w-xl space-y-5" novalidate>
     <?= Csrf::field() ?>
+
+    <div class="flex items-center gap-4">
+        <?= Avatar::html($site['logo_path'] ?? null, $site['name'] ?? '?', size: 'h-16 w-16', textSize: 'text-xl') ?>
+        <div class="flex-1">
+            <?= Form::file('logo', 'Logo do site', $errors['logo'] ?? null) ?>
+            <?php if ($isEdit && !empty($site['logo_path'])): ?>
+                <label class="mt-2 flex items-center gap-2 text-sm text-text-secondary">
+                    <input type="checkbox" name="remove_logo" value="1"
+                           class="h-4 w-4 rounded border-border bg-surface-2 text-cyan focus:ring-cyan">
+                    Remover logo atual
+                </label>
+            <?php endif; ?>
+        </div>
+    </div>
 
     <?= Form::text('name', 'Nome', $site, $errors, required: true) ?>
     <?= Form::text('niche', 'Nicho', $site, $errors) ?>

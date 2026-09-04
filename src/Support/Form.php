@@ -44,6 +44,20 @@ final class Form
         );
     }
 
+    /** Campo de upload de imagem (foto de perfil, logo) — sempre opcional, validação real fica em Uploads::image(). */
+    public static function file(string $name, string $label, ?string $error = null, string $accept = 'image/jpeg,image/png,image/webp,image/gif'): string
+    {
+        $id = 'f_' . $name;
+        $border = $error !== null ? 'border-danger' : 'border-border';
+        $aria = $error !== null ? " aria-invalid=\"true\" aria-describedby=\"{$id}_err\"" : '';
+
+        return self::wrap($id, $label, false, $error,
+            "<input type=\"file\" id=\"{$id}\" name=\"{$name}\" accept=\"{$accept}\"{$aria} class=\"mt-1 w-full rounded-md border {$border} "
+            . 'bg-surface-2 px-3 py-2 text-sm text-text-secondary file:mr-3 file:rounded file:border-0 file:bg-cyan/10 '
+            . 'file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-cyan hover:file:bg-cyan/20 focus:border-cyan focus:outline-none">'
+        );
+    }
+
     public static function checkbox(string $name, string $label, array $data, bool $default = false): string
     {
         $id = 'f_' . $name;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Services\AuthService;
 use App\Services\SiteService;
+use App\Support\Avatar;
 use App\Support\Csrf;
 use App\Support\Session;
 use App\View;
@@ -109,7 +110,10 @@ if ($authUser !== null && !$hasSiteNav) {
 
             <?php if ($authUser !== null): ?>
                 <div class="mt-6 border-t border-border pt-4">
-                    <p class="truncate px-2 text-xs text-text-secondary"><?= View::e($authUser['email']) ?></p>
+                    <div class="flex items-center gap-2 px-2">
+                        <?= Avatar::html($authUser['avatar_path'] ?? null, $authUser['name'], size: 'h-7 w-7', radius: 'rounded-full', textSize: 'text-xs') ?>
+                        <p class="truncate text-xs text-text-secondary"><?= View::e($authUser['email']) ?></p>
+                    </div>
                     <form method="post" action="/logout" class="mt-2">
                         <?= Csrf::field() ?>
                         <button type="submit"
@@ -134,7 +138,10 @@ if ($authUser !== null && !$hasSiteNav) {
                         <div class="absolute right-0 z-40 mt-2 w-64 rounded-lg border border-border bg-surface p-4 shadow-2xl">
                             <?php require __DIR__ . '/_nav.php'; ?>
                             <div class="mt-6 border-t border-border pt-4">
-                                <p class="truncate px-2 text-xs text-text-secondary"><?= View::e($authUser['email']) ?></p>
+                                <div class="flex items-center gap-2 px-2">
+                                    <?= Avatar::html($authUser['avatar_path'] ?? null, $authUser['name'], size: 'h-7 w-7', radius: 'rounded-full', textSize: 'text-xs') ?>
+                                    <p class="truncate text-xs text-text-secondary"><?= View::e($authUser['email']) ?></p>
+                                </div>
                                 <form method="post" action="/logout" class="mt-2">
                                     <?= Csrf::field() ?>
                                     <button type="submit"

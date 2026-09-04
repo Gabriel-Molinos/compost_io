@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Avatar;
 use App\Support\Labels;
 use App\View;
 
@@ -30,7 +31,12 @@ use App\View;
         <tbody>
             <?php foreach ($users as $user): ?>
                 <tr class="border-b border-border/60 last:border-0">
-                    <td class="px-4 py-3 text-text-primary"><?= View::e($user['name']) ?></td>
+                    <td class="px-4 py-3 text-text-primary">
+                        <span class="flex items-center gap-3">
+                            <?= Avatar::html($user['avatar_path'] ?? null, $user['name'], size: 'h-7 w-7', radius: 'rounded-full', textSize: 'text-xs') ?>
+                            <?= View::e($user['name']) ?>
+                        </span>
+                    </td>
                     <td class="px-4 py-3 font-mono text-text-secondary"><?= View::e($user['email']) ?></td>
                     <td class="px-4 py-3 text-text-secondary"><?= View::e(Labels::role($user['role'])) ?></td>
                     <td class="px-4 py-3 text-text-secondary">

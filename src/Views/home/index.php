@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Avatar;
 use App\Support\Icon;
 use App\Support\Labels;
 use App\View;
@@ -93,10 +94,7 @@ $firstName = $user !== null ? explode(' ', trim((string) $user['name']))[0] : nu
                        class="group flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 pb-3
                               transition-colors hover:border-border-strong">
                         <span class="flex items-start justify-between gap-2">
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-grad
-                                         font-display text-base font-bold text-text-primary shadow-[0_0_0_1px_rgba(0,208,240,.25)]">
-                                <?= View::e(mb_strtoupper(mb_substr((string) $site['name'], 0, 1))) ?>
-                            </span>
+                            <?= Avatar::html($site['logo_path'] ?? null, (string) $site['name'], size: 'h-11 w-11', textSize: 'text-base') ?>
                             <span class="flex items-center gap-1.5 text-xs text-text-muted" title="<?= $active ? 'Ativo' : 'Inativo' ?>">
                                 <span aria-hidden="true" class="h-1.5 w-1.5 rounded-full <?= $active ? 'bg-success status-dot' : 'bg-text-muted' ?>"></span>
                                 <?= $active ? 'ativo' : 'inativo' ?>

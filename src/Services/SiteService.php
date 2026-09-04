@@ -12,7 +12,7 @@ final class SiteService
     public function all(): array
     {
         return Connection::get()
-            ->query('SELECT id, name, niche, language, is_active FROM sites ORDER BY name')
+            ->query('SELECT id, name, logo_path, niche, language, is_active FROM sites ORDER BY name')
             ->fetchAll();
     }
 
@@ -20,7 +20,7 @@ final class SiteService
     public function forUser(int $userId): array
     {
         $stmt = Connection::get()->prepare(
-            'SELECT s.id, s.name, s.niche, s.language, s.is_active
+            'SELECT s.id, s.name, s.logo_path, s.niche, s.language, s.is_active
              FROM sites s
              JOIN user_site us ON us.site_id = s.id
              WHERE us.user_id = :id
@@ -118,6 +118,13 @@ final class SiteService
              WHERE id = :id'
         );
         $stmt->execute($this->params($data) + ['id' => $id]);
+    }
+
+    /** Grava (ou limpa, com null) o caminho do logo já enviado/salvo por Uploads::image(). */
+    public function setLogo(int $siteId, ?string $path): void
+    {
+        Connection::get()->prepare('UPDATE sites SET logo_path = :p WHERE id = :id')
+            ->execute(['p' => $path, 'id' => $siteId]);
     }
 
     /**

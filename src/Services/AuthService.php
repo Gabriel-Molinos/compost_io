@@ -72,7 +72,7 @@ final class AuthService
         }
 
         $stmt = Connection::get()->prepare(
-            'SELECT id, name, email, role, is_active FROM users WHERE id = :id LIMIT 1'
+            'SELECT id, name, email, role, is_active, avatar_path FROM users WHERE id = :id LIMIT 1'
         );
         $stmt->execute(['id' => (int) $id]);
         $user = $stmt->fetch();

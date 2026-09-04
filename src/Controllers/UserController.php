@@ -10,6 +10,7 @@ use App\Services\UserService;
 use App\Support\Csrf;
 use App\Support\Http;
 use App\Support\Session;
+use App\Support\Uploads;
 use App\Support\Validator;
 use App\View;
 
@@ -62,6 +63,19 @@ final class UserController
         $id = $this->users->create($_POST, (string) $_POST['password']);
         $this->users->syncSites($id, $this->siteIds($_POST));
 
+        try {
+            $avatar = Uploads::image($_FILES['avatar'] ?? null, 'avatars', $id);
+            if ($avatar !== null) {
+                $this->users->setAvatar($id, $avatar);
+            }
+        } catch (\RuntimeException $e) {
+            // Usuário já foi criado — não desfaz o cadastro por causa da foto,
+            // só avisa e deixa ele reenviar depois em "Editar".
+            Session::flash('error', 'Usuário criado, mas a foto não foi salva: ' . $e->getMessage());
+            Http::redirect('/users/' . $id . '/edit');
+            return;
+        }
+
         Session::flash('success', 'Usuário criado.');
         Http::redirect('/users/' . $id . '/edit');
     }
@@ -113,6 +127,22 @@ final class UserController
 
         $this->users->update((int) $user['id'], $_POST, $_POST['password'] ?? null);
         $this->users->syncSites((int) $user['id'], $this->siteIds($_POST));
+
+        if (!empty($_POST['remove_avatar'])) {
+            Uploads::delete($user['avatar_path'] ?? null);
+            $this->users->setAvatar((int) $user['id'], null);
+        } else {
+            try {
+                $avatar = Uploads::image($_FILES['avatar'] ?? null, 'avatars', (int) $user['id']);
+                if ($avatar !== null) {
+                    $this->users->setAvatar((int) $user['id'], $avatar);
+                }
+            } catch (\RuntimeException $e) {
+                Session::flash('error', 'Usuário salvo, mas a foto não foi atualizada: ' . $e->getMessage());
+                Http::redirect('/users/' . $user['id'] . '/edit');
+                return;
+            }
+        }
 
         Session::flash('success', 'Usuário atualizado.');
         Http::redirect('/users/' . $user['id'] . '/edit');

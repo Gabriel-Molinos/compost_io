@@ -15,6 +15,7 @@ use App\Services\SiteService;
 use App\Support\Csrf;
 use App\Support\Http;
 use App\Support\Session;
+use App\Support\Uploads;
 use App\Support\Validator;
 use App\View;
 
@@ -105,6 +106,18 @@ final class SiteController extends Controller
         }
 
         $newId = $this->sites->create($_POST);
+
+        try {
+            $logo = Uploads::image($_FILES['logo'] ?? null, 'logos', $newId);
+            if ($logo !== null) {
+                $this->sites->setLogo($newId, $logo);
+            }
+        } catch (\RuntimeException $e) {
+            Session::flash('error', 'Site criado, mas o logo não foi salvo: ' . $e->getMessage());
+            Http::redirect('/sites/' . $newId . '/edit');
+            return;
+        }
+
         Session::flash('success', 'Site criado.');
         Http::redirect('/sites/' . $newId . '/edit');
     }
@@ -139,6 +152,23 @@ final class SiteController extends Controller
         }
 
         $this->sites->update((int) $site['id'], $_POST);
+
+        if (!empty($_POST['remove_logo'])) {
+            Uploads::delete($site['logo_path'] ?? null);
+            $this->sites->setLogo((int) $site['id'], null);
+        } else {
+            try {
+                $logo = Uploads::image($_FILES['logo'] ?? null, 'logos', (int) $site['id']);
+                if ($logo !== null) {
+                    $this->sites->setLogo((int) $site['id'], $logo);
+                }
+            } catch (\RuntimeException $e) {
+                Session::flash('error', 'Site salvo, mas o logo não foi atualizado: ' . $e->getMessage());
+                Http::redirect('/sites/' . $site['id'] . '/edit');
+                return;
+            }
+        }
+
         Session::flash('success', 'Site atualizado.');
         Http::redirect('/sites/' . $site['id'] . '/edit');
     }

@@ -13,7 +13,7 @@ final class UserService
     public function all(): array
     {
         return Connection::get()->query(
-            'SELECT u.id, u.name, u.email, u.role, u.is_active,
+            'SELECT u.id, u.name, u.email, u.role, u.is_active, u.avatar_path,
                     (SELECT COUNT(*) FROM user_site us WHERE us.user_id = u.id) AS site_count
              FROM users u ORDER BY u.name'
         )->fetchAll();
@@ -23,7 +23,7 @@ final class UserService
     public function find(int $id): ?array
     {
         $stmt = Connection::get()->prepare(
-            'SELECT id, name, email, role, is_active FROM users WHERE id = :id LIMIT 1'
+            'SELECT id, name, email, role, is_active, avatar_path FROM users WHERE id = :id LIMIT 1'
         );
         $stmt->execute(['id' => $id]);
 
@@ -84,6 +84,13 @@ final class UserService
 
         $sql .= ' WHERE id = :id';
         Connection::get()->prepare($sql)->execute($params);
+    }
+
+    /** Grava (ou limpa, com null) o caminho da foto de perfil já enviada/salva por Uploads::image(). */
+    public function setAvatar(int $userId, ?string $path): void
+    {
+        Connection::get()->prepare('UPDATE users SET avatar_path = :p WHERE id = :id')
+            ->execute(['p' => $path, 'id' => $userId]);
     }
 
     /** @return list<int> */

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Avatar;
 use App\Support\Labels;
 use App\View;
 
@@ -28,7 +29,10 @@ use App\View;
             <li>
                 <a href="/sites/<?= View::e($site['id']) ?>"
                    class="flex items-center justify-between gap-4 px-4 py-3 hover:bg-surface">
-                    <span class="text-text-primary"><?= View::e($site['name']) ?></span>
+                    <span class="flex items-center gap-3 text-text-primary">
+                        <?= Avatar::html($site['logo_path'] ?? null, $site['name'], size: 'h-7 w-7', radius: 'rounded-md', textSize: 'text-xs') ?>
+                        <?= View::e($site['name']) ?>
+                    </span>
                     <span class="flex items-center gap-3 text-sm text-text-muted">
                         <span><?= View::e($site['niche'] ?? '—') ?></span>
                         <span class="font-mono"><?= View::e($site['language']) ?></span>

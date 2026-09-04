@@ -16,6 +16,12 @@ final class Labels
         };
     }
 
+    /** Badge pronta (HTML) pro perfil de um usuário — ADMIN em destaque (ciano), Redator-Chefe neutro. */
+    public static function roleBadge(string $role): string
+    {
+        return self::badge(self::role($role), $role === 'ADMIN' ? 'cyan' : 'muted');
+    }
+
     public static function articleStatus(string $status): string
     {
         return match ($status) {

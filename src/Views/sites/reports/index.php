@@ -29,34 +29,44 @@ $n = static fn ($v): string => $v === null ? '—' : (string) $v;
     </div>
 </div>
 
-<dl class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-    <?php
-    $card = static function (string $label, string $value, ?string $sub = null): void {
-        echo '<div class="rounded-lg border border-border bg-surface p-4">';
-        echo '<dt class="text-xs uppercase tracking-wide text-text-muted">' . View::e($label) . '</dt>';
-        echo '<dd class="mt-1 font-display text-2xl text-text-primary">' . View::e($value) . '</dd>';
+<?php
+// Barra de estatística única (grid + gap-px + bg-border faz as divisórias
+// finas entre colunas, em qualquer quebra de linha responsiva — divide-x
+// deixa borda sobrando no início de cada linha nova quando o grid quebra,
+// esse truque não) em vez de 9 cards separados lado a lado (§ "sopa de
+// bordas" do sistema de design).
+$statBar = static function (array $cols, string $gridCols): void {
+    echo '<dl class="mt-5 grid gap-px overflow-hidden rounded-lg border border-border bg-border ' . $gridCols . '">';
+    foreach ($cols as [$label, $value, $sub]) {
+        echo '<div class="bg-surface p-4">';
+        echo '<dt class="text-xs font-semibold uppercase tracking-wide text-text-muted">' . View::e($label) . '</dt>';
+        echo '<dd class="mt-1 font-display text-2xl font-semibold text-text-primary">' . View::e($value) . '</dd>';
         if ($sub !== null) {
             echo '<p class="mt-0.5 text-xs text-text-muted">' . View::e($sub) . '</p>';
         }
         echo '</div>';
-    };
+    }
+    echo '</dl>';
+};
 
-    $card('Meta do mês', $n($report['goal_total']), $report['goal_total'] === null ? 'sem meta cadastrada' : null);
-    $card('Produzidos', (string) $report['produced']);
-    $card('Aprovados', (string) $report['approved']);
-    $card('Rejeitados', (string) $report['rejected']);
-    $card('Publicados', (string) $report['published']);
-    $card('Em revisão agora', (string) $report['pending_now']);
-    $card('Taxa de aprovação', $report['approval_rate'] === null ? '—' : $report['approval_rate'] . '%',
-        'aprovados / (aprovados + rejeitados)');
-    $card('Tempo médio de revisão', $report['avg_review_hours'] === null ? '—' : $report['avg_review_hours'] . ' h',
-        'do artigo entrar em revisão até aprovar/rejeitar');
-    $card('Custo de IA', 'US$ ' . number_format((float) $report['ai_cost'], 2));
-    ?>
-</dl>
+$statBar([
+    ['Meta do mês', $n($report['goal_total']), $report['goal_total'] === null ? 'sem meta cadastrada' : null],
+    ['Produzidos', (string) $report['produced'], null],
+    ['Aprovados', (string) $report['approved'], null],
+    ['Rejeitados', (string) $report['rejected'], null],
+    ['Publicados', (string) $report['published'], null],
+    ['Em revisão agora', (string) $report['pending_now'], null],
+], 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6');
+
+$statBar([
+    ['Taxa de aprovação', $report['approval_rate'] === null ? '—' : $report['approval_rate'] . '%', 'aprovados / (aprovados + rejeitados)'],
+    ['Tempo médio de revisão', $report['avg_review_hours'] === null ? '—' : $report['avg_review_hours'] . ' h', 'do artigo entrar em revisão até aprovar/rejeitar'],
+    ['Custo de IA', 'US$ ' . number_format((float) $report['ai_cost'], 2), null],
+], 'grid-cols-1 sm:grid-cols-3');
+?>
 
 <section class="mt-8">
-    <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">
+    <h3 class="text-xs font-semibold uppercase tracking-wide text-text-muted">
         Comparado com <?= View::e($prevMonthName) ?>
     </h3>
     <?php if (!$comparison['had_data']): ?>
@@ -117,7 +127,7 @@ $n = static fn ($v): string => $v === null ? '—' : (string) $v;
 </section>
 
 <section class="mt-8">
-    <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">
+    <h3 class="text-xs font-semibold uppercase tracking-wide text-text-muted">
         Tendência (últimos <?= count($trend['periods']) ?> meses)
     </h3>
     <?php
@@ -157,36 +167,38 @@ $n = static fn ($v): string => $v === null ? '—' : (string) $v;
 </section>
 
 <section class="mt-8">
-    <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Por categoria (meta × realizado)</h3>
+    <h3 class="text-xs font-semibold uppercase tracking-wide text-text-muted">Por categoria (meta × realizado)</h3>
     <?php if ($report['categories'] === []): ?>
         <p class="mt-2 text-sm text-text-secondary">Nenhuma categoria cadastrada.</p>
     <?php else: ?>
-        <table class="mt-3 w-full text-sm">
-            <thead>
-                <tr class="text-left text-xs uppercase tracking-wide text-text-muted">
-                    <th class="py-1">Categoria</th><th class="py-1 text-right">Meta</th>
-                    <th class="py-1 text-right">Aprovados</th><th class="py-1 text-right">Saldo</th>
+        <div class="mt-3 overflow-x-auto rounded-lg border border-border">
+        <table class="w-full text-left text-sm">
+            <thead class="border-b border-border text-text-muted">
+                <tr>
+                    <th scope="col" class="px-4 py-3 font-medium">Categoria</th><th scope="col" class="px-4 py-3 text-right font-medium">Meta</th>
+                    <th scope="col" class="px-4 py-3 text-right font-medium">Aprovados</th><th scope="col" class="px-4 py-3 text-right font-medium">Saldo</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-border">
+            <tbody>
                 <?php foreach ($report['categories'] as $c): ?>
                     <?php $saldo = (int) $c['produced'] - (int) $c['target']; ?>
-                    <tr>
-                        <td class="py-1.5 text-text-primary"><?= View::e($c['name']) ?></td>
-                        <td class="py-1.5 text-right font-mono text-text-secondary"><?= (int) $c['target'] ?></td>
-                        <td class="py-1.5 text-right font-mono text-text-secondary"><?= (int) $c['produced'] ?></td>
-                        <td class="py-1.5 text-right font-mono <?= $saldo < 0 ? 'text-warning' : 'text-success' ?>">
+                    <tr class="border-b border-border/60 last:border-0">
+                        <td class="px-4 py-3 text-text-primary"><?= View::e($c['name']) ?></td>
+                        <td class="px-4 py-3 text-right font-mono text-text-secondary"><?= (int) $c['target'] ?></td>
+                        <td class="px-4 py-3 text-right font-mono text-text-secondary"><?= (int) $c['produced'] ?></td>
+                        <td class="px-4 py-3 text-right font-mono <?= $saldo < 0 ? 'text-warning' : 'text-success' ?>">
                             <?= $saldo > 0 ? '+' : '' ?><?= $saldo ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
     <?php endif; ?>
 </section>
 
 <section class="mt-8">
-    <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Motivos de rejeição</h3>
+    <h3 class="text-xs font-semibold uppercase tracking-wide text-text-muted">Motivos de rejeição</h3>
     <?php if ($report['reject_reasons'] === []): ?>
         <p class="mt-2 text-sm text-text-secondary">Nenhuma rejeição neste mês.</p>
     <?php else: ?>

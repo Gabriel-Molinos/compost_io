@@ -71,10 +71,10 @@ $role = $user['role'] ?? 'REDATOR_CHEFE';
     <?= Form::checkbox('is_active', 'Usuário ativo', $user, default: true) ?>
 
     <div class="flex gap-3 pt-2">
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-bright">
+        <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
             <?= $isEdit ? 'Salvar' : 'Criar usuário' ?>
         </button>
-        <a href="/users" class="rounded-md border border-border px-4 py-2 text-text-secondary hover:text-text-primary">
+        <a href="/users" class="rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
             Cancelar
         </a>
     </div>

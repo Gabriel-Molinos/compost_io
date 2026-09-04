@@ -62,10 +62,10 @@ $isEdit = !empty($goal['id']);
     </fieldset>
 
     <div class="flex gap-3 pt-2">
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-bright">
+        <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
             <?= $isEdit ? 'Salvar' : 'Criar meta' ?>
         </button>
         <a href="/sites/<?= View::e($site['id']) ?>/goals"
-           class="rounded-md border border-border px-4 py-2 text-text-secondary hover:text-text-primary">Cancelar</a>
+           class="rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">Cancelar</a>
     </div>
 </form>

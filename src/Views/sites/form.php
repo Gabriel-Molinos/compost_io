@@ -58,10 +58,10 @@ if ($isEdit): ?>
 
     <div class="flex gap-3 pt-2">
         <button type="submit"
-                class="rounded-md bg-cyan px-4 py-2 font-semibold text-[#050B0F] hover:bg-cyan-bright">
+                class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
             <?= $isEdit ? 'Salvar' : 'Criar site' ?>
         </button>
-        <a href="<?= View::e($backHref) ?>" class="rounded-md border border-border px-4 py-2 text-text-secondary hover:text-text-primary">
+        <a href="<?= View::e($backHref) ?>" class="rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
             Cancelar
         </a>
     </div>

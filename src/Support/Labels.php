@@ -96,10 +96,18 @@ final class Labels
         return self::badge(self::scheduleStatus($status), self::scheduleStatusTone($status));
     }
 
-    /** Badge pronta (HTML) pra um booleano ativo/inativo — mesmo formato das outras badges. */
-    public static function activeBadge(bool $active): string
+    /**
+     * Badge pronta (HTML) pra um booleano ativo/inativo — mesmo formato das
+     * outras badges. `$feminine` pra concordância com substantivos femininos
+     * (ex.: "lição ativa/desativada" em memory/index.php).
+     */
+    public static function activeBadge(bool $active, bool $feminine = false): string
     {
-        return self::badge($active ? 'Ativo' : 'Inativo', $active ? 'success' : 'muted');
+        $label = $feminine
+            ? ($active ? 'Ativa' : 'Desativada')
+            : ($active ? 'Ativo' : 'Inativo');
+
+        return self::badge($label, $active ? 'success' : 'muted');
     }
 
     /** Monta o HTML comum de badge (bolinha + texto) — usado por todas as badges acima. */

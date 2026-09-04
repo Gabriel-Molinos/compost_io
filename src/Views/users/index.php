@@ -36,13 +36,7 @@ use App\View;
                     <td class="px-4 py-3 text-text-secondary">
                         <?= $user['role'] === 'ADMIN' ? 'todos' : View::e($user['site_count']) ?>
                     </td>
-                    <td class="px-4 py-3">
-                        <?php if ((int) $user['is_active'] === 1): ?>
-                            <span class="text-success">● Ativo</span>
-                        <?php else: ?>
-                            <span class="text-text-muted">○ Inativo</span>
-                        <?php endif; ?>
-                    </td>
+                    <td class="px-4 py-3"><?= Labels::activeBadge((int) $user['is_active'] === 1) ?></td>
                     <td class="px-4 py-3 text-right">
                         <a href="/users/<?= View::e($user['id']) ?>/edit"
                            class="text-cyan hover:text-cyan-bright">Editar</a>

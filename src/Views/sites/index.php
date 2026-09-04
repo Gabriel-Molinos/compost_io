@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Labels;
 use App\View;
 
 /** @var list<array<string, mixed>> $sites */
@@ -18,7 +19,7 @@ use App\View;
 </div>
 
 <?php if ($sites === []): ?>
-    <p class="mt-8 text-text-secondary">
+    <p class="mt-8 text-sm text-text-secondary">
         <?= $isAdmin ? 'Nenhum site cadastrado ainda.' : 'Você não está vinculado a nenhum site.' ?>
     </p>
 <?php else: ?>
@@ -31,11 +32,7 @@ use App\View;
                     <span class="flex items-center gap-3 text-sm text-text-muted">
                         <span><?= View::e($site['niche'] ?? '—') ?></span>
                         <span class="font-mono"><?= View::e($site['language']) ?></span>
-                        <?php if ((int) $site['is_active'] === 1): ?>
-                            <span class="text-success">● Ativo</span>
-                        <?php else: ?>
-                            <span>○ Inativo</span>
-                        <?php endif; ?>
+                        <?= Labels::activeBadge((int) $site['is_active'] === 1) ?>
                     </span>
                 </a>
             </li>

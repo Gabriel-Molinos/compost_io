@@ -15,6 +15,13 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* A <meta name="color-scheme" content="dark"> no <head> não é o
+       bastante sozinha pro Chromium — sem essa propriedade CSS também, o
+       menu NATIVO do <select> (a lista que abre ao clicar) continua
+       renderizando claro/branco mesmo com o campo fechado já no tema
+       escuro. É o motivo exato de "os selects continuam parecendo os
+       mesmos" — o que muda ao interagir (abrir a lista) ainda tava claro. */
+    color-scheme: dark;
   }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }

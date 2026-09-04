@@ -22,13 +22,17 @@ final class GoalService
     public function allForSite(int $siteId): array
     {
         $stmt = Connection::get()->prepare(
-            'SELECT g.id, g.period, g.total_articles, g.general_guidelines,
-                    COALESCE(SUM(gc.target_count), 0) AS allocated
+            "SELECT g.id, g.period, g.total_articles, g.general_guidelines,
+                    COALESCE(SUM(gc.target_count), 0) AS allocated,
+                    (SELECT COUNT(*) FROM articles a
+                      WHERE a.site_id = g.site_id AND a.deleted_at IS NULL
+                        AND DATE_FORMAT(a.reviewed_at, '%Y-%m') = g.period
+                        AND a.status IN ('APPROVED','SCHEDULED','PUBLISHED')) AS approved
              FROM goals g
              LEFT JOIN goal_categories gc ON gc.goal_id = g.id
              WHERE g.site_id = :s
              GROUP BY g.id
-             ORDER BY g.period DESC'
+             ORDER BY g.period DESC"
         );
         $stmt->execute(['s' => $siteId]);
 

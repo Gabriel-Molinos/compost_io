@@ -14,14 +14,22 @@ final class HomeController
     public function index(): void
     {
         $user = AuthService::user();
-        $mySites = ($user !== null && $user['role'] !== 'ADMIN')
-            ? (new SiteService())->forUser((int) $user['id'])
-            : [];
+
+        $sites = [];
+        $sitesTotal = 0;
+        if ($user !== null) {
+            $isAdmin = $user['role'] === 'ADMIN';
+            $siteService = new SiteService();
+            $all = $isAdmin ? $siteService->all() : $siteService->forUser((int) $user['id']);
+            $sitesTotal = count($all);
+            $sites = array_slice($all, 0, 6); // cartão-grid embaixo, cap visual — "ver todos" cobre o resto
+        }
 
         View::render('home/index', [
-            'title'   => 'Início',
-            'user'    => $user,
-            'mySites' => $mySites,
+            'title'      => 'Início',
+            'user'       => $user,
+            'sites'      => $sites,
+            'sitesTotal' => $sitesTotal,
         ]);
     }
 

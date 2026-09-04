@@ -7,7 +7,8 @@ use App\Support\Labels;
 use App\View;
 
 /** @var array<string, mixed>|null $user */
-/** @var list<array<string, mixed>> $mySites */
+/** @var list<array<string, mixed>> $sites */
+/** @var int $sitesTotal */
 
 $isAdmin = $user !== null && $user['role'] === 'ADMIN';
 
@@ -59,31 +60,51 @@ $firstName = $user !== null ? explode(' ', trim((string) $user['name']))[0] : nu
             </span>
         </a>
     </div>
-<?php else: ?>
+<?php endif; ?>
+
+<?php if ($user !== null): ?>
     <section aria-labelledby="meus-sites" class="mt-8">
-        <h2 id="meus-sites" class="text-xs font-semibold uppercase tracking-wide text-text-muted">Meus sites</h2>
-        <?php if ($mySites === []): ?>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="meus-sites" class="font-display text-lg font-semibold text-text-primary">
+                <?= $isAdmin ? 'Sites' : 'Meus sites' ?>
+            </h2>
+            <?php if ($sitesTotal > count($sites)): ?>
+                <a href="/sites" class="text-sm text-cyan hover:text-cyan-bright">Ver todos (<?= $sitesTotal ?>) →</a>
+            <?php endif; ?>
+        </div>
+
+        <?php if ($sites === []): ?>
             <p class="mt-3 text-sm text-text-secondary">
-                Nenhum site vinculado ao seu usuário ainda. Peça ao administrador para te vincular a um site.
+                <?= $isAdmin
+                    ? 'Nenhum site cadastrado ainda.'
+                    : 'Nenhum site vinculado ao seu usuário ainda. Peça ao administrador para te vincular a um site.' ?>
             </p>
         <?php else: ?>
-            <ul class="mt-3 divide-y divide-border rounded-lg border border-border bg-surface">
-                <?php foreach ($mySites as $site): ?>
-                    <li>
-                        <a href="/sites/<?= View::e($site['id']) ?>"
-                           class="flex items-center justify-between px-4 py-3 hover:bg-surface">
-                            <span class="text-text-primary"><?= View::e($site['name']) ?></span>
-                            <span class="text-sm text-text-muted">
-                                <?= View::e($site['niche'] ?? '—') ?>
-                                <?php if ((int) $site['is_active'] !== 1): ?>· inativo<?php endif; ?>
+            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <?php foreach ($sites as $site): ?>
+                    <a href="/sites/<?= View::e($site['id']) ?>"
+                       class="hover-card group flex items-start gap-4 rounded-lg border border-border bg-surface p-5 hover:border-cyan">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-cyan/10 font-display text-sm font-bold text-cyan">
+                            <?= View::e(mb_strtoupper(mb_substr((string) $site['name'], 0, 1))) ?>
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="flex items-center justify-between gap-2">
+                                <span class="block truncate text-base font-semibold text-text-primary"><?= View::e($site['name']) ?></span>
+                                <span aria-hidden="true" class="shrink-0 text-text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-cyan">→</span>
                             </span>
-                        </a>
-                    </li>
+                            <span class="mt-1 block truncate text-sm text-text-secondary">
+                                <?= View::e($site['niche'] ?? 'Sem nicho definido') ?>
+                                <?php if ((int) $site['is_active'] !== 1): ?><span class="text-text-muted"> · inativo</span><?php endif; ?>
+                            </span>
+                        </span>
+                    </a>
                 <?php endforeach; ?>
-            </ul>
-            <p class="mt-3 text-sm text-text-muted">
-                Abra um site para configurar categorias, interesses e metas editoriais.
-            </p>
+            </div>
+            <?php if (!$isAdmin): ?>
+                <p class="mt-3 text-sm text-text-muted">
+                    Abra um site para configurar categorias, interesses e metas editoriais.
+                </p>
+            <?php endif; ?>
         <?php endif; ?>
     </section>
 <?php endif; ?>

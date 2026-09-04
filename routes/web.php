@@ -12,6 +12,7 @@ use App\Controllers\GoalController;
 use App\Controllers\HomeController;
 use App\Controllers\IntelligenceController;
 use App\Controllers\ProductionController;
+use App\Controllers\ProfileController;
 use App\Controllers\ReportController;
 use App\Controllers\ScheduleController;
 use App\Controllers\SiteController;
@@ -35,6 +36,10 @@ return static function (Router $router): void {
     // Aplicação
     $router->add('GET', '/', [HomeController::class, 'index'], auth: true);
     $router->add('GET', '/api/health/db', [HomeController::class, 'databaseHealth'], auth: true);
+
+    // Meu perfil (qualquer usuário logado — troca só a própria foto, nunca a de outro)
+    $router->add('GET',  '/profile',        [ProfileController::class, 'edit'],         auth: true);
+    $router->add('POST', '/profile/avatar', [ProfileController::class, 'updateAvatar'], auth: true);
 
     // Usuários (somente ADMIN)
     $router->add('GET',  '/users',           [UserController::class, 'index'],  admin: true);

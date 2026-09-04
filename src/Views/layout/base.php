@@ -110,10 +110,10 @@ if ($authUser !== null && !$hasSiteNav) {
 
             <?php if ($authUser !== null): ?>
                 <div class="mt-6 border-t border-border pt-4">
-                    <div class="flex items-center gap-2 px-2">
+                    <a href="/profile" class="flex items-center gap-2 rounded-md px-2 py-1 -mx-2 hover:bg-surface-2" title="Meu perfil">
                         <?= Avatar::html($authUser['avatar_path'] ?? null, $authUser['name'], size: 'h-7 w-7', radius: 'rounded-full', textSize: 'text-xs') ?>
                         <p class="truncate text-xs text-text-secondary"><?= View::e($authUser['email']) ?></p>
-                    </div>
+                    </a>
                     <form method="post" action="/logout" class="mt-2">
                         <?= Csrf::field() ?>
                         <button type="submit"
@@ -138,10 +138,10 @@ if ($authUser !== null && !$hasSiteNav) {
                         <div class="absolute right-0 z-40 mt-2 w-64 rounded-lg border border-border bg-surface p-4 shadow-2xl">
                             <?php require __DIR__ . '/_nav.php'; ?>
                             <div class="mt-6 border-t border-border pt-4">
-                                <div class="flex items-center gap-2 px-2">
+                                <a href="/profile" class="flex items-center gap-2 rounded-md px-2 py-1 -mx-2 hover:bg-surface-2" title="Meu perfil">
                                     <?= Avatar::html($authUser['avatar_path'] ?? null, $authUser['name'], size: 'h-7 w-7', radius: 'rounded-full', textSize: 'text-xs') ?>
                                     <p class="truncate text-xs text-text-secondary"><?= View::e($authUser['email']) ?></p>
-                                </div>
+                                </a>
                                 <form method="post" action="/logout" class="mt-2">
                                     <?= Csrf::field() ?>
                                     <button type="submit"

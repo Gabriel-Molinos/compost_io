@@ -25,7 +25,9 @@ $firstName = $user !== null ? explode(' ', trim((string) $user['name']))[0] : nu
 ?>
 <div class="flex items-center gap-4">
     <?php if ($user !== null): ?>
-        <?= Avatar::html($user['avatar_path'] ?? null, $user['name'], size: 'h-14 w-14', radius: 'rounded-full', textSize: 'text-lg') ?>
+        <a href="/profile" class="hover-card rounded-full" title="Trocar sua foto">
+            <?= Avatar::html($user['avatar_path'] ?? null, $user['name'], size: 'h-14 w-14', radius: 'rounded-full', textSize: 'text-lg') ?>
+        </a>
     <?php endif; ?>
     <div>
         <h1 class="font-display text-2xl font-bold text-text-primary">

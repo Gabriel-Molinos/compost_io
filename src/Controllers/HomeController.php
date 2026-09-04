@@ -22,7 +22,6 @@ final class HomeController
             'title'   => 'Início',
             'user'    => $user,
             'mySites' => $mySites,
-            'db'      => $this->databaseStatus(),
         ]);
     }
 

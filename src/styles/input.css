@@ -452,6 +452,10 @@
     cursor: pointer;
     transition: background-color 100ms ease, color 100ms ease;
   }
+  /* Hover puro em CSS — não depende do JS marcar `.is-active` (que também
+     dá esse mesmo realce, só que sincronizado com o teclado/scroll; aqui
+     é feedback imediato de mouse, garantido mesmo se algum evento atrasar). */
+  .select-option:hover:not(.is-disabled),
   .select-option.is-active {
     background-color: rgba(0, 208, 240, .16);
   }

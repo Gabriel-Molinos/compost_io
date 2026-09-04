@@ -99,17 +99,17 @@ $diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
                 ?>
                 <div data-calendar-day="<?= View::e($ymd) ?>"
                      class="flex h-32 flex-col border-b border-r border-border p-1.5 transition-colors last:border-r-0
-                            <?= $inMonth ? 'hover:bg-surface-2/40' : 'bg-surface/40' ?>">
+                            <?= $inMonth ? 'hover:bg-surface-2/40' : 'bg-base/80' ?>">
                     <div class="flex shrink-0 items-center justify-between">
                         <span class="flex h-6 w-6 items-center justify-center rounded-full text-xs
-                                     <?= $isToday ? 'bg-cyan font-semibold text-[#050B0F]' : ($inMonth ? 'text-text-secondary' : 'text-text-muted') ?>">
+                                     <?= $isToday ? 'bg-cyan font-semibold text-[#050B0F]' : ($inMonth ? 'text-text-secondary' : 'text-text-muted/50') ?>">
                             <?= (int) $day->format('j') ?>
                         </span>
                         <?php if (count($items) > 0): ?>
                             <span class="text-[10px] font-mono text-text-muted"><?= count($items) ?></span>
                         <?php endif; ?>
                     </div>
-                    <div class="mt-1 min-h-0 flex-1 space-y-1 overflow-y-auto pr-0.5">
+                    <div class="mt-1 min-h-0 flex-1 space-y-1 overflow-y-auto pr-0.5 <?= $inMonth ? '' : 'opacity-50' ?>">
                         <?php foreach ($items as $it): ?>
                             <?php
                             $tone = Labels::scheduleStatusTone((string) $it['status']);

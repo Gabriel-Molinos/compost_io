@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Support\Avatar;
 use App\Support\SvgChart;
 use App\View;
 
@@ -18,12 +19,16 @@ $activeTab = 'overview';
 require __DIR__ . '/_tabs.php';
 ?>
 <div class="flex flex-wrap items-center justify-between gap-3">
-    <div>
-        <h2 class="font-display text-lg font-semibold text-text-primary">Visão geral</h2>
-        <p class="mt-1 text-sm text-text-secondary">
-            <?= View::e($site['niche'] ?? 'Sem nicho definido') ?>
-            <?= !empty($site['language']) ? ' · ' . View::e($site['language']) : '' ?>
-        </p>
+    <div class="flex items-center gap-4">
+        <?= Avatar::html($site['logo_path'] ?? null, (string) $site['name'], size: 'h-14 w-14', radius: 'rounded-lg', textSize: 'text-xl', bg: 'bg-white') ?>
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-text-muted">Visão geral</p>
+            <h1 class="font-display text-2xl font-bold text-text-primary"><?= View::e($site['name']) ?></h1>
+            <p class="mt-0.5 text-sm text-text-secondary">
+                <?= View::e($site['niche'] ?? 'Sem nicho definido') ?>
+                <?= !empty($site['language']) ? ' · ' . View::e($site['language']) : '' ?>
+            </p>
+        </div>
     </div>
     <a href="/sites/<?= View::e($site['id']) ?>/production"
        class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
@@ -99,23 +104,48 @@ require __DIR__ . '/_tabs.php';
 </div>
 
 <?php if (array_sum($trend['produced']) > 0): ?>
+    <?php
+    $mesesAbrev = ['01' => 'jan', '02' => 'fev', '03' => 'mar', '04' => 'abr', '05' => 'mai', '06' => 'jun',
+        '07' => 'jul', '08' => 'ago', '09' => 'set', '10' => 'out', '11' => 'nov', '12' => 'dez'];
+    $labels = array_map(static function (string $p) use ($mesesAbrev): string {
+        [$y, $m] = explode('-', $p);
+        return $mesesAbrev[$m] . '/' . substr($y, 2);
+    }, $trend['periods']);
+
+    // Mês atual × anterior — dá ao gráfico um número de destaque e uma
+    // variação, em vez de só as barras soltas sem nenhum dado em texto.
+    $n = count($trend['produced']);
+    $current = $trend['produced'][$n - 1] ?? 0;
+    $previous = $n >= 2 ? $trend['produced'][$n - 2] : null;
+    $delta = $previous !== null ? $current - $previous : null;
+    ?>
     <section class="mt-8">
         <div class="flex items-center justify-between">
-            <h3 class="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                Produção nos últimos <?= count($trend['periods']) ?> meses
-            </h3>
-            <a href="/sites/<?= View::e($site['id']) ?>/reports" class="text-xs text-cyan hover:text-cyan-bright">Ver relatório completo →</a>
+            <h3 class="font-display text-lg font-semibold text-text-primary">Produção</h3>
+            <a href="/sites/<?= View::e($site['id']) ?>/reports" class="text-sm text-cyan hover:text-cyan-bright">Ver relatório completo →</a>
         </div>
-        <div class="mt-3 rounded-lg border border-border bg-surface p-4">
-            <?php
-            $mesesAbrev = ['01' => 'jan', '02' => 'fev', '03' => 'mar', '04' => 'abr', '05' => 'mai', '06' => 'jun',
-                '07' => 'jul', '08' => 'ago', '09' => 'set', '10' => 'out', '11' => 'nov', '12' => 'dez'];
-            $labels = array_map(static function (string $p) use ($mesesAbrev): string {
-                [$y, $m] = explode('-', $p);
-                return $mesesAbrev[$m] . '/' . substr($y, 2);
-            }, $trend['periods']);
-            ?>
-            <?= SvgChart::bars($labels, $trend['produced'], '#00D0F0', static fn ($v) => (string) (int) $v) ?>
+
+        <div class="relative mt-3 overflow-hidden rounded-lg border border-border bg-surface p-5">
+            <div class="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-cyan/10 blur-3xl"></div>
+
+            <div class="relative flex flex-wrap items-end justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-text-muted">Artigos este mês</p>
+                    <p class="mt-1 font-mono text-3xl font-semibold text-text-primary"><?= $current ?></p>
+                    <?php if ($delta !== null && $delta !== 0): ?>
+                        <p class="mt-0.5 text-xs <?= $delta > 0 ? 'text-success' : 'text-warning' ?>">
+                            <?= $delta > 0 ? '+' : '' ?><?= $delta ?> vs. mês passado
+                        </p>
+                    <?php elseif ($delta === 0): ?>
+                        <p class="mt-0.5 text-xs text-text-muted">sem mudança vs. mês passado</p>
+                    <?php endif; ?>
+                </div>
+                <p class="text-xs text-text-muted">últimos <?= count($trend['periods']) ?> meses</p>
+            </div>
+
+            <div class="relative mt-4">
+                <?= SvgChart::bars($labels, $trend['produced'], '#00D0F0', static fn ($v) => (string) (int) $v) ?>
+            </div>
         </div>
     </section>
 <?php endif; ?>

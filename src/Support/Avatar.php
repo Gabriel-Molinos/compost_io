@@ -22,6 +22,7 @@ final class Avatar
         string $radius = 'rounded-lg',
         string $textSize = 'text-base',
         string $fit = 'cover',
+        string $bg = 'bg-surface-2',
     ): string {
         if ($path !== null && $path !== '' && is_file(dirname(__DIR__, 2) . '/public/' . $path)) {
             $src = View::e(View::asset($path));
@@ -30,10 +31,10 @@ final class Avatar
             // Tailwind só enxerga texto literal no arquivo, não o resultado em
             // runtime de uma string PHP montada com variável.
             $objectFit = $fit === 'contain' ? 'object-contain' : 'object-cover';
-            // bg-surface-2 embaixo: some no "cover" (a imagem preenche tudo),
-            // mas no "contain" (logo não-quadrado numa moldura larga) vira o
-            // fundo das sobras — a logo inteira aparece, sem esticar/cortar.
-            return "<img src=\"{$src}\" alt=\"\" class=\"{$size} {$radius} shrink-0 bg-surface-2 {$objectFit}\">";
+            // $bg preenche as sobras do "contain" (logo não-quadrada numa
+            // moldura maior) — some no "cover", que preenche tudo. Passado
+            // como classe literal pelo chamador (mesmo padrão de $size).
+            return "<img src=\"{$src}\" alt=\"\" class=\"{$size} {$radius} shrink-0 {$bg} {$objectFit}\">";
         }
 
         $label = trim($label);

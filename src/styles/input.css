@@ -413,10 +413,14 @@
      com padding confortável, hover/seleção com o mesmo ciano do resto do
      app, e uma marca (✓) na opção atual em vez de depender só de cor. */
   .select-listbox {
-    position: absolute;
-    z-index: 40;
-    inset-inline: 0;
-    top: calc(100% + .375rem);
+    /* position:fixed (não absolute) e de propósito FORA do .select-shell —
+       select-enhance.js anexa ela no <body> e calcula left/top/width pelo
+       retângulo do botão (getBoundingClientRect) toda vez que abre. Assim
+       nenhum ancestral com overflow-hidden (o painel "Gerar novo rascunho"
+       usa isso pra não vazar o conteúdo dos cantos arredondados, por
+       exemplo) consegue cortar a lista no meio. */
+    position: fixed;
+    z-index: 50;
     margin: 0;
     padding: .375rem;
     list-style: none;

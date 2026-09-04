@@ -133,8 +133,19 @@
       select.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
+    // A lista mora fora do wrapper (ver comentário no fim da função) —
+    // fixed + coordenadas do próprio botão, recalculadas toda vez que abre
+    // e enquanto estiver aberta (scroll/resize de qualquer ancestral,
+    // captura em true pra pegar scroll de containers internos também).
+    function positionListbox() {
+      var r = btn.getBoundingClientRect();
+      listbox.style.left = r.left + 'px';
+      listbox.style.top = (r.bottom + 6) + 'px';
+      listbox.style.width = r.width + 'px';
+    }
+
     function onDocClick(e) {
-      if (!wrapper.contains(e.target)) { close(false); }
+      if (!wrapper.contains(e.target) && !listbox.contains(e.target)) { close(false); }
     }
     function onDocKeydown(e) {
       switch (e.key) {
@@ -162,6 +173,7 @@
 
     function open() {
       if (btn.disabled || !listbox.hidden) { return; }
+      positionListbox();
       listbox.hidden = false;
       btn.setAttribute('aria-expanded', 'true');
       setActive(select.selectedIndex < 0 ? 0 : select.selectedIndex);
@@ -169,6 +181,8 @@
       if (activeItem) { activeItem.scrollIntoView({ block: 'nearest' }); }
       document.addEventListener('click', onDocClick, true);
       document.addEventListener('keydown', onDocKeydown, true);
+      window.addEventListener('scroll', positionListbox, true);
+      window.addEventListener('resize', positionListbox, true);
     }
 
     function close(focusBtn) {
@@ -178,6 +192,8 @@
       btn.removeAttribute('aria-activedescendant');
       document.removeEventListener('click', onDocClick, true);
       document.removeEventListener('keydown', onDocKeydown, true);
+      window.removeEventListener('scroll', positionListbox, true);
+      window.removeEventListener('resize', positionListbox, true);
       if (focusBtn) { btn.focus(); }
     }
 
@@ -200,8 +216,14 @@
 
     select.insertAdjacentElement('beforebegin', wrapper);
     wrapper.appendChild(btn);
-    wrapper.appendChild(listbox);
     wrapper.appendChild(select);
+    // A lista vai pro <body>, fora do wrapper — se ficasse dentro, qualquer
+    // ancestral com overflow-hidden (ex.: o painel "Gerar novo rascunho",
+    // arredondado com overflow-hidden pra não vazar o conteúdo dos cantos)
+    // corta a lista no meio quando ela é mais alta que o espaço restante
+    // do painel. Com `position:fixed` + coordenadas do botão (acima) ela
+    // flutua por cima de tudo, imune a overflow de qualquer container.
+    document.body.appendChild(listbox);
 
     syncFromSelect();
   }

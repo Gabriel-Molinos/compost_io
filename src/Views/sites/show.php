@@ -22,7 +22,7 @@ require __DIR__ . '/_tabs.php';
 ?>
 <div class="flex flex-wrap items-center justify-between gap-3">
     <div class="flex items-center gap-4">
-        <?= Avatar::html($site['logo_path'] ?? null, (string) $site['name'], size: 'h-14 w-14', radius: 'rounded-lg', textSize: 'text-xl', bg: 'bg-white') ?>
+        <?= Avatar::html($site['logo_path'] ?? null, (string) $site['name'], size: 'h-24 w-24', radius: 'rounded-lg', textSize: 'text-3xl', bg: 'bg-white') ?>
         <div>
             <p class="text-xs font-semibold uppercase tracking-wide text-text-muted">Visão geral</p>
             <div class="flex items-center gap-2">

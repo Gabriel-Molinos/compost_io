@@ -19,6 +19,7 @@ use App\View;
 /** @var array<string,mixed>|null $schedule */
 /** @var array<string,mixed>|null $lastSchedule */
 /** @var list<array<string,mixed>> $authors */
+/** @var string|null $nextSlot data/hora (Y-m-d H:i:s) que o agendamento automático vai usar, quando o artigo está APPROVED */
 
 $activeTab = 'production';
 require __DIR__ . '/../_tabs.php';
@@ -139,7 +140,15 @@ $authorOptions = static function (array $authors, int $selectedId): string {
                 Escolha a <a href="#imagens" class="text-cyan hover:text-cyan-bright">imagem destacada</a> antes de agendar.
             </p>
         <?php else: ?>
-            <p class="mt-1 text-sm text-text-secondary">Define autor, data/hora e usa a imagem destacada já escolhida. O envio ao WordPress é um passo à parte.</p>
+            <p class="mt-1 text-sm text-text-secondary">
+                Escolha o autor — a imagem destacada já escolhida é usada automaticamente, e a data/hora também:
+                <?php if ($nextSlot !== null): ?>
+                    <strong class="text-text-primary">
+                        vai ser publicado em <?= View::e(date('d/m/Y \à\s H:i', strtotime($nextSlot))) ?>
+                    </strong>
+                    — o próximo horário livre deste site (sempre 9h). Quiser outra data, dá pra reagendar depois.
+                <?php endif; ?>
+            </p>
             <form method="post" action="<?= $scheduleBase ?>/schedule" class="mt-3 grid gap-4 sm:max-w-md">
                 <?= Csrf::field() ?>
                 <input type="hidden" name="image_id" value="<?= View::e($featuredSelected['id']) ?>">
@@ -149,11 +158,6 @@ $authorOptions = static function (array $authors, int $selectedId): string {
                             class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
                         <?= $authorOptions($authors, 0) ?>
                     </select>
-                </label>
-                <label class="text-sm">
-                    <span class="block font-medium text-text-secondary">Data e hora da publicação</span>
-                    <input type="datetime-local" name="scheduled_date" required min="<?= $nowLocal ?>"
-                           class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
                 </label>
                 <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
                     Agendar

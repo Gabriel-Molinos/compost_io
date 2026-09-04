@@ -38,8 +38,10 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
 ?>
 <h2 class="font-display text-lg font-semibold text-text-primary">Produção</h2>
 <p class="mt-1 text-sm text-text-secondary">
-    A IA gera um rascunho (planejamento → pesquisa → escrita). Cada geração faz
-    várias chamadas ao Gemini e <strong>tem custo</strong> — gere poucos por vez.
+    Todo dia, 1 rascunho novo é gerado automaticamente por este site (se estiver ativo) —
+    marcado como <span class="text-cyan">automático</span> na lista abaixo. Cada geração faz
+    várias chamadas ao Gemini e <strong>tem custo</strong>. Use o formulário abaixo pra gerar
+    um extra quando quiser.
 </p>
 
 <section class="mt-5 overflow-hidden rounded-lg border border-border bg-surface">
@@ -115,6 +117,9 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
                     <div class="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-text-muted">
                         <?= Labels::articleStatusBadge((string) $a['status']) ?>
                         <span><?= View::e(date('d/m/Y', strtotime((string) $a['created_at']))) ?></span>
+                        <?php if (($a['source'] ?? 'MANUAL') === 'AUTO'): ?>
+                            <span class="rounded-full bg-cyan/10 px-1.5 py-0.5 text-[11px] font-medium text-cyan">automático</span>
+                        <?php endif; ?>
                         <?php if ((int) ($a['attempt_number'] ?? 1) > 1): ?><span>· tentativa <?= View::e($a['attempt_number']) ?></span><?php endif; ?>
                         <?php if (!empty($a['category_name'])): ?><span>· <?= View::e($a['category_name']) ?></span><?php endif; ?>
                         <?php if (!empty($a['word_count'])): ?><span>· <?= View::e($a['word_count']) ?> palavras</span><?php endif; ?>

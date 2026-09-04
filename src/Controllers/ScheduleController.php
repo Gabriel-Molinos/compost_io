@@ -27,10 +27,16 @@ final class ScheduleController extends Controller
         $this->articles = new ArticleService();
     }
 
+    /**
+     * Primeiro agendamento, logo após aprovar: só autor + imagem — a data/hora
+     * é escolhida sozinha (próximo horário livre, 9h). Pedido do responsável
+     * 2026-09-04: Redator-Chefe não digita mais data aqui. `update()` (reagendar)
+     * continua manual, é o escape-hatch pra quem quiser uma data diferente.
+     */
     public function store(string $siteId, string $articleId): void
     {
         $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
-            $this->schedules->schedule($aid, $sid, $this->authorId(), $this->dateTime(), $this->imageId());
+            $this->schedules->scheduleAuto($aid, $sid, $this->authorId(), $this->imageId());
             Session::flash('success', 'Artigo agendado.');
         });
     }

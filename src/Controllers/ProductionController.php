@@ -35,9 +35,6 @@ use Throwable;
  */
 final class ProductionController extends Controller
 {
-    /** Teto diário de gerações por site enquanto não há limite de custo (§95). */
-    private const DAILY_LIMIT = 15;
-
     private ArticleService $articles;
     private AiExecutionService $executions;
 
@@ -82,7 +79,7 @@ final class ProductionController extends Controller
         try {
             $articleId = $this->articles->createWithDailyLimit(
                 (int) $site['id'],
-                self::DAILY_LIMIT,
+                ArticleService::DAILY_LIMIT,
                 fn () => $pipeline->prepareGenerate((int) $site['id'], $goalId),
             );
         } catch (DailyLimitExceededException $e) {
@@ -155,6 +152,11 @@ final class ProductionController extends Controller
             'schedule'   => $schedules->activeForArticle((int) $article['id']),
             'lastSchedule' => $schedules->latestForArticle((int) $article['id']),
             'authors'    => $schedules->authorsForSite((int) $site['id']),
+            // Data/hora que o agendamento automático vai usar — só pra mostrar
+            // antes de agendar (RF-011 revisto: o Redator-Chefe não escolhe mais
+            // a data, só autor + imagem). Calculado sempre; a view só exibe
+            // quando o artigo está APPROVED e ainda sem agendamento.
+            'nextSlot'   => $article['status'] === 'APPROVED' ? $schedules->nextAvailableSlot((int) $site['id']) : null,
             'feedback'   => (new FeedbackService())->forContext(
                 (int) $article['id'],
                 $article['lineage_id'] !== null ? (int) $article['lineage_id'] : null,

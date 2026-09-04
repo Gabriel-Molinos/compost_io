@@ -70,6 +70,59 @@ final class GoalService
         return $targets;
     }
 
+    /** A meta do site pro período (AAAA-MM), se existir — usado pela geração automática (bin/worker.php). */
+    public function findByPeriod(int $siteId, string $period): ?array
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT * FROM goals WHERE site_id = :s AND period = :p LIMIT 1'
+        );
+        $stmt->execute(['s' => $siteId, 'p' => $period]);
+
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * Categoria mais atrasada em relação ao alvo do mês (maior `target - realizado`),
+     * pra geração automática escolher sozinha (bin/worker.php) — mesma ideia do
+     * relatório "Por categoria" (ReportService::monthly()), só que devolvendo 1 id
+     * em vez da tabela inteira. `null` se a meta não tem distribuição por categoria
+     * ou se todo mundo já bateu o alvo (a geração segue sem categoria, como já
+     * acontece quando o campo fica em branco na geração manual).
+     */
+    public function mostUnderTargetCategory(int $siteId, int $goalId, string $period): ?int
+    {
+        $targets = $this->categoryTargets($goalId);
+        if ($targets === []) {
+            return null;
+        }
+
+        $stmt = Connection::get()->prepare(
+            "SELECT category_id, COUNT(*) AS produced
+             FROM articles
+             WHERE site_id = :s AND category_id IS NOT NULL AND deleted_at IS NULL
+               AND DATE_FORMAT(created_at, '%Y-%m') = :p
+               AND status IN ('APPROVED','SCHEDULED','PUBLISHED')
+             GROUP BY category_id"
+        );
+        $stmt->execute(['s' => $siteId, 'p' => $period]);
+        $produced = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $produced[(int) $row['category_id']] = (int) $row['produced'];
+        }
+
+        $best = null;
+        $bestGap = 0;
+        foreach ($targets as $categoryId => $target) {
+            $gap = $target - ($produced[$categoryId] ?? 0);
+            if ($gap > $bestGap) {
+                $bestGap = $gap;
+                $best = $categoryId;
+            }
+        }
+
+        return $best;
+    }
+
     public function periodExists(int $siteId, string $period, ?int $ignoreId = null): bool
     {
         $sql = 'SELECT COUNT(*) FROM goals WHERE site_id = :s AND period = :p';

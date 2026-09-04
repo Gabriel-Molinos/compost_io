@@ -132,11 +132,59 @@ final class ScheduleService
     }
 
     /**
-     * Cria o agendamento. Valida artigo/autor/imagem/data.
+     * Cria o agendamento com data/hora escolhida manualmente. Valida artigo/autor/imagem/data.
      *
      * @throws RuntimeException entrada inválida
      */
     public function schedule(int $articleId, int $siteId, int $authorId, string $dateTimeLocal, int $imageId): void
+    {
+        $when = $this->parseFutureDate($dateTimeLocal);
+        $this->insertSchedule($articleId, $siteId, $authorId, $when, $imageId);
+    }
+
+    /**
+     * Cria o agendamento com a data/hora escolhida automaticamente pelo sistema
+     * (próximo horário livre, sempre 9h — pedido do responsável 2026-09-04:
+     * depois de aprovar e escolher autor/imagem, o Redator-Chefe não digita
+     * mais data). Valida artigo/autor/imagem, igual `schedule()`.
+     *
+     * @throws RuntimeException entrada inválida
+     */
+    public function scheduleAuto(int $articleId, int $siteId, int $authorId, int $imageId): void
+    {
+        $when = $this->nextAvailableSlot($siteId);
+        $this->insertSchedule($articleId, $siteId, $authorId, $when, $imageId);
+    }
+
+    /**
+     * Próximo horário livre pra publicar neste site: começa em hoje às 9h (ou
+     * agora, se já passou das 9h) e avança dia a dia até achar uma data sem
+     * nenhum agendamento vigente (não-cancelado) — mantém o ritmo de ~1
+     * publicação por dia por site sem duas caindo no mesmo dia.
+     */
+    public function nextAvailableSlot(int $siteId): string
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT DATE(s.scheduled_date) AS d
+             FROM schedules s
+             JOIN articles a ON a.id = s.article_id AND a.site_id = :s
+             WHERE s.status <> 'CANCELED' AND s.scheduled_date >= CURDATE()"
+        );
+        $stmt->execute(['s' => $siteId]);
+        $taken = array_flip($stmt->fetchAll(\PDO::FETCH_COLUMN));
+
+        $now = new DateTimeImmutable('now');
+        $candidate = $now->setTime(9, 0, 0);
+
+        while (isset($taken[$candidate->format('Y-m-d')]) || $candidate < $now) {
+            $candidate = $candidate->modify('+1 day');
+        }
+
+        return $candidate->format('Y-m-d H:i:00');
+    }
+
+    /** Insere a linha PENDING e marca o artigo SCHEDULED — núcleo compartilhado por schedule()/scheduleAuto(). */
+    private function insertSchedule(int $articleId, int $siteId, int $authorId, string $when, int $imageId): void
     {
         $article = $this->articles->find($siteId, $articleId);
         if ($article === null) {
@@ -146,7 +194,6 @@ final class ScheduleService
             throw new RuntimeException('Só é possível agendar um artigo aprovado (status atual: ' . $article['status'] . ').');
         }
 
-        $when = $this->parseFutureDate($dateTimeLocal);
         $this->assertAuthor($authorId, $siteId);
         $this->assertFeaturedImage($imageId, $articleId);
 

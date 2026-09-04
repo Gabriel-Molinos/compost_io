@@ -102,9 +102,10 @@ final class ArticlePipeline
      * ter o que precisa pra redirecionar/despachar o job, antes do trabalho
      * pesado rodar (Fase 9.1b — fila conectada ao pipeline).
      */
-    public function prepareGenerate(int $siteId, ?int $goalId = null): int
+    /** @param 'MANUAL'|'AUTO' $source repassado direto pra ArticleService::create() */
+    public function prepareGenerate(int $siteId, ?int $goalId = null, string $source = 'MANUAL'): int
     {
-        return $this->articles->create($siteId, $goalId);
+        return $this->articles->create($siteId, $goalId, $source);
     }
 
     /**

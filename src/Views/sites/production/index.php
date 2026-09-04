@@ -132,7 +132,7 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
             </li>
         <?php endforeach; ?>
     </ul>
-    <p data-filter-empty hidden class="mt-3 text-sm text-text-secondary">Nenhum rascunho neste filtro.</p>
+    <p data-filter-empty class="mt-3 hidden text-sm text-text-secondary">Nenhum rascunho neste filtro.</p>
 <?php endif; ?>
 
 <script>
@@ -159,10 +159,15 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
                 var visible = 0;
                 rows.forEach(function (row) {
                     var show = filter === 'all' || row.getAttribute('data-status-group') === filter;
-                    row.hidden = !show;
+                    // classList.toggle('hidden', ...) em vez do atributo/propriedade
+                    // `hidden` nativo — a linha tem `class="flex ..."`, e o `.flex`
+                    // do Tailwind tem a mesma especificidade do reset de `[hidden]`
+                    // (que usa :where(), especificidade zero); a classe `.hidden`
+                    // do próprio Tailwind vem depois no CSS compilado e vence.
+                    row.classList.toggle('hidden', !show);
                     if (show) visible++;
                 });
-                if (empty) empty.hidden = visible > 0;
+                if (empty) empty.classList.toggle('hidden', visible > 0);
             });
         });
     })();

@@ -81,14 +81,37 @@
 }
 
 @layer components {
-  /* Fundo do app: vinheta radial + scanline sutil (~3%) — textura única
-     permitida pela identidade visual, nunca acima disso. */
+  /* Fundo do app: vinheta radial + scanline sutil + grade — textura única
+     permitida pela identidade visual, nunca acima disso. A grade (linhas
+     repetidas a cada 48px) reforça a leitura "painel digital/HUD" da
+     identidade Y2K; fica atrás de todo conteúdo (ver .app-bg::before e
+     `relative z-10` no wrapper em layout/base.php e layout/auth.php). */
   .app-bg {
+    position: relative;
     background-color: #050B0F;
     background-image:
       radial-gradient(ellipse 60% 40% at 50% -10%, rgba(0, 208, 240, .08), transparent 60%),
-      repeating-linear-gradient(0deg, rgba(240, 248, 255, .025) 0px, rgba(240, 248, 255, .025) 1px, transparent 1px, transparent 3px);
+      repeating-linear-gradient(0deg, rgba(240, 248, 255, .025) 0px, rgba(240, 248, 255, .025) 1px, transparent 1px, transparent 3px),
+      repeating-linear-gradient(90deg, rgba(0, 208, 240, .06) 0px, rgba(0, 208, 240, .06) 1px, transparent 1px, transparent 48px),
+      repeating-linear-gradient(0deg, rgba(0, 208, 240, .06) 0px, rgba(0, 208, 240, .06) 1px, transparent 1px, transparent 48px);
     background-attachment: fixed;
+  }
+
+  /* Brilho que segue o mouse — coordenadas vêm de --mx/--my (definidas via
+     JS em layout/base.php e layout/auth.php, throttled por requestAnimationFrame).
+     Puramente decorativo (pointer-events:none), fica atrás do conteúdo real;
+     sem JS (JS desabilitado) ou com prefers-reduced-motion, --mx/--my nunca
+     mudam e o brilho fica parado no centro — nunca quebra o layout. */
+  .app-bg::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(480px circle at var(--mx, 50%) var(--my, 30%), rgba(0, 208, 240, .12), transparent 70%);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .app-bg::before { display: none; }
   }
 
   /* Glow contido no acento ciano — qualquer botão/elemento com bg-cyan ganha

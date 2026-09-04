@@ -22,6 +22,7 @@ use App\View;
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Orbitron:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= View::e(View::asset('assets/css/app.css')) ?>">
+    <script src="<?= View::e(View::asset('assets/js/mouse-glow.js')) ?>" defer></script>
 
     <style>
         :focus-visible { outline: 2px solid #7FE8FF; outline-offset: 2px; border-radius: 2px; }
@@ -31,7 +32,7 @@ use App\View;
     </style>
 </head>
 <body class="app-bg flex min-h-screen items-center justify-center px-6 py-12 font-sans text-text-primary antialiased">
-    <main id="conteudo" class="w-full max-w-sm">
+    <main id="conteudo" class="relative z-10 w-full max-w-sm">
         <img src="/assets/brand/logo-lockup.webp" alt="COMPOST — Editorial Dashboard"
              class="mx-auto mb-8 h-auto w-56 drop-shadow-[0_0_30px_rgba(0,208,240,0.25)]">
 

@@ -23,15 +23,22 @@ $greeting = match (true) {
 };
 $firstName = $user !== null ? explode(' ', trim((string) $user['name']))[0] : null;
 ?>
-<h1 class="font-display text-2xl font-bold text-text-primary">
-    <?= View::e($greeting) ?><?= $firstName !== null ? ', ' . View::e($firstName) : '' ?>
-</h1>
-<p class="mt-2 text-sm text-text-secondary">
+<div class="flex items-center gap-4">
     <?php if ($user !== null): ?>
-        Tudo certo por aqui. Você está conectado(a) como
-        <span class="text-text-primary"><?= View::e(Labels::role($user['role'])) ?></span>.
+        <?= Avatar::html($user['avatar_path'] ?? null, $user['name'], size: 'h-14 w-14', radius: 'rounded-full', textSize: 'text-lg') ?>
     <?php endif; ?>
-</p>
+    <div>
+        <h1 class="font-display text-2xl font-bold text-text-primary">
+            <?= View::e($greeting) ?><?= $firstName !== null ? ', ' . View::e($firstName) : '' ?>
+        </h1>
+        <p class="mt-1 text-sm text-text-secondary">
+            <?php if ($user !== null): ?>
+                Tudo certo por aqui. Você está conectado(a) como
+                <span class="text-text-primary"><?= View::e(Labels::role($user['role'])) ?></span>.
+            <?php endif; ?>
+        </p>
+    </div>
+</div>
 
 <?php if ($isAdmin): ?>
     <p class="mt-8 text-sm text-text-secondary">

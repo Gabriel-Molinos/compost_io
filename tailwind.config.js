@@ -6,7 +6,18 @@ module.exports = {
   // em PHP fora de src/Views — sem isso, o scanner de conteúdo não as vê e
   // elas somem do CSS compilado sem aviso nenhum (bug real: Icon.php usava
   // classes Tailwind pra tamanho e saíam gigantes, sem CSS nenhum aplicado).
-  content: ['./src/Views/**/*.php', './src/Support/**/*.php', './public/**/*.php'],
+  // Mesmo problema, versão JS: public/assets/js/**/*.js entrou porque
+  // select-enhance.js monta className tipo "select-trigger"/"select-listbox"
+  // em runtime — sem esse glob, ./public/**/*.php não batia em .js nenhum e
+  // as classes de @layer components inteiras (select-shell/trigger/listbox/
+  // option, is-active/is-selected/is-disabled) somiam do CSS compilado sem
+  // erro nenhum, exatamente como o caso do Icon.php acima.
+  content: [
+    './src/Views/**/*.php',
+    './src/Support/**/*.php',
+    './public/**/*.php',
+    './public/assets/js/**/*.js',
+  ],
   theme: {
     extend: {
       colors: {

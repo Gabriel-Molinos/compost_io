@@ -78,6 +78,7 @@ if ($authUser !== null && !$hasSiteNav) {
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Orbitron:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= View::e(View::asset('assets/css/app.css')) ?>">
     <script src="<?= View::e(View::asset('assets/js/mouse-glow.js')) ?>" defer></script>
+    <script src="<?= View::e(View::asset('assets/js/select-enhance.js')) ?>" defer></script>
 
     <style>
         :focus-visible { outline: 2px solid #7FE8FF; outline-offset: 2px; border-radius: 2px; }

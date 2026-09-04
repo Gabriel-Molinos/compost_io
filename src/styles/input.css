@@ -299,4 +299,168 @@
     position: relative;
     background-image: linear-gradient(180deg, rgb(240 248 255 / 14%), transparent 55%);
   }
+
+  /* =====================================================================
+     Select — lista de opções (assets/js/select-enhance.js).
+     A caixa fechada já tinha um redesign completo (regras `select{...}`
+     acima), mas a lista que abre ao clicar é o POPUP NATIVO do navegador —
+     `color-scheme: dark` no <html> ajuda pouco (Chromium continua
+     desenhando texto pequeno, sem padding, sem hover, contraste ruim) e
+     não existe CSS que controle isso de verdade em todo navegador. A
+     única forma de ter uma lista com a MESMA identidade visual da caixa
+     (padding, hover, item selecionado marcado, cantos arredondados) é
+     parar de depender do popup nativo pra exibição — o JS troca a caixa
+     visível por um botão + `<ul role="listbox">` desenhados aqui, e
+     empurra o `<select>` original (que continua existindo, some só
+     visualmente) pra trás, ainda dono do nome/valor que o form envia.
+
+     Progressive enhancement de verdade: sem JS (ou se `select-enhance.js`
+     falhar por qualquer motivo), o `<select>` nunca é escondido — as
+     regras `select{...}` acima seguem valendo e o campo continua 100%
+     funcional, só com a lista nativa em vez desta. Por isso as cores/
+     medidas abaixo repetem as da caixa em vez de compartilhar a regra:
+     são dois visuais para o MESMO componente, um deles é o modo de
+     segurança. */
+  .select-shell {
+    position: relative;
+    display: block;
+  }
+  /* O <select> real fica invisível mas ocupando o mesmo espaço do botão —
+     é ele quem recebe foco de validação nativa (campo obrigatório vazio)
+     e quem o navegador tenta rolar/apontar se o form for enviado inválido;
+     por isso `pointer-events: none` (quem responde a clique é o botão por
+     cima) em vez de `display: none` (isso tiraria o campo da validação). */
+  .select-shell > select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .select-trigger {
+    all: unset;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 2.375rem;
+    padding: .5625rem 2.5rem .5625rem .75rem;
+    border-radius: .375rem;
+    border: 1px solid rgba(0, 208, 240, .30);
+    background-color: #0A2647;
+    color: #F0F8FF;
+    font-family: inherit;
+    font-size: .875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(240, 248, 255, .05);
+    transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
+    background-repeat: no-repeat, no-repeat, no-repeat;
+    background-position: right .9rem center, right 2.5rem top 0, right center;
+    background-size: 13px, 1px 100%, 2.5rem 100%;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238FA6BC' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+      linear-gradient(rgba(61, 82, 102, .55), rgba(61, 82, 102, .55)),
+      linear-gradient(rgba(0, 208, 240, .07), rgba(0, 208, 240, .07));
+  }
+  .select-trigger-label {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .select-trigger:hover:not(:disabled),
+  .select-trigger:focus,
+  .select-trigger[aria-expanded="true"] {
+    border-color: rgba(0, 208, 240, .55);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237FE8FF' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+      linear-gradient(rgba(127, 232, 255, .5), rgba(127, 232, 255, .5)),
+      linear-gradient(rgba(0, 208, 240, .13), rgba(0, 208, 240, .13));
+  }
+  .select-trigger:focus {
+    outline: none;
+  }
+  .select-trigger:focus-visible {
+    box-shadow: inset 0 1px 0 rgba(240, 248, 255, .05), 0 0 0 3px rgba(0, 208, 240, .28);
+  }
+  .select-trigger:disabled {
+    cursor: not-allowed;
+    opacity: .5;
+    border-color: rgba(61, 82, 102, .6);
+    background-color: #061830;
+    box-shadow: none;
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237B8FA1' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+      linear-gradient(rgba(61, 82, 102, .35), rgba(61, 82, 102, .35)),
+      transparent;
+  }
+  .select-trigger[aria-invalid="true"] {
+    border-color: rgba(255, 92, 122, .55);
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FF5C7A' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
+      linear-gradient(rgba(255, 92, 122, .4), rgba(255, 92, 122, .4)),
+      linear-gradient(rgba(255, 92, 122, .08), rgba(255, 92, 122, .08));
+  }
+
+  /* A lista em si — aqui é onde o pedido "melhora a hora de ver as opções"
+     é resolvido de verdade: mesmo fundo/borda/raio da caixa, cada opção
+     com padding confortável, hover/seleção com o mesmo ciano do resto do
+     app, e uma marca (✓) na opção atual em vez de depender só de cor. */
+  .select-listbox {
+    position: absolute;
+    z-index: 40;
+    inset-inline: 0;
+    top: calc(100% + .375rem);
+    margin: 0;
+    padding: .375rem;
+    list-style: none;
+    max-height: 16rem;
+    overflow-y: auto;
+    border-radius: .5rem;
+    border: 1px solid rgba(0, 208, 240, .35);
+    background-color: #0A2647;
+    box-shadow: 0 16px 32px -12px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(240, 248, 255, .05);
+    animation: select-pop 120ms ease both;
+  }
+  @keyframes select-pop {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .select-listbox { animation: none; }
+  }
+  .select-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .5rem .625rem;
+    border-radius: .375rem;
+    font-size: .875rem;
+    line-height: 1.25rem;
+    color: #F0F8FF;
+    cursor: pointer;
+    transition: background-color 100ms ease, color 100ms ease;
+  }
+  .select-option.is-active {
+    background-color: rgba(0, 208, 240, .16);
+  }
+  .select-option.is-selected {
+    color: #00D0F0;
+    font-weight: 600;
+  }
+  .select-option.is-selected::after {
+    content: '✓';
+    font-size: .75rem;
+  }
+  .select-option.is-disabled {
+    opacity: .45;
+    cursor: not-allowed;
+  }
 }

@@ -106,34 +106,42 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
             <?php
             $tone = Labels::articleStatusTone((string) $a['status']);
             $group = $statusGroup((string) $a['status']);
+            $isGenerating = in_array($a['status'], ['PLANNED', 'IN_PROGRESS'], true);
             ?>
             <li data-status-group="<?= $group ?>"
-                class="flex items-start justify-between gap-4 rounded-lg border-l-2 <?= $toneBorder($tone) ?> border-y border-r border-border bg-surface px-4 py-3.5">
-                <div class="min-w-0">
-                    <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>"
-                       class="font-medium text-text-primary hover:text-cyan">
-                        <?= View::e($a['title'] ?: 'Rascunho #' . $a['id']) ?>
-                    </a>
-                    <div class="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                        <?= Labels::articleStatusBadge((string) $a['status']) ?>
-                        <span><?= View::e(date('d/m/Y', strtotime((string) $a['created_at']))) ?></span>
-                        <?php if (($a['source'] ?? 'MANUAL') === 'AUTO'): ?>
-                            <span class="rounded-full bg-cyan/10 px-1.5 py-0.5 text-[11px] font-medium text-cyan">automático</span>
-                        <?php endif; ?>
-                        <?php if ((int) ($a['attempt_number'] ?? 1) > 1): ?><span>· tentativa <?= View::e($a['attempt_number']) ?></span><?php endif; ?>
-                        <?php if (!empty($a['category_name'])): ?><span>· <?= View::e($a['category_name']) ?></span><?php endif; ?>
-                        <?php if (!empty($a['word_count'])): ?><span>· <?= View::e($a['word_count']) ?> palavras</span><?php endif; ?>
-                        <span class="font-mono">· US$ <?= number_format((float) $a['ai_cost'], 4) ?></span>
+                class="flex flex-col gap-2.5 rounded-lg border-l-2 <?= $toneBorder($tone) ?> border-y border-r border-border bg-surface px-4 py-3.5">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="min-w-0">
+                        <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>"
+                           class="font-medium text-text-primary hover:text-cyan">
+                            <?= View::e($a['title'] ?: 'Rascunho #' . $a['id']) ?>
+                        </a>
+                        <div class="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-text-muted">
+                            <?= Labels::articleStatusBadge((string) $a['status']) ?>
+                            <span><?= View::e(date('d/m/Y', strtotime((string) $a['created_at']))) ?></span>
+                            <?php if (($a['source'] ?? 'MANUAL') === 'AUTO'): ?>
+                                <span class="rounded-full bg-cyan/10 px-1.5 py-0.5 text-[11px] font-medium text-cyan">automático</span>
+                            <?php endif; ?>
+                            <?php if ((int) ($a['attempt_number'] ?? 1) > 1): ?><span>· tentativa <?= View::e($a['attempt_number']) ?></span><?php endif; ?>
+                            <?php if (!empty($a['category_name'])): ?><span>· <?= View::e($a['category_name']) ?></span><?php endif; ?>
+                            <?php if (!empty($a['word_count'])): ?><span>· <?= View::e($a['word_count']) ?> palavras</span><?php endif; ?>
+                            <span class="font-mono">· US$ <?= number_format((float) $a['ai_cost'], 4) ?></span>
+                        </div>
                     </div>
+                    <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>/delete"
+                          onsubmit="return confirm('Descartar este rascunho?');">
+                        <?= Csrf::field() ?>
+                        <button type="submit" title="Descartar" aria-label="Descartar"
+                                class="shrink-0 rounded-md p-1.5 text-text-muted transition-colors hover:bg-danger/10 hover:text-danger">
+                            <?= $deleteIcon ?>
+                        </button>
+                    </form>
                 </div>
-                <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>/delete"
-                      onsubmit="return confirm('Descartar este rascunho?');">
-                    <?= Csrf::field() ?>
-                    <button type="submit" title="Descartar" aria-label="Descartar"
-                            class="shrink-0 rounded-md p-1.5 text-text-muted transition-colors hover:bg-danger/10 hover:text-danger">
-                        <?= $deleteIcon ?>
-                    </button>
-                </form>
+                <?php if ($isGenerating): ?>
+                    <div class="loading-bar-track" role="progressbar" aria-label="A IA está gerando este rascunho">
+                        <div class="loading-bar-fill"></div>
+                    </div>
+                <?php endif; ?>
             </li>
         <?php endforeach; ?>
     </ul>

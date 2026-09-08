@@ -508,4 +508,39 @@
     opacity: .45;
     cursor: not-allowed;
   }
+
+  /* Barrinha de "a IA está trabalhando nisso agora" — rascunhos PLANNED/
+     IN_PROGRESS na lista de Produção e no cabeçalho do artigo (pedido do
+     responsável, 2026-09-08: "fica uma barrinha carregando"). Indeterminada
+     de propósito — não temos % real de progresso do pipeline, só "em
+     andamento" — o preenchimento desliza sem parar em vez de fingir uma
+     porcentagem que não existe. */
+  .loading-bar-track {
+    position: relative;
+    overflow: hidden;
+    height: .25rem;
+    border-radius: 999px;
+    background-color: rgba(61, 82, 102, .35);
+  }
+  .loading-bar-fill {
+    position: absolute;
+    inset: 0;
+    width: 35%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, #00A8C4, #00D0F0 45%, #7FE8FF, #00D0F0 65%, #00A8C4, transparent);
+    box-shadow: 0 0 8px rgba(0, 208, 240, .55);
+    animation: loading-bar-slide 1.7s ease-in-out infinite;
+  }
+  @keyframes loading-bar-slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .loading-bar-fill {
+      animation: none;
+      inset: 0;
+      width: 100%;
+      opacity: .35;
+    }
+  }
 }

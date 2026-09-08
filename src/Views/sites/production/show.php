@@ -38,6 +38,11 @@ require __DIR__ . '/../_tabs.php';
     <h2 class="font-display text-lg font-semibold text-text-primary"><?= View::e($article['title'] ?: 'Rascunho #' . $article['id']) ?></h2>
     <?= Labels::articleStatusBadge((string) $article['status']) ?>
 </div>
+<?php if (in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true)): ?>
+    <div class="loading-bar-track mt-2 max-w-xs" role="progressbar" aria-label="A IA está gerando este rascunho">
+        <div class="loading-bar-fill"></div>
+    </div>
+<?php endif; ?>
 <p class="mt-1 text-sm text-text-muted">
     <?php if ((int) ($article['attempt_number'] ?? 1) > 1): ?>tentativa <?= View::e($article['attempt_number']) ?> · <?php endif; ?>
     <?php if (!empty($article['focus_keyword'])): ?>palavra-chave: <em><?= View::e($article['focus_keyword']) ?></em> · <?php endif; ?>

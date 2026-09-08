@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\Csrf;
+use App\Support\Icon;
 use App\View;
 
 /** @var string $email */
@@ -15,7 +16,8 @@ $describedBy = $error !== null ? 'login-error' : null;
 <p class="mt-1 text-sm text-text-secondary">Acesse com seu e-mail e senha.</p>
 
 <?php if ($flash !== null): ?>
-    <p role="status" class="mt-4 rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
+    <p role="status" class="mt-4 flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-text-secondary">
+        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan" aria-hidden="true"></span>
         <?= View::e($flash) ?>
     </p>
 <?php endif; ?>
@@ -23,7 +25,7 @@ $describedBy = $error !== null ? 'login-error' : null;
 <?php if ($error !== null): ?>
     <p id="login-error" role="alert"
        class="mt-4 flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
-        <span aria-hidden="true">!</span>
+        <span class="mt-0.5 shrink-0" aria-hidden="true"><?= Icon::nav('alert') ?></span>
         <span><?= View::e($error) ?></span>
     </p>
 <?php endif; ?>
@@ -33,20 +35,24 @@ $describedBy = $error !== null ? 'login-error' : null;
 
     <div>
         <label for="email" class="block text-sm font-medium text-text-secondary">E-mail</label>
-        <input type="email" id="email" name="email" required autocomplete="username" autofocus
-               value="<?= View::e($email) ?>"
-               <?php if ($describedBy): ?>aria-describedby="<?= $describedBy ?>" aria-invalid="true"<?php endif; ?>
-               class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary
-                      placeholder:text-text-muted focus:border-cyan focus:outline-none">
+        <div class="relative mt-1">
+            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-text-muted"><?= Icon::nav('mail') ?></span>
+            <input type="email" id="email" name="email" required autocomplete="username" autofocus
+                   value="<?= View::e($email) ?>"
+                   <?php if ($describedBy): ?>aria-describedby="<?= $describedBy ?>" aria-invalid="true"<?php endif; ?>
+                   class="w-full rounded-md border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-surface-2 py-2.5 pl-10 pr-3 text-text-primary
+                          placeholder:text-text-muted focus:outline-none">
+        </div>
     </div>
 
     <div>
         <label for="password" class="block text-sm font-medium text-text-secondary">Senha</label>
         <div class="relative mt-1">
+            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-text-muted"><?= Icon::nav('lock') ?></span>
             <input type="password" id="password" name="password" required autocomplete="current-password"
                    <?php if ($describedBy): ?>aria-describedby="<?= $describedBy ?>" aria-invalid="true"<?php endif; ?>
-                   class="w-full rounded-md border border-border bg-surface-2 px-3 py-2 pr-11 text-text-primary
-                          focus:border-cyan focus:outline-none">
+                   class="w-full rounded-md border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-surface-2 py-2.5 pl-10 pr-11 text-text-primary
+                          focus:outline-none">
             <button type="button" id="toggle-password" aria-label="Mostrar senha" aria-pressed="false"
                     class="absolute inset-y-0 right-0 flex items-center px-3 text-text-muted hover:text-text-primary">
                 <svg data-icon="show" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
@@ -63,7 +69,7 @@ $describedBy = $error !== null ? 'login-error' : null;
     </div>
 
     <button type="submit"
-            class="w-full rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] transition-colors
+            class="w-full rounded-md bg-cyan px-4 py-2.5 text-sm font-semibold text-[#050B0F] transition-colors
                    hover:bg-cyan-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
         Entrar
     </button>

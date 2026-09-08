@@ -56,4 +56,17 @@ final class View
 
         return '/' . ltrim($path, '/') . ($mtime !== false ? '?v=' . $mtime : '');
     }
+
+    /**
+     * Data de hoje abreviada em pt-BR ("08 SET 2026"), pro rodapé de
+     * layout/base.php e layout/auth.php. `date()` sozinho não localiza nome
+     * de mês (depende de locale do SO, que não configuramos) — mesma
+     * abordagem manual já usada em Views/sites/calendar/index.php.
+     */
+    public static function todayShort(): string
+    {
+        $meses = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+
+        return date('d') . ' ' . $meses[(int) date('n') - 1] . ' ' . date('Y');
+    }
 }

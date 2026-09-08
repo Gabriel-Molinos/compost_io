@@ -83,6 +83,7 @@ if ($authUser !== null && !$hasSiteNav) {
     <link rel="stylesheet" href="<?= View::e(View::asset('assets/css/app.css')) ?>">
     <script src="<?= View::e(View::asset('assets/js/select-enhance.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/confirm-dialog.js')) ?>" defer></script>
+    <script src="<?= View::e(View::asset('assets/js/footer-clock.js')) ?>" defer></script>
 
     <style>
         :focus-visible { outline: 2px solid #7FE8FF; outline-offset: 2px; border-radius: 2px; }
@@ -177,8 +178,13 @@ if ($authUser !== null && !$hasSiteNav) {
                 </div>
             </main>
 
-            <footer class="border-t border-border px-4 py-6 text-xs text-text-muted sm:px-6 lg:px-10">
-                COMPOST · <?= View::e(date('Y')) ?>
+            <footer class="flex items-center justify-between border-t border-border px-4 py-6 text-[11px] uppercase tracking-wide text-text-muted sm:px-6 lg:px-10">
+                <span class="font-mono tabular-nums text-text-secondary" data-clock>00:00:00</span>
+                <span class="flex items-center gap-1.5 text-text-muted">
+                    <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan shadow-[0_0_6px_rgba(0,208,240,.8)]"></span>
+                    COMPOST
+                </span>
+                <span class="font-mono text-text-secondary"><?= View::e(View::todayShort()) ?></span>
             </footer>
         </div>
     </div>

@@ -220,7 +220,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
                 </form>
             </details>
             <form method="post" action="<?= $scheduleBase ?>/schedule/cancel"
-                  onsubmit="return confirm('Cancelar o agendamento? O artigo volta para aprovado.');">
+                  data-confirm="Cancelar o agendamento? O artigo volta para aprovado.">
                 <?= Csrf::field() ?>
                 <button type="submit" class="rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
                     Cancelar agendamento
@@ -242,7 +242,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
             Cancele e agende de novo pra tentar mais uma vez.
         </p>
         <form method="post" action="<?= $scheduleBase ?>/schedule/cancel" class="mt-3"
-              onsubmit="return confirm('Cancelar o agendamento? O artigo volta para aprovado.');">
+              data-confirm="Cancelar o agendamento? O artigo volta para aprovado.">
             <?= Csrf::field() ?>
             <button type="submit" class="rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
                 Cancelar agendamento
@@ -265,14 +265,14 @@ $authorOptions = static function (array $authors, int $selectedId): string {
 
         <div class="mt-4 flex flex-wrap items-center gap-3">
             <form method="post" action="<?= $scheduleBase ?>/schedule/republish"
-                  onsubmit="return confirm('Reenviar título, corpo e imagens deste artigo para o post no WordPress? Isso sobrescreve edições feitas direto lá.');">
+                  data-confirm="Reenviar título, corpo e imagens deste artigo para o post no WordPress? Isso sobrescreve edições feitas direto lá.">
                 <?= Csrf::field() ?>
                 <button type="submit" class="rounded-md border border-cyan px-4 py-2 text-sm font-semibold text-cyan hover:bg-cyan/10">
                     Atualizar no WordPress
                 </button>
             </form>
             <form method="post" action="<?= $scheduleBase ?>/schedule/retract"
-                  onsubmit="return confirm('Retirar o post do WordPress (vai para a lixeira lá) e voltar o artigo para aprovado?');">
+                  data-confirm="Retirar o post do WordPress (vai para a lixeira lá) e voltar o artigo para aprovado?">
                 <?= Csrf::field() ?>
                 <button type="submit" class="rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
                     Retirar do WordPress
@@ -411,7 +411,7 @@ $maxAttempts = 3;
     $base = '/sites/' . View::e($site['id']) . '/production/' . View::e($article['id']);
     $deleteForm = static function (array $img) use ($base): void {
         echo '<form method="post" action="' . $base . '/images/' . View::e($img['id']) . '/delete"'
-            . ' onsubmit="return confirm(\'Remover esta imagem?\');" class="mt-2 text-right">';
+            . ' data-confirm="Remover esta imagem?" class="mt-2 text-right">';
         echo Csrf::field();
         echo '<button type="submit" class="text-xs text-text-muted hover:text-danger">Remover</button>';
         echo '</form>';

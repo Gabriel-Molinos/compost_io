@@ -91,7 +91,7 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
                         <?= $editIcon ?> Editar
                     </a>
                     <form method="post" action="<?= $base ?>/<?= View::e($goal['id']) ?>/delete"
-                          onsubmit="return confirm('Remover a meta de <?= View::e($periodLabel($goal['period'])) ?>?');">
+                          data-confirm="Remover a meta de <?= View::e($periodLabel($goal['period'])) ?>?">
                         <?= Csrf::field() ?>
                         <button type="submit"
                                 class="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-danger/50 hover:bg-danger/10 hover:text-danger">

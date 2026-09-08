@@ -543,4 +543,94 @@
       opacity: .35;
     }
   }
+
+  /* =====================================================================
+     Diálogo de confirmação — troca o confirm() nativo do navegador (feio,
+     sem identidade nenhuma do produto) por um <dialog> desenhado com a
+     mesma linguagem visual do resto do app (assets/js/confirm-dialog.js
+     é quem abre/fecha). <dialog nativo já resolve foco preso, Esc fecha,
+     ::backdrop, centralização — só precisa de estilo por cima. */
+  .confirm-dialog {
+    padding: 0;
+    border: none;
+    border-radius: .75rem;
+    background: transparent;
+    max-width: 26rem;
+    width: calc(100% - 2rem);
+    color: inherit;
+  }
+  .confirm-dialog::backdrop {
+    background: rgba(5, 11, 15, .72);
+    backdrop-filter: blur(2px);
+  }
+  .confirm-dialog-panel {
+    border-radius: .75rem;
+    border: 1px solid rgba(255, 92, 122, .35);
+    background-color: #061830;
+    background-image: linear-gradient(180deg, rgba(255, 92, 122, .09), transparent 45%);
+    padding: 1.5rem;
+    box-shadow: 0 24px 60px -12px rgba(0, 0, 0, .7);
+  }
+  .confirm-dialog[open] .confirm-dialog-panel {
+    animation: confirm-dialog-in 160ms ease both;
+  }
+  @keyframes confirm-dialog-in {
+    from { opacity: 0; transform: translateY(8px) scale(.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .confirm-dialog[open] .confirm-dialog-panel { animation: none; }
+  }
+  .confirm-dialog-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    background-color: rgba(255, 92, 122, .12);
+    color: #FF5C7A;
+    margin-bottom: 1rem;
+  }
+  .confirm-dialog-message {
+    margin: 0;
+    color: #F0F8FF;
+    font-size: .9375rem;
+    line-height: 1.5;
+  }
+  .confirm-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .75rem;
+    margin-top: 1.5rem;
+  }
+  .confirm-dialog-cancel,
+  .confirm-dialog-confirm {
+    border-radius: .375rem;
+    padding: .5rem 1rem;
+    font-family: inherit;
+    font-size: .875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 150ms ease, color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  }
+  .confirm-dialog-cancel {
+    border: 1px solid #3D5266;
+    background: transparent;
+    color: #8FA6BC;
+  }
+  .confirm-dialog-cancel:hover {
+    border-color: #4A6076;
+    color: #F0F8FF;
+  }
+  .confirm-dialog-confirm {
+    border: none;
+    background-color: #FF5C7A;
+    color: #050B0F;
+    font-weight: 700;
+  }
+  .confirm-dialog-confirm:hover {
+    background-color: #ff7a93;
+    box-shadow: 0 0 16px rgba(255, 92, 122, .4);
+  }
 }

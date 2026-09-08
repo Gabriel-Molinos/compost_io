@@ -141,7 +141,7 @@ $toggleIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
                                 </button>
                             </form>
                             <form method="post" action="<?= $base ?>/<?= View::e($l['id']) ?>/delete"
-                                  onsubmit="return confirm('Remover esta lição?');">
+                                  data-confirm="Remover esta lição?">
                                 <?= Csrf::field() ?>
                                 <button type="submit"
                                         class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-danger/10 hover:text-danger">

@@ -83,6 +83,7 @@ if ($authUser !== null && !$hasSiteNav) {
     <link rel="stylesheet" href="<?= View::e(View::asset('assets/css/app.css')) ?>">
     <script src="<?= View::e(View::asset('assets/js/mouse-glow.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/select-enhance.js')) ?>" defer></script>
+    <script src="<?= View::e(View::asset('assets/js/confirm-dialog.js')) ?>" defer></script>
 
     <style>
         :focus-visible { outline: 2px solid #7FE8FF; outline-offset: 2px; border-radius: 2px; }

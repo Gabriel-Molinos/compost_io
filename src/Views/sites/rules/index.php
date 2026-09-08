@@ -45,7 +45,7 @@ $renderPanel = static function (array $items, string $type, string $emptyText, s
         echo '<a href="' . $base . '/' . View::e($rule['id']) . '/edit" title="Editar" aria-label="Editar"'
            . ' class="rounded-md p-1.5 text-text-muted transition-colors hover:bg-surface hover:text-cyan">' . $editIcon . '</a>';
         echo '<form method="post" action="' . $base . '/' . View::e($rule['id']) . '/delete" '
-           . 'onsubmit="return confirm(\'Remover esta regra?\');">' . Csrf::field()
+           . 'data-confirm="Remover esta regra?">' . Csrf::field()
            . '<button type="submit" title="Remover" aria-label="Remover"'
            . ' class="rounded-md p-1.5 text-text-muted transition-colors hover:bg-danger/10 hover:text-danger">' . $deleteIcon . '</button></form>';
         echo '</div></li>';

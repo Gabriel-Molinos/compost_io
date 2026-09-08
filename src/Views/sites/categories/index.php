@@ -79,7 +79,7 @@ $syncedWithWp = array_filter($categories, static fn ($c) => !empty($c['wordpress
                     </a>
                     <form method="post"
                           action="/sites/<?= View::e($site['id']) ?>/categories/<?= View::e($category['id']) ?>/delete"
-                          onsubmit="return confirm('Remover esta categoria?');">
+                          data-confirm="Remover esta categoria?">
                         <?= Csrf::field() ?>
                         <button type="submit"
                                 class="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-danger/50 hover:bg-danger/10 hover:text-danger">

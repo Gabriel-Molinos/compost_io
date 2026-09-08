@@ -91,7 +91,7 @@ $formData = [
                 </button>
             </form>
             <form method="post" action="/sites/<?= View::e($site['id']) ?>/wordpress/delete"
-                  onsubmit="return confirm('Remover a credencial WordPress deste site?');">
+                  data-confirm="Remover a credencial WordPress deste site?">
                 <?= Csrf::field() ?>
                 <button type="submit" class="rounded-md border border-border px-4 py-2 text-sm text-text-muted hover:border-danger/50 hover:bg-danger/10 hover:text-danger">
                     Remover credencial

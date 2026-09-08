@@ -129,7 +129,7 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
                         </div>
                     </div>
                     <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>/delete"
-                          onsubmit="return confirm('Descartar este rascunho?');">
+                          data-confirm="Descartar este rascunho?">
                         <?= Csrf::field() ?>
                         <button type="submit" title="Descartar" aria-label="Descartar"
                                 class="shrink-0 rounded-md p-1.5 text-text-muted transition-colors hover:bg-danger/10 hover:text-danger">

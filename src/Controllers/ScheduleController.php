@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Services\ArticleService;
+use App\Services\AuthService;
 use App\Services\NotificationService;
 use App\Services\ScheduleService;
 use App\Services\WordPressPublishService;
@@ -39,7 +40,7 @@ final class ScheduleController extends Controller
     public function store(string $siteId, string $articleId): void
     {
         $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
-            $this->schedules->scheduleAuto($aid, $sid, $this->authorId(), $this->imageId());
+            $this->schedules->scheduleAuto($aid, $sid, $this->authorId(), $this->imageId(), AuthService::id());
             Session::flash('success', 'Artigo agendado.');
         });
     }
@@ -47,7 +48,7 @@ final class ScheduleController extends Controller
     public function update(string $siteId, string $articleId): void
     {
         $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
-            $this->schedules->reschedule($aid, $sid, $this->authorId(), $this->dateTime(), $this->imageId());
+            $this->schedules->reschedule($aid, $sid, $this->authorId(), $this->dateTime(), $this->imageId(), AuthService::id());
             Session::flash('success', 'Agendamento atualizado.');
         });
     }
@@ -64,15 +65,20 @@ final class ScheduleController extends Controller
     {
         $this->raiseLimit();
         $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
+            // Captura ANTES de publicar — sucesso muda o status da linha pra
+            // PUBLISHED, e activeForArticle() só acha PENDING; sem isso, o
+            // caminho de sucesso perderia quem agendou.
+            $recipientId = $this->scheduleOwner($aid);
+
             try {
                 $r = (new WordPressPublishService())->publish($aid, $sid);
             } catch (Throwable $e) {
-                $this->notifyPublishResult($sid, $aid, false, $e->getMessage());
+                $this->notifyPublishResult($sid, $aid, false, $e->getMessage(), $recipientId);
                 throw $e;
             }
             $label = $r['status'] === 'future' ? 'agendado no WordPress' : 'publicado';
             Session::flash('success', 'Artigo ' . $label . ' — post #' . $r['post_id'] . ' no WordPress.' . self::extras($r));
-            $this->notifyPublishResult($sid, $aid, true, 'Post #' . $r['post_id'] . ' no WordPress.');
+            $this->notifyPublishResult($sid, $aid, true, 'Post #' . $r['post_id'] . ' no WordPress.', $recipientId);
         });
     }
 
@@ -101,19 +107,35 @@ final class ScheduleController extends Controller
      * publicação automática agendada (ScheduleJobHandlers) — ninguém precisa
      * estar olhando a tela na hora pra saber o que aconteceu.
      */
-    private function notifyPublishResult(int $siteId, int $articleId, bool $success, string $detail): void
+    /**
+     * Só quem agendou/reagendou (schedules.created_by) recebe a notificação
+     * — não a equipe inteira do site (pedido do responsável, 2026-09-08).
+     * Sem dono registrado (agendamento de antes da migration 0016, ou
+     * `AuthService::id()` indisponível por algum motivo), cai no fallback
+     * de avisar a equipe — melhor isso do que a publicação falhar/ter
+     * sucesso e ninguém nunca saber.
+     */
+    private function notifyPublishResult(int $siteId, int $articleId, bool $success, string $detail, ?int $recipientId): void
     {
         $article = $this->articles->find($siteId, $articleId);
         $title = $article !== null && !empty($article['title']) ? (string) $article['title'] : 'Rascunho #' . $articleId;
         $link = '/sites/' . $siteId . '/production/' . $articleId . '#agendar';
+        $type = $success ? NotificationService::TYPE_PUBLISH_SUCCESS : NotificationService::TYPE_PUBLISH_FAILED;
+        $notifTitle = $success ? 'Post publicado' : 'Falha ao publicar';
+        $message = "\"{$title}\" — {$detail}";
 
-        $this->notifications->notifySiteTeam(
-            $siteId,
-            $success ? NotificationService::TYPE_PUBLISH_SUCCESS : NotificationService::TYPE_PUBLISH_FAILED,
-            $success ? 'Post publicado' : 'Falha ao publicar',
-            "\"{$title}\" — {$detail}",
-            $link,
-        );
+        if ($recipientId !== null) {
+            $this->notifications->notify($recipientId, $type, $notifTitle, $message, $siteId, $link);
+            return;
+        }
+        $this->notifications->notifySiteTeam($siteId, $type, $notifTitle, $message, $link);
+    }
+
+    private function scheduleOwner(int $articleId): ?int
+    {
+        $schedule = $this->schedules->activeForArticle($articleId);
+
+        return $schedule !== null && $schedule['created_by'] !== null ? (int) $schedule['created_by'] : null;
     }
 
     /** @param array{links_rewritten:int, links_unwrapped:int, body_images:int} $r */

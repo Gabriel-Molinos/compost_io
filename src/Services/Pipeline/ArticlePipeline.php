@@ -139,10 +139,14 @@ final class ArticlePipeline
      * {@see self::MAX_ATTEMPTS} tentativas — marca `BLOCKED` e já lança (esse
      * caso nunca chega a enfileirar nada). Sem chamada a IA.
      *
+     * `$userId` é quem clicou "Regenerar" agora (AuthService::id() do
+     * controller) — é pra ele que a notificação de BLOCKED vai, não pra
+     * equipe inteira do site (pedido do responsável, 2026-09-08).
+     *
      * @return array{article_id:int, site_id:int, goal_id:?int, category_id:?int, lineage_id:int}
      * @throws PipelineException
      */
-    public function prepareRegenerate(int $previousArticleId): array
+    public function prepareRegenerate(int $previousArticleId, ?int $userId = null): array
     {
         $prev = $this->articles->findById($previousArticleId);
         if ($prev === null) {
@@ -161,13 +165,16 @@ final class ArticlePipeline
 
         if ($attempt > self::MAX_ATTEMPTS) {
             $this->articles->setStatus($previousArticleId, 'BLOCKED');
-            $this->notifications->notifySiteTeam(
-                (int) $prev['site_id'],
-                NotificationService::TYPE_ATTENTION,
-                'Artigo bloqueado',
-                '"' . ($prev['title'] ?: 'Rascunho #' . $previousArticleId) . '" esgotou as ' . self::MAX_ATTEMPTS . ' tentativas — decisão humana necessária.',
-                '/sites/' . $prev['site_id'] . '/production/' . $previousArticleId,
-            );
+            $siteId = (int) $prev['site_id'];
+            $type = NotificationService::TYPE_ATTENTION;
+            $title = 'Artigo bloqueado';
+            $message = '"' . ($prev['title'] ?: 'Rascunho #' . $previousArticleId) . '" esgotou as ' . self::MAX_ATTEMPTS . ' tentativas — decisão humana necessária.';
+            $link = '/sites/' . $siteId . '/production/' . $previousArticleId;
+            if ($userId !== null) {
+                $this->notifications->notify($userId, $type, $title, $message, $siteId, $link);
+            } else {
+                $this->notifications->notifySiteTeam($siteId, $type, $title, $message, $link);
+            }
             throw new PipelineException(
                 'Limite de ' . self::MAX_ATTEMPTS . ' tentativas atingido nesta linhagem — artigo BLOQUEADO. Decisão humana necessária.',
                 $previousArticleId,

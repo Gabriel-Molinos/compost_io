@@ -112,6 +112,20 @@ final class ScheduleService
         );
     }
 
+    /**
+     * Quem agendou esta linha (schedules.created_by) — pra quem a notificação
+     * de publicação automática (ScheduleJobHandlers) deve ir, em vez de pra
+     * equipe inteira do site (pedido do responsável, 2026-09-08).
+     */
+    public function createdByFor(int $scheduleId): ?int
+    {
+        $stmt = Connection::get()->prepare('SELECT created_by FROM schedules WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $scheduleId]);
+        $value = $stmt->fetchColumn();
+
+        return $value !== false && $value !== null ? (int) $value : null;
+    }
+
     /** Marca um agendamento como `FAILED` — envio ao WordPress esgotou as tentativas (Fase 9). Nunca falha silenciosamente. */
     public function markFailed(int $scheduleId): void
     {
@@ -136,10 +150,10 @@ final class ScheduleService
      *
      * @throws RuntimeException entrada inválida
      */
-    public function schedule(int $articleId, int $siteId, int $authorId, string $dateTimeLocal, int $imageId): void
+    public function schedule(int $articleId, int $siteId, int $authorId, string $dateTimeLocal, int $imageId, ?int $createdBy = null): void
     {
         $when = $this->parseFutureDate($dateTimeLocal);
-        $this->insertSchedule($articleId, $siteId, $authorId, $when, $imageId);
+        $this->insertSchedule($articleId, $siteId, $authorId, $when, $imageId, $createdBy);
     }
 
     /**
@@ -148,12 +162,18 @@ final class ScheduleService
      * depois de aprovar e escolher autor/imagem, o Redator-Chefe não digita
      * mais data). Valida artigo/autor/imagem, igual `schedule()`.
      *
+     * `$createdBy` (Redator-Chefe/Admin que clicou "Agendar") fica salvo na
+     * linha — é pra ele que a notificação de "post publicado/falhou" vai
+     * quando o worker publicar sozinho depois, sem ninguém olhando na hora
+     * (pedido do responsável, 2026-09-08: notificar só quem colocou o post
+     * pra rodar, não a equipe inteira do site).
+     *
      * @throws RuntimeException entrada inválida
      */
-    public function scheduleAuto(int $articleId, int $siteId, int $authorId, int $imageId): void
+    public function scheduleAuto(int $articleId, int $siteId, int $authorId, int $imageId, ?int $createdBy = null): void
     {
         $when = $this->nextAvailableSlot($siteId);
-        $this->insertSchedule($articleId, $siteId, $authorId, $when, $imageId);
+        $this->insertSchedule($articleId, $siteId, $authorId, $when, $imageId, $createdBy);
     }
 
     /**
@@ -184,7 +204,7 @@ final class ScheduleService
     }
 
     /** Insere a linha PENDING e marca o artigo SCHEDULED — núcleo compartilhado por schedule()/scheduleAuto(). */
-    private function insertSchedule(int $articleId, int $siteId, int $authorId, string $when, int $imageId): void
+    private function insertSchedule(int $articleId, int $siteId, int $authorId, string $when, int $imageId, ?int $createdBy = null): void
     {
         $article = $this->articles->find($siteId, $articleId);
         if ($article === null) {
@@ -201,9 +221,9 @@ final class ScheduleService
         $pdo->beginTransaction();
         try {
             $pdo->prepare(
-                "INSERT INTO schedules (article_id, author_id, image_id, scheduled_date, status)
-                 VALUES (:a, :au, :img, :d, 'PENDING')"
-            )->execute(['a' => $articleId, 'au' => $authorId, 'img' => $imageId, 'd' => $when]);
+                "INSERT INTO schedules (article_id, author_id, created_by, image_id, scheduled_date, status)
+                 VALUES (:a, :au, :cb, :img, :d, 'PENDING')"
+            )->execute(['a' => $articleId, 'au' => $authorId, 'cb' => $createdBy, 'img' => $imageId, 'd' => $when]);
 
             $this->articles->setStatus($articleId, 'SCHEDULED');
             $pdo->commit();
@@ -218,7 +238,7 @@ final class ScheduleService
      *
      * @throws RuntimeException entrada inválida
      */
-    public function reschedule(int $articleId, int $siteId, int $authorId, string $dateTimeLocal, int $imageId): void
+    public function reschedule(int $articleId, int $siteId, int $authorId, string $dateTimeLocal, int $imageId, ?int $createdBy = null): void
     {
         $schedule = $this->activeForArticle($articleId);
         if ($schedule === null) {
@@ -229,10 +249,13 @@ final class ScheduleService
         $this->assertAuthor($authorId, $siteId);
         $this->assertFeaturedImage($imageId, $articleId);
 
+        // Quem reagenda passa a ser quem recebe a notificação de publicação —
+        // é quem está com o dedo no agendamento agora, mesmo raciocínio de
+        // scheduleAuto().
         Connection::get()->prepare(
-            'UPDATE schedules SET author_id = :au, image_id = :img, scheduled_date = :d
+            'UPDATE schedules SET author_id = :au, created_by = :cb, image_id = :img, scheduled_date = :d
              WHERE id = :id'
-        )->execute(['au' => $authorId, 'img' => $imageId, 'd' => $when, 'id' => (int) $schedule['id']]);
+        )->execute(['au' => $authorId, 'cb' => $createdBy, 'img' => $imageId, 'd' => $when, 'id' => (int) $schedule['id']]);
     }
 
     /**

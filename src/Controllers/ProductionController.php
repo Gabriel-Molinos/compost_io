@@ -94,6 +94,10 @@ final class ProductionController extends Controller
                 'site_id'     => (int) $site['id'],
                 'goal_id'     => $goalId,
                 'category_id' => $categoryId,
+                // Quem clicou "Gerar rascunho" agora — só pra notificação de
+                // ERROR (ArticleJobHandlers); a geração automática diária
+                // (bin/worker.php) nunca manda isso, não tem humano por trás.
+                'user_id'     => AuthService::id(),
             ]));
         } catch (PipelineException $e) {
             // Só acontece com QUEUE_DRIVER=sync (o handler roda inline, nesta
@@ -174,7 +178,7 @@ final class ProductionController extends Controller
         // Validação/BLOCKED-check é síncrona e rápida (sem IA) — falha aqui
         // ainda vira flash normal, redirecionando pro artigo anterior.
         try {
-            $prepared = (new ArticlePipeline())->prepareRegenerate((int) $article['id']);
+            $prepared = (new ArticlePipeline())->prepareRegenerate((int) $article['id'], AuthService::id());
         } catch (PipelineException $e) {
             Session::flash('error', $e->getMessage());
             Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id']);
@@ -188,6 +192,7 @@ final class ProductionController extends Controller
                 'goal_id'     => $prepared['goal_id'],
                 'category_id' => $prepared['category_id'],
                 'lineage_id'  => $prepared['lineage_id'],
+                'user_id'     => AuthService::id(),
             ]));
         } catch (PipelineException $e) {
             // Só acontece com QUEUE_DRIVER=sync — ver dispatchArticleJob().

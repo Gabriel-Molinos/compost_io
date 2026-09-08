@@ -36,8 +36,11 @@ use Throwable;
  *
  * Notificação (pedido do responsável, 2026-09-08): `ERROR` é exatamente o
  * "precisa de atenção humana" que a geração automática diária (bin/worker.php)
- * pode produzir sem ninguém olhando — avisa a equipe do site na hora que
- * acontece, em vez de só aparecer na lista de Produção na próxima visita.
+ * pode produzir sem ninguém olhando. Geração/regeneração MANUAL carrega
+ * `user_id` no payload (quem clicou "Gerar"/"Regenerar" — ver
+ * `ProductionController`) e só ele é avisado; a automática diária nunca
+ * manda esse campo (não tem humano por trás daquele clique), então cai no
+ * fallback de avisar a equipe inteira do site.
  */
 final class ArticleJobHandlers
 {
@@ -49,7 +52,7 @@ final class ArticleJobHandlers
     ): void {
         $notifications ??= new NotificationService();
 
-        $onFailure = static function (Throwable $e, int $siteId) use ($articles, $notifications): void {
+        $onFailure = static function (Throwable $e, int $siteId, ?int $userId) use ($articles, $notifications): void {
             if (!$e instanceof PipelineException) {
                 return;
             }
@@ -57,13 +60,15 @@ final class ArticleJobHandlers
 
             $article = $articles->find($siteId, $e->articleId);
             $title = $article !== null && !empty($article['title']) ? (string) $article['title'] : 'Rascunho #' . $e->articleId;
-            $notifications->notifySiteTeam(
-                $siteId,
-                NotificationService::TYPE_ATTENTION,
-                'Falha técnica na geração',
-                "\"{$title}\" precisa de atenção — {$e->getMessage()}",
-                '/sites/' . $siteId . '/production/' . $e->articleId,
-            );
+            $notifTitle = 'Falha técnica na geração';
+            $message = "\"{$title}\" precisa de atenção — {$e->getMessage()}";
+            $link = '/sites/' . $siteId . '/production/' . $e->articleId;
+
+            if ($userId !== null) {
+                $notifications->notify($userId, NotificationService::TYPE_ATTENTION, $notifTitle, $message, $siteId, $link);
+                return;
+            }
+            $notifications->notifySiteTeam($siteId, NotificationService::TYPE_ATTENTION, $notifTitle, $message, $link);
         };
 
         $queue->register('article.generate', function (Job $job) use ($pipeline, $onFailure): void {
@@ -75,7 +80,8 @@ final class ArticleJobHandlers
                     $job->payload['category_id'] !== null ? (int) $job->payload['category_id'] : null,
                 );
             } catch (Throwable $e) {
-                $onFailure($e, (int) $job->payload['site_id']);
+                $userId = isset($job->payload['user_id']) && $job->payload['user_id'] !== null ? (int) $job->payload['user_id'] : null;
+                $onFailure($e, (int) $job->payload['site_id'], $userId);
                 throw $e;
             }
         });
@@ -90,7 +96,8 @@ final class ArticleJobHandlers
                     (int) $job->payload['lineage_id'],
                 );
             } catch (Throwable $e) {
-                $onFailure($e, (int) $job->payload['site_id']);
+                $userId = isset($job->payload['user_id']) && $job->payload['user_id'] !== null ? (int) $job->payload['user_id'] : null;
+                $onFailure($e, (int) $job->payload['site_id'], $userId);
                 throw $e;
             }
         });

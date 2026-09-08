@@ -204,7 +204,7 @@
   /* Fundo do app: vinheta radial + scanline sutil + grade — textura única
      permitida pela identidade visual, nunca acima disso. A grade (linhas
      repetidas a cada 48px) reforça a leitura "painel digital/HUD" da
-     identidade Y2K; fica atrás de todo conteúdo (ver .app-bg::before e
+     identidade Y2K; fica atrás de todo conteúdo (ver .app-bg::after e
      `relative z-10` no wrapper em layout/base.php e layout/auth.php). */
   .app-bg {
     position: relative;
@@ -215,28 +215,6 @@
       repeating-linear-gradient(90deg, rgba(0, 208, 240, .06) 0px, rgba(0, 208, 240, .06) 1px, transparent 1px, transparent 48px),
       repeating-linear-gradient(0deg, rgba(0, 208, 240, .06) 0px, rgba(0, 208, 240, .06) 1px, transparent 1px, transparent 48px);
     background-attachment: fixed;
-  }
-
-  /* Brilho que segue o mouse — coordenadas vêm de --mx/--my (definidas via
-     JS em layout/base.php e layout/auth.php, throttled por requestAnimationFrame).
-     Puramente decorativo (pointer-events:none), fica atrás do conteúdo real;
-     sem JS (JS desabilitado) ou com prefers-reduced-motion, --mx/--my nunca
-     mudam e o brilho fica parado no centro — nunca quebra o layout. */
-  .app-bg::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    /* Dois raios sobrepostos: um núcleo mais forte e curto, um halo maior e
-       fraco por fora — fica visível de relance sem virar uma mancha lisa
-       (a versão de um raio só, mais fraca, sumia contra o fundo escuro). */
-    background:
-      radial-gradient(320px circle at var(--mx, 50%) var(--my, 30%), rgba(0, 208, 240, .22), transparent 65%),
-      radial-gradient(680px circle at var(--mx, 50%) var(--my, 30%), rgba(0, 208, 240, .12), transparent 70%);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .app-bg::before { display: none; }
   }
 
   /* Brilho ambiente — refeito do zero (2026-09-08).
@@ -260,13 +238,13 @@
     position: fixed;
     top: 50%;
     left: 50%;
-    width: 900px;
-    height: 900px;
+    width: 1300px;
+    height: 1300px;
     z-index: 0;
     pointer-events: none;
     background:
-      radial-gradient(circle at 36% 38%, rgba(0, 208, 240, .06), transparent 48%),
-      radial-gradient(circle at 64% 58%, rgba(127, 232, 255, .04), transparent 48%);
+      radial-gradient(circle at 36% 38%, rgba(0, 208, 240, .22), transparent 52%),
+      radial-gradient(circle at 64% 58%, rgba(127, 232, 255, .16), transparent 52%);
     transform: translate(-50%, -50%);
     animation: aurora-drift 24s ease-in-out infinite;
   }

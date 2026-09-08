@@ -81,7 +81,6 @@ if ($authUser !== null && !$hasSiteNav) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=Orbitron:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= View::e(View::asset('assets/css/app.css')) ?>">
-    <script src="<?= View::e(View::asset('assets/js/mouse-glow.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/select-enhance.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/confirm-dialog.js')) ?>" defer></script>
 

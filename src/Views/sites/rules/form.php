@@ -61,13 +61,13 @@ $intensityLabels = ['', 'muito baixa', 'baixa', 'média', 'alta', 'muito alta'];
             </legend>
             <div class="mt-2 grid grid-cols-5 gap-2">
                 <?php foreach ([1, 2, 3, 4, 5] as $n): ?>
-                    <label class="flex cursor-pointer flex-col items-center gap-1 rounded-md border border-border bg-surface-2 py-2 text-text-secondary has-[:checked]:border-cyan has-[:checked]:bg-cyan/10 has-[:checked]:text-cyan has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-cyan-bright has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-surface">
+                    <label class="flex cursor-pointer flex-col items-center gap-1 rounded-md border border-border bg-surface-2 py-2 text-text-primary hover:border-border-strong has-[:checked]:border-cyan has-[:checked]:bg-cyan/10 has-[:checked]:text-cyan has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-cyan-bright has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-surface">
                         <input type="radio" name="intensity" value="<?= $n ?>" <?= $intensity === $n ? 'checked' : '' ?> class="sr-only">
                         <span class="font-mono text-base font-semibold"><?= $n ?></span>
                     </label>
                 <?php endforeach; ?>
             </div>
-            <p class="mt-2 text-xs text-text-muted"><?= $intensityLabels[$intensity] ?></p>
+            <p class="mt-2 text-xs font-medium text-text-secondary"><?= $intensityLabels[$intensity] ?></p>
             <?php if (isset($errors['intensity'])): ?>
                 <p class="mt-1 text-sm text-danger"><?= View::e($errors['intensity']) ?></p>
             <?php endif; ?>

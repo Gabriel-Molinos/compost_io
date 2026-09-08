@@ -18,7 +18,7 @@ $base = '/sites/' . $site['id'] . '/rules';
 $dots = static function (int $intensity, string $fillClass): string {
     $html = '<span class="flex items-center gap-1" role="img" aria-label="Intensidade ' . $intensity . ' de 5">';
     for ($i = 1; $i <= 5; $i++) {
-        $html .= '<span class="h-1.5 w-1.5 rounded-full ' . ($i <= $intensity ? $fillClass : 'bg-border') . '"></span>';
+        $html .= '<span class="h-1.5 w-1.5 rounded-full ' . ($i <= $intensity ? $fillClass : 'bg-border-strong') . '"></span>';
     }
     return $html . '</span>';
 };

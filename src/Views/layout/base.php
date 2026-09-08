@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Services\AuthService;
+use App\Services\NotificationService;
 use App\Services\SiteService;
 use App\Support\Avatar;
 use App\Support\Csrf;
@@ -35,6 +36,9 @@ if ($authUser !== null) {
     }
     $globalNav[] = ['/sites', 'Sites', 'sites'];
 }
+
+$showNotifications = $authUser !== null;
+$unreadNotifications = $showNotifications ? (new NotificationService())->unreadCount((int) $authUser['id']) : 0;
 
 // "/sites" só ativo na lista em si (match exato) — dentro de um site
 // (/sites/{id}/...) quem mostra onde você está é a seção do site logo

@@ -23,6 +23,7 @@ use App\Services\CategoryService;
 use App\Services\EditorialMemoryService;
 use App\Services\FeedbackService;
 use App\Services\ImageService;
+use App\Services\NotificationService;
 use App\Services\PromptBuilder;
 use App\Support\ImageConverter;
 use App\Support\ImageStorage;
@@ -66,6 +67,7 @@ final class ArticlePipeline
     private ImageService $imageStore;
     private ?ImageProvider $imageProvider;
     private RetryRunner $retry;
+    private NotificationService $notifications;
 
     public function __construct(
         ?AIProvider $ai = null,
@@ -77,6 +79,7 @@ final class ArticlePipeline
         ?RetryRunner $retry = null,
         ?ImageService $imageStore = null,
         ?ImageProvider $imageProvider = null,
+        ?NotificationService $notifications = null,
     ) {
         $this->ai = $ai ?? new GeminiProvider();
         $this->prompts = $prompts ?? new PromptBuilder();
@@ -87,6 +90,7 @@ final class ArticlePipeline
         $this->feedback = new FeedbackService();
         $this->memory = new EditorialMemoryService();
         $this->imageStore = $imageStore ?? new ImageService();
+        $this->notifications = $notifications ?? new NotificationService();
         // Instanciado sob demanda em generateImages() — não exige IMAGE_API_KEY
         // quando o pipeline roda sem a etapa de imagem (ex.: testes).
         $this->imageProvider = $imageProvider;
@@ -157,6 +161,13 @@ final class ArticlePipeline
 
         if ($attempt > self::MAX_ATTEMPTS) {
             $this->articles->setStatus($previousArticleId, 'BLOCKED');
+            $this->notifications->notifySiteTeam(
+                (int) $prev['site_id'],
+                NotificationService::TYPE_ATTENTION,
+                'Artigo bloqueado',
+                '"' . ($prev['title'] ?: 'Rascunho #' . $previousArticleId) . '" esgotou as ' . self::MAX_ATTEMPTS . ' tentativas — decisão humana necessária.',
+                '/sites/' . $prev['site_id'] . '/production/' . $previousArticleId,
+            );
             throw new PipelineException(
                 'Limite de ' . self::MAX_ATTEMPTS . ' tentativas atingido nesta linhagem — artigo BLOQUEADO. Decisão humana necessária.',
                 $previousArticleId,

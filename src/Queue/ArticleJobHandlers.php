@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Queue;
 
 use App\Services\ArticleService;
+use App\Services\NotificationService;
 use App\Services\Pipeline\ArticlePipeline;
 use App\Services\Pipeline\PipelineException;
 use Throwable;
@@ -32,15 +33,37 @@ use Throwable;
  * reenfileirar rodaria a IA de novo do zero (custo real) por algo já
  * tratado. Qualquer OUTRA exceção (bug, infra) vira `fail()` — candidata a
  * retry de verdade no nível de job (Fase 9).
+ *
+ * Notificação (pedido do responsável, 2026-09-08): `ERROR` é exatamente o
+ * "precisa de atenção humana" que a geração automática diária (bin/worker.php)
+ * pode produzir sem ninguém olhando — avisa a equipe do site na hora que
+ * acontece, em vez de só aparecer na lista de Produção na próxima visita.
  */
 final class ArticleJobHandlers
 {
-    public static function register(Queue $queue, ArticlePipeline $pipeline, ArticleService $articles): void
-    {
-        $onFailure = static function (Throwable $e) use ($articles): void {
-            if ($e instanceof PipelineException) {
-                $articles->setStatus($e->articleId, 'ERROR');
+    public static function register(
+        Queue $queue,
+        ArticlePipeline $pipeline,
+        ArticleService $articles,
+        ?NotificationService $notifications = null,
+    ): void {
+        $notifications ??= new NotificationService();
+
+        $onFailure = static function (Throwable $e, int $siteId) use ($articles, $notifications): void {
+            if (!$e instanceof PipelineException) {
+                return;
             }
+            $articles->setStatus($e->articleId, 'ERROR');
+
+            $article = $articles->find($siteId, $e->articleId);
+            $title = $article !== null && !empty($article['title']) ? (string) $article['title'] : 'Rascunho #' . $e->articleId;
+            $notifications->notifySiteTeam(
+                $siteId,
+                NotificationService::TYPE_ATTENTION,
+                'Falha técnica na geração',
+                "\"{$title}\" precisa de atenção — {$e->getMessage()}",
+                '/sites/' . $siteId . '/production/' . $e->articleId,
+            );
         };
 
         $queue->register('article.generate', function (Job $job) use ($pipeline, $onFailure): void {
@@ -52,7 +75,7 @@ final class ArticleJobHandlers
                     $job->payload['category_id'] !== null ? (int) $job->payload['category_id'] : null,
                 );
             } catch (Throwable $e) {
-                $onFailure($e);
+                $onFailure($e, (int) $job->payload['site_id']);
                 throw $e;
             }
         });
@@ -67,7 +90,7 @@ final class ArticleJobHandlers
                     (int) $job->payload['lineage_id'],
                 );
             } catch (Throwable $e) {
-                $onFailure($e);
+                $onFailure($e, (int) $job->payload['site_id']);
                 throw $e;
             }
         });

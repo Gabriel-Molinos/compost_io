@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Services\ArticleService;
+use App\Services\NotificationService;
 use App\Services\ScheduleService;
 use App\Services\WordPressPublishService;
 use App\Support\Csrf;
@@ -20,11 +21,13 @@ final class ScheduleController extends Controller
 {
     private ScheduleService $schedules;
     private ArticleService $articles;
+    private NotificationService $notifications;
 
     public function __construct()
     {
         $this->schedules = new ScheduleService();
         $this->articles = new ArticleService();
+        $this->notifications = new NotificationService();
     }
 
     /**
@@ -61,9 +64,15 @@ final class ScheduleController extends Controller
     {
         $this->raiseLimit();
         $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
-            $r = (new WordPressPublishService())->publish($aid, $sid);
+            try {
+                $r = (new WordPressPublishService())->publish($aid, $sid);
+            } catch (Throwable $e) {
+                $this->notifyPublishResult($sid, $aid, false, $e->getMessage());
+                throw $e;
+            }
             $label = $r['status'] === 'future' ? 'agendado no WordPress' : 'publicado';
             Session::flash('success', 'Artigo ' . $label . ' — post #' . $r['post_id'] . ' no WordPress.' . self::extras($r));
+            $this->notifyPublishResult($sid, $aid, true, 'Post #' . $r['post_id'] . ' no WordPress.');
         });
     }
 
@@ -83,6 +92,28 @@ final class ScheduleController extends Controller
             (new WordPressPublishService())->retract($aid, $sid);
             Session::flash('success', 'Post retirado do WordPress (foi para a lixeira lá). O artigo voltou para aprovado.');
         });
+    }
+
+    /**
+     * Avisa a equipe do site (ADMINs + Redator-Chefe vinculado) do resultado
+     * da publicação — deu certo ou deu errado (pedido do responsável,
+     * 2026-09-08). Mesmo caminho usado pelo clique manual (aqui) e pela
+     * publicação automática agendada (ScheduleJobHandlers) — ninguém precisa
+     * estar olhando a tela na hora pra saber o que aconteceu.
+     */
+    private function notifyPublishResult(int $siteId, int $articleId, bool $success, string $detail): void
+    {
+        $article = $this->articles->find($siteId, $articleId);
+        $title = $article !== null && !empty($article['title']) ? (string) $article['title'] : 'Rascunho #' . $articleId;
+        $link = '/sites/' . $siteId . '/production/' . $articleId . '#agendar';
+
+        $this->notifications->notifySiteTeam(
+            $siteId,
+            $success ? NotificationService::TYPE_PUBLISH_SUCCESS : NotificationService::TYPE_PUBLISH_FAILED,
+            $success ? 'Post publicado' : 'Falha ao publicar',
+            "\"{$title}\" — {$detail}",
+            $link,
+        );
     }
 
     /** @param array{links_rewritten:int, links_unwrapped:int, body_images:int} $r */

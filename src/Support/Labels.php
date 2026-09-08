@@ -116,6 +116,30 @@ final class Labels
         return self::badge($label, $active ? 'success' : 'muted');
     }
 
+    /** Tom semântico do tipo de notificação (NotificationService::TYPE_*). */
+    public static function notificationTone(string $type): string
+    {
+        return match ($type) {
+            'PUBLISH_SUCCESS' => 'success',
+            'PUBLISH_FAILED'  => 'danger',
+            'SITE_ASSIGNED'   => 'cyan',
+            'ATTENTION'       => 'warning',
+            default           => 'muted',
+        };
+    }
+
+    /** Rótulo curto do tipo de notificação — a etiqueta ao lado do título. */
+    public static function notificationTypeLabel(string $type): string
+    {
+        return match ($type) {
+            'PUBLISH_SUCCESS' => 'Publicação',
+            'PUBLISH_FAILED'  => 'Falha',
+            'SITE_ASSIGNED'   => 'Site',
+            'ATTENTION'       => 'Atenção',
+            default           => 'Aviso',
+        };
+    }
+
     /** Monta o HTML comum de badge (bolinha + texto) — usado por todas as badges acima. */
     private static function badge(string $label, string $tone): string
     {

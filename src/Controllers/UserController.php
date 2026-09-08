@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Services\AuthService;
+use App\Services\NotificationService;
 use App\Services\SiteService;
 use App\Services\UserService;
 use App\Support\Csrf;
@@ -18,11 +19,13 @@ final class UserController
 {
     private UserService $users;
     private SiteService $sites;
+    private NotificationService $notifications;
 
     public function __construct()
     {
         $this->users = new UserService();
         $this->sites = new SiteService();
+        $this->notifications = new NotificationService();
     }
 
     public function index(): void
@@ -61,7 +64,9 @@ final class UserController
         }
 
         $id = $this->users->create($_POST, (string) $_POST['password']);
-        $this->users->syncSites($id, $this->siteIds($_POST));
+        $siteIds = $this->siteIds($_POST);
+        $this->users->syncSites($id, $siteIds);
+        $this->notifyNewAssignments($id, [], $siteIds);
 
         try {
             $avatar = Uploads::image($_FILES['avatar'] ?? null, 'avatars', $id);
@@ -125,8 +130,11 @@ final class UserController
             return;
         }
 
+        $previousSiteIds = $this->users->siteIdsFor((int) $user['id']);
         $this->users->update((int) $user['id'], $_POST, $_POST['password'] ?? null);
-        $this->users->syncSites((int) $user['id'], $this->siteIds($_POST));
+        $siteIds = $this->siteIds($_POST);
+        $this->users->syncSites((int) $user['id'], $siteIds);
+        $this->notifyNewAssignments((int) $user['id'], $previousSiteIds, $siteIds);
 
         if (!empty($_POST['remove_avatar'])) {
             Uploads::delete($user['avatar_path'] ?? null);
@@ -165,6 +173,32 @@ final class UserController
         return (new Validator($data, $rules, [
             'name' => 'Nome', 'email' => 'E-mail', 'role' => 'Perfil', 'password' => 'Senha',
         ]))->errors();
+    }
+
+    /**
+     * Avisa o usuário quando um admin vincula ele a um site novo (pedido do
+     * responsável, 2026-09-08) — só os IDs que não estavam na lista anterior,
+     * pra não notificar de novo um vínculo que já existia.
+     *
+     * @param list<int> $before
+     * @param list<int> $after
+     */
+    private function notifyNewAssignments(int $userId, array $before, array $after): void
+    {
+        foreach (array_diff($after, $before) as $siteId) {
+            $site = $this->sites->find($siteId);
+            if ($site === null) {
+                continue;
+            }
+            $this->notifications->notify(
+                $userId,
+                NotificationService::TYPE_SITE_ASSIGNED,
+                'Você foi vinculado a um site',
+                'Um administrador te deu acesso a "' . $site['name'] . '".',
+                $siteId,
+                '/sites/' . $siteId,
+            );
+        }
     }
 
     /** @param array<string, mixed> $data @return list<int> */

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Queue;
 
+use App\Services\ArticleService;
+use App\Services\NotificationService;
 use App\Services\ScheduleService;
 use App\Services\WordPressPublishService;
 use Throwable;
@@ -21,23 +23,62 @@ use Throwable;
  * (retry automático até `Job::MAX_ATTEMPTS`). Só na última tentativa este
  * handler marca `schedules.FAILED` *antes* de relançar — visível ao
  * Redator-Chefe, nunca falha silenciosamente (regra de transparência, §59).
+ *
+ * Notificação (pedido do responsável, 2026-09-08): esta é a publicação
+ * AUTOMÁTICA — ninguém clicou "Enviar ao WordPress" agora, então ninguém
+ * está olhando a tela pra ver se deu certo. Sucesso avisa na hora; falha só
+ * avisa quando esgota as tentativas (mesma guarda do markFailed acima —
+ * senão notificaria 1 vez por tentativa de retry, virando spam).
  */
 final class ScheduleJobHandlers
 {
-    public static function register(Queue $queue, WordPressPublishService $publisher, ScheduleService $schedules): void
-    {
-        $queue->register('schedule.publish', function (Job $job) use ($publisher, $schedules): void {
+    public static function register(
+        Queue $queue,
+        WordPressPublishService $publisher,
+        ScheduleService $schedules,
+        ?ArticleService $articles = null,
+        ?NotificationService $notifications = null,
+    ): void {
+        $articles ??= new ArticleService();
+        $notifications ??= new NotificationService();
+
+        $queue->register('schedule.publish', function (Job $job) use ($publisher, $schedules, $articles, $notifications): void {
+            $siteId = (int) $job->payload['site_id'];
+            $articleId = (int) $job->payload['article_id'];
+
             try {
-                $publisher->publish((int) $job->payload['article_id'], (int) $job->payload['site_id']);
+                $result = $publisher->publish($articleId, $siteId);
+                self::notify($articles, $notifications, $siteId, $articleId, true, 'Post #' . $result['post_id'] . ' no WordPress.');
             } catch (Throwable $e) {
                 if ($job->attempts >= Job::MAX_ATTEMPTS - 1) {
                     // Esta falha vai esgotar as tentativas — o job cai no
                     // dead-letter logo em seguida (fail() do driver).
                     $schedules->markFailed((int) $job->payload['schedule_id']);
+                    self::notify($articles, $notifications, $siteId, $articleId, false, $e->getMessage());
                 }
 
                 throw $e;
             }
         });
+    }
+
+    private static function notify(
+        ArticleService $articles,
+        NotificationService $notifications,
+        int $siteId,
+        int $articleId,
+        bool $success,
+        string $detail,
+    ): void {
+        $article = $articles->find($siteId, $articleId);
+        $title = $article !== null && !empty($article['title']) ? (string) $article['title'] : 'Rascunho #' . $articleId;
+
+        $notifications->notifySiteTeam(
+            $siteId,
+            $success ? NotificationService::TYPE_PUBLISH_SUCCESS : NotificationService::TYPE_PUBLISH_FAILED,
+            $success ? 'Post publicado (automático)' : 'Falha ao publicar (automático)',
+            "\"{$title}\" — {$detail}",
+            '/sites/' . $siteId . '/production/' . $articleId . '#agendar',
+        );
     }
 }

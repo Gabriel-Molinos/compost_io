@@ -11,6 +11,7 @@ use App\Controllers\EditorialRuleController;
 use App\Controllers\GoalController;
 use App\Controllers\HomeController;
 use App\Controllers\IntelligenceController;
+use App\Controllers\NotificationController;
 use App\Controllers\ProductionController;
 use App\Controllers\ProfileController;
 use App\Controllers\ReportController;
@@ -40,6 +41,11 @@ return static function (Router $router): void {
     // Meu perfil (qualquer usuário logado — troca só a própria foto, nunca a de outro)
     $router->add('GET',  '/profile',        [ProfileController::class, 'edit'],         auth: true);
     $router->add('POST', '/profile/avatar', [ProfileController::class, 'updateAvatar'], auth: true);
+
+    // Notificações (qualquer usuário logado — sempre só as próprias)
+    $router->add('GET',  '/notifications',           [NotificationController::class, 'index'],        auth: true);
+    $router->add('POST', '/notifications/read-all',  [NotificationController::class, 'markAllRead'],  auth: true);
+    $router->add('POST', '/notifications/{id}/open', [NotificationController::class, 'open'],          auth: true);
 
     // Usuários (somente ADMIN)
     $router->add('GET',  '/users',           [UserController::class, 'index'],  admin: true);

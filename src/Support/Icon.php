@@ -29,6 +29,7 @@ final class Icon
             . '<rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/>',
         'users' => '<circle cx="8.5" cy="9" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/>'
             . '<path d="M2.5 19.8c.6-3.5 3-5.6 6-5.6s5.4 2.1 6 5.6"/><path d="M15 19.8c.4-2.4 1.7-4.1 3.6-4.8"/>',
+        'bell'  => '<path d="M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5Z"/><path d="M9.5 19.5a2.5 2.5 0 0 0 5 0"/>',
         // --- abas do site ---
         'overview'     => '<rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="17" rx="1"/>',
         'categories'   => '<path d="M3 3h7l11 11-7 7L3 10V3Z"/><circle cx="7.5" cy="7.5" r="1.3"/>',

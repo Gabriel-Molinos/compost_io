@@ -62,7 +62,7 @@ anel de foco — [Parte 20, R-UI-06](../technical/ui-ux-frontend.md#102-regras-o
 
 | Token | Papel | Hex |
 |---|---|---|
-| `base` | Fundo geral da aplicação | `#050B0F` |
+| `void` | Fundo geral da aplicação | `#050B0F` |
 | `surface` | Cards, inputs, painéis | `#061830` |
 | `surface-2` | Superfície elevada, sidebar, modais, linhas destacadas | `#0A2647` |
 | `border` | Contorno de cards/inputs, divisórias | `#3D5266` |

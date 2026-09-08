@@ -21,7 +21,13 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        base: '#050B0F',
+        // "void" (não "base") de propósito — Tailwind já tem "base" na escala
+        // padrão de font-size (text-base = 1rem). Duas fontes gerando a mesma
+        // classe `.text-base` faziam ela carregar font-size E color juntos,
+        // aplicando #050B0F sem querer em todo `text-base` do app usado só
+        // pra tamanho (achado real: os números do seletor de intensidade em
+        // /rules/new ficavam ilegíveis mesmo depois de trocar a cor deles).
+        void: '#050B0F',
         surface: '#061830',
         'surface-2': '#0A2647',
         border: '#3D5266',

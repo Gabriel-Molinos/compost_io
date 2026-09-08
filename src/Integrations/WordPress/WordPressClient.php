@@ -217,6 +217,57 @@ final class WordPressClient
             $headers[] = $h;
         }
 
+        $result = $this->exec($method, $url, $headers, $payload);
+
+        // Redirect (bug real reportado: site com Cloudflare/host redirecionando
+        // o domínio puro pro "www" — penazo.com -> www.penazo.com — fazia todo
+        // sync falhar com "resposta não-JSON", já que a URL configurada nunca
+        // era a de verdade). Não segue redirect automaticamente via cURL
+        // (CURLOPT_FOLLOWLOCATION reenviaria a Application Password pra
+        // QUALQUER host que o Location apontasse, inclusive um terceiro em
+        // caso de DNS/host comprometido) — em vez disso, refaz a MESMA
+        // chamada (mesmo método/corpo) uma única vez, só pro destino exato
+        // que o próprio servidor indicou. Um hop já cobre o caso real; se
+        // redirecionar de novo depois disso, o erro abaixo aparece normal.
+        if (in_array($result['status'], [301, 302, 303, 307, 308], true) && $result['redirect'] !== '') {
+            $result = $this->exec($method, $result['redirect'], $headers, $payload);
+        }
+
+        $status = $result['status'];
+        $raw = $result['body'];
+        $decoded = json_decode($raw, true);
+
+        if ($status < 200 || $status >= 300) {
+            $apiMessage = is_array($decoded) ? ($decoded['message'] ?? 'erro desconhecido') : 'resposta não-JSON';
+            $hint = match ($status) {
+                401     => ' — usuário ou Application Password incorretos.',
+                403     => ' — o usuário não tem permissão para esta operação.',
+                404     => ' — recurso ou REST API não encontrados (confira a URL do site).',
+                default => '',
+            };
+            throw new WordPressException(
+                "WordPress retornou HTTP {$status}: {$apiMessage}{$hint}",
+                retryable: $status === 429 || $status >= 500,
+                httpStatus: $status,
+            );
+        }
+
+        if ($decoded === null && trim($raw) !== '') {
+            throw new WordPressException("Resposta do WordPress não é JSON (HTTP {$status}). O endereço aponta para um WordPress?", httpStatus: $status);
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * Uma chamada cURL isolada — reaproveitada pra requisição original e,
+     * quando houver, pro único hop de redirect que `send()` segue.
+     *
+     * @param list<string> $headers
+     * @return array{status:int, body:string, redirect:string}
+     */
+    private function exec(string $method, string $url, array $headers, ?string $payload): array
+    {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_CUSTOMREQUEST  => $method,
@@ -237,34 +288,17 @@ final class WordPressClient
         $errno = curl_errno($ch);
         $error = curl_error($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        // Populado mesmo com FOLLOWLOCATION desligado — é pra isso que existe
+        // (doc do libcurl: "especially useful in combination with
+        // CURLOPT_FOLLOWLOCATION being disabled").
+        $redirect = (string) curl_getinfo($ch, CURLINFO_REDIRECT_URL);
         curl_close($ch);
 
         if ($errno !== 0) {
             throw new WordPressException("Falha de rede ao chamar o WordPress: {$error} (curl {$errno}).", retryable: true);
         }
 
-        $decoded = json_decode((string) $raw, true);
-
-        if ($status < 200 || $status >= 300) {
-            $apiMessage = is_array($decoded) ? ($decoded['message'] ?? 'erro desconhecido') : 'resposta não-JSON';
-            $hint = match ($status) {
-                401     => ' — usuário ou Application Password incorretos.',
-                403     => ' — o usuário não tem permissão para esta operação.',
-                404     => ' — recurso ou REST API não encontrados (confira a URL do site).',
-                default => '',
-            };
-            throw new WordPressException(
-                "WordPress retornou HTTP {$status}: {$apiMessage}{$hint}",
-                retryable: $status === 429 || $status >= 500,
-                httpStatus: $status,
-            );
-        }
-
-        if ($decoded === null && trim((string) $raw) !== '') {
-            throw new WordPressException("Resposta do WordPress não é JSON (HTTP {$status}). O endereço aponta para um WordPress?", httpStatus: $status);
-        }
-
-        return $decoded;
+        return ['status' => $status, 'body' => (string) $raw, 'redirect' => $redirect];
     }
 
     private static function sanitizeFilename(string $name): string

@@ -239,29 +239,38 @@
     .app-bg::before { display: none; }
   }
 
-  /* Brilho passando pela grade — uma faixa diagonal bem fraca varre a tela
-     devagar e some, feito um scan HUD, sem nunca virar uma mancha fixa (o
-     background-size 220% deixa a faixa fora da tela na maior parte do
-     ciclo, então ela "passa" em vez de ficar ali). Puramente decorativo,
-     mesma camada de trás que .app-bg::before (mouse-glow). */
+  /* Brilho passando pelas linhas da grade — uma faixa HORIZONTAL (acompanha
+     as linhas 0deg da grade, não corta elas de través) desce devagar e some.
+     Versão anterior era uma faixa diagonal a 115deg: nas pontas do ciclo
+     ela ficava "presa" saindo pelo canto (background-position em % com
+     background-size ampliado nunca sai 100% da tela nos 2 eixos ao mesmo
+     tempo — sobrava lasca visível no canto, o "quebrado" reportado). Uma
+     faixa só no eixo Y, com `background-position` animando em unidades
+     fixas (px) além da altura real do fundo, sai 100% pra fora sem sobra
+     nenhuma — e como é horizontal, ilumina literalmente as linhas
+     horizontais da grade (0deg) enquanto atravessa, em vez de recortar
+     tudo num ângulo que não tem nada a ver com o padrão da grade.
+     Puramente decorativo, mesma camada de trás que .app-bg::before. */
   .app-bg::after {
     content: '';
     position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background-image: linear-gradient(115deg,
-      transparent 46%,
-      rgba(0, 208, 240, .14) 48.5%,
-      rgba(160, 240, 255, .28) 50%,
-      rgba(0, 208, 240, .14) 51.5%,
-      transparent 54%);
-    background-size: 220% 220%;
+    background-repeat: no-repeat;
+    background-image: linear-gradient(180deg,
+      transparent 0%,
+      rgba(0, 208, 240, .16) 42%,
+      rgba(160, 240, 255, .30) 50%,
+      rgba(0, 208, 240, .16) 58%,
+      transparent 100%);
+    background-size: 100% 240px;
+    background-position: center -240px;
     animation: grid-shine 10s ease-in-out infinite;
   }
   @keyframes grid-shine {
-    0%, 15%   { background-position: -90% -90%; }
-    55%, 100% { background-position: 190% 190%; }
+    0%, 15%   { background-position: center -240px; }
+    55%, 100% { background-position: center calc(100% + 240px); }
   }
   @media (prefers-reduced-motion: reduce) {
     .app-bg::after { display: none; }

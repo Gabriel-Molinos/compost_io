@@ -7,6 +7,8 @@ use App\Services\NotificationService;
 use App\Services\SiteService;
 use App\Support\Avatar;
 use App\Support\Csrf;
+use App\Support\Icon;
+use App\Support\Labels;
 use App\Support\Session;
 use App\View;
 
@@ -104,31 +106,34 @@ if ($authUser !== null && !$hasSiteNav) {
 
     <div class="relative z-10 flex min-h-screen">
         <!-- Sidebar fixa (telas ≥ lg) -->
-        <aside class="hidden w-64 shrink-0 flex-col border-r border-border bg-surface/60 px-4 py-6 lg:flex">
-            <a href="/" class="flex items-center gap-2.5 px-2">
-                <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-6 w-6 shrink-0">
+        <aside class="hidden w-64 shrink-0 flex-col border-r border-border bg-surface/60 py-5 lg:flex">
+            <a href="/" class="flex items-center gap-2.5 px-5">
+                <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-7 w-7 shrink-0">
                 <img src="/assets/brand/wordmark.png" alt="COMPOST" class="h-4 w-auto">
             </a>
 
-            <div class="mt-8 flex-1 overflow-y-auto">
-                <?php require __DIR__ . '/_nav.php'; ?>
-            </div>
-
             <?php if ($authUser !== null): ?>
-                <div class="mt-6 border-t border-border pt-4">
-                    <a href="/profile" class="flex items-center gap-2 rounded-md px-2 py-1 -mx-2 hover:bg-surface-2" title="Meu perfil">
-                        <?= Avatar::html($authUser['avatar_path'] ?? null, $authUser['name'], size: 'h-7 w-7', radius: 'rounded-full', textSize: 'text-xs') ?>
-                        <p class="truncate text-xs text-text-secondary"><?= View::e($authUser['email']) ?></p>
+                <div class="mx-4 mt-5 flex items-center gap-2.5 rounded-lg border border-border bg-surface-2/50 p-2.5">
+                    <a href="/profile" class="flex min-w-0 flex-1 items-center gap-2.5 rounded-md" title="Meu perfil">
+                        <?= Avatar::html($authUser['avatar_path'] ?? null, $authUser['name'], size: 'h-9 w-9', radius: 'rounded-md', textSize: 'text-sm') ?>
+                        <span class="min-w-0">
+                            <span class="block truncate text-sm font-semibold text-text-primary"><?= View::e($authUser['name']) ?></span>
+                            <span class="block truncate text-xs text-text-muted"><?= View::e(Labels::role($authUser['role'])) ?></span>
+                        </span>
                     </a>
-                    <form method="post" action="/logout" class="mt-2">
+                    <form method="post" action="/logout">
                         <?= Csrf::field() ?>
-                        <button type="submit"
-                                class="w-full rounded-md border border-border px-3 py-1.5 text-left text-sm text-text-secondary hover:border-cyan hover:text-text-primary">
-                            Sair
+                        <button type="submit" title="Sair"
+                                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-cyan">
+                            <?= Icon::nav('logout') ?>
                         </button>
                     </form>
                 </div>
             <?php endif; ?>
+
+            <div class="mt-6 flex-1 overflow-y-auto px-4">
+                <?php require __DIR__ . '/_nav.php'; ?>
+            </div>
         </aside>
 
         <div class="flex min-w-0 flex-1 flex-col">
@@ -142,19 +147,24 @@ if ($authUser !== null && !$hasSiteNav) {
                     <details class="relative">
                         <summary class="rounded-md border border-border px-3 py-1.5 text-sm text-text-secondary">Menu</summary>
                         <div class="absolute right-0 z-40 mt-2 w-64 rounded-lg border border-border bg-surface p-4 shadow-2xl">
-                            <?php require __DIR__ . '/_nav.php'; ?>
-                            <div class="mt-6 border-t border-border pt-4">
-                                <a href="/profile" class="flex items-center gap-2 rounded-md px-2 py-1 -mx-2 hover:bg-surface-2" title="Meu perfil">
-                                    <?= Avatar::html($authUser['avatar_path'] ?? null, $authUser['name'], size: 'h-7 w-7', radius: 'rounded-full', textSize: 'text-xs') ?>
-                                    <p class="truncate text-xs text-text-secondary"><?= View::e($authUser['email']) ?></p>
+                            <div class="flex items-center gap-2.5 rounded-lg border border-border bg-surface-2/50 p-2.5">
+                                <a href="/profile" class="flex min-w-0 flex-1 items-center gap-2.5 rounded-md" title="Meu perfil">
+                                    <?= Avatar::html($authUser['avatar_path'] ?? null, $authUser['name'], size: 'h-9 w-9', radius: 'rounded-md', textSize: 'text-sm') ?>
+                                    <span class="min-w-0">
+                                        <span class="block truncate text-sm font-semibold text-text-primary"><?= View::e($authUser['name']) ?></span>
+                                        <span class="block truncate text-xs text-text-muted"><?= View::e(Labels::role($authUser['role'])) ?></span>
+                                    </span>
                                 </a>
-                                <form method="post" action="/logout" class="mt-2">
+                                <form method="post" action="/logout">
                                     <?= Csrf::field() ?>
-                                    <button type="submit"
-                                            class="w-full rounded-md border border-border px-3 py-1.5 text-left text-sm text-text-secondary hover:border-cyan">
-                                        Sair
+                                    <button type="submit" title="Sair"
+                                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-cyan">
+                                        <?= Icon::nav('logout') ?>
                                     </button>
                                 </form>
+                            </div>
+                            <div class="mt-4 border-t border-border pt-4">
+                                <?php require __DIR__ . '/_nav.php'; ?>
                             </div>
                         </div>
                     </details>

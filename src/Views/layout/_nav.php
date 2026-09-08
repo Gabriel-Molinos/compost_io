@@ -16,7 +16,26 @@ use App\View;
 /** @var int $unreadNotifications */
 /** @var bool $showNotifications */
 
-$navLink = static function (string $href, string $label, string $icon, bool $active, int $badge = 0): void {
+// Fundo do chip do ícone varia por item (pedido do responsável, 2026-09-08:
+// "mal distribuída"/monótona com todo ícone igual) — paleta fixa dentro da
+// identidade (cyan/success/warning/danger/info, todas em baixa opacidade,
+// nunca cor "crua" fora da paleta), escolhida por hash do nome do ícone.
+// Hash (não índice sequencial) pra cada ícone sempre cair na mesma cor em
+// qualquer tela — estável entre navegações, só "quebra" visualmente entre
+// itens diferentes, não pisca a cada request.
+// Variável local, não const: este arquivo é require'd duas vezes por
+// página (sidebar desktop + menu mobile em <details>) — const no nível
+// do arquivo quebraria na segunda inclusão ("Cannot redeclare constant").
+$iconChipPalette = ['bg-cyan/15 text-cyan', 'bg-success/15 text-success',
+    'bg-warning/15 text-warning', 'bg-danger/15 text-danger', 'bg-info/15 text-info'];
+
+$iconChip = static function (string $icon) use ($iconChipPalette): string {
+    $hash = crc32($icon);
+
+    return $iconChipPalette[$hash % count($iconChipPalette)];
+};
+
+$navLink = static function (string $href, string $label, string $icon, bool $active, int $badge = 0) use ($iconChip): void {
     // Ativo reforça "onde estou" com tinta de fundo + barra de acento à
     // esquerda (não só cor — a barra é uma pista de forma, R-UI-07 — e o
     // fundo cyan/10 sozinho era sutil demais pra ler rápido na sidebar).
@@ -27,8 +46,12 @@ $navLink = static function (string $href, string $label, string $icon, bool $act
         ? '<span class="ml-auto flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-danger px-1 text-[11px] font-bold text-[#050B0F]">'
             . ($badge > 99 ? '99+' : $badge) . '</span>'
         : '';
-    echo '<a href="' . View::e($href) . '" class="flex items-center gap-2.5 rounded-r-md py-2 pr-3 text-sm font-medium transition-colors ' . $tone . '">'
-        . Icon::nav($icon) . '<span class="truncate">' . View::e($label) . '</span>' . $badgeHtml . '</a>';
+    // Chip some quando ativo — o item ativo já tem sua própria cor de estado
+    // (cyan sólido); manter o chip por baixo brigava com esse acento.
+    $chipClass = $active ? 'text-cyan' : 'rounded-md p-1 ' . $iconChip($icon);
+    echo '<a href="' . View::e($href) . '" class="flex items-center gap-2.5 rounded-r-md py-1.5 pr-3 text-sm font-medium transition-colors ' . $tone . '">'
+        . '<span class="flex shrink-0 items-center justify-center ' . $chipClass . '">' . Icon::nav($icon) . '</span>'
+        . '<span class="truncate">' . View::e($label) . '</span>' . $badgeHtml . '</a>';
 };
 ?>
 <nav aria-label="Principal" class="flex flex-col gap-1">

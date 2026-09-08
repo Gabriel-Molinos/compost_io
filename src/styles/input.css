@@ -239,6 +239,34 @@
     .app-bg::before { display: none; }
   }
 
+  /* Brilho passando pela grade — uma faixa diagonal bem fraca varre a tela
+     devagar e some, feito um scan HUD, sem nunca virar uma mancha fixa (o
+     background-size 220% deixa a faixa fora da tela na maior parte do
+     ciclo, então ela "passa" em vez de ficar ali). Puramente decorativo,
+     mesma camada de trás que .app-bg::before (mouse-glow). */
+  .app-bg::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: linear-gradient(115deg,
+      transparent 46%,
+      rgba(0, 208, 240, .14) 48.5%,
+      rgba(160, 240, 255, .28) 50%,
+      rgba(0, 208, 240, .14) 51.5%,
+      transparent 54%);
+    background-size: 220% 220%;
+    animation: grid-shine 10s ease-in-out infinite;
+  }
+  @keyframes grid-shine {
+    0%, 15%   { background-position: -90% -90%; }
+    55%, 100% { background-position: 190% 190%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .app-bg::after { display: none; }
+  }
+
   /* Glow contido no acento ciano — qualquer botão/elemento com bg-cyan ganha
      o mesmo brilho no hover/foco automaticamente (sem classe extra por View). */
   .bg-cyan:hover, .bg-cyan:focus-visible {

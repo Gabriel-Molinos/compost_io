@@ -65,13 +65,18 @@ final class UserService
         return (int) $pdo->lastInsertId();
     }
 
-    /** @param array<string, mixed> $data */
+    /**
+     * Não mexe em `name` (pedido do responsável, 2026-09-08: nome é o único
+     * dado de perfil que o próprio usuário controla — admin edita e-mail,
+     * senha, perfil/papel e sites vinculados; ver self::updateName()).
+     *
+     * @param array<string, mixed> $data
+     */
     public function update(int $id, array $data, ?string $plainPassword): void
     {
-        $sql = 'UPDATE users SET name = :name, email = :email, role = :role, is_active = :active';
+        $sql = 'UPDATE users SET email = :email, role = :role, is_active = :active';
         $params = [
             'id'     => $id,
-            'name'   => trim((string) $data['name']),
             'email'  => trim((string) $data['email']),
             'role'   => $data['role'] === 'ADMIN' ? 'ADMIN' : 'REDATOR_CHEFE',
             'active' => !empty($data['is_active']) ? 1 : 0,
@@ -84,6 +89,13 @@ final class UserService
 
         $sql .= ' WHERE id = :id';
         Connection::get()->prepare($sql)->execute($params);
+    }
+
+    /** O próprio usuário troca o próprio nome (ProfileController) — admin não mexe mais nisso. */
+    public function updateName(int $id, string $name): void
+    {
+        Connection::get()->prepare('UPDATE users SET name = :name WHERE id = :id')
+            ->execute(['name' => trim($name), 'id' => $id]);
     }
 
     /** Grava (ou limpa, com null) o caminho da foto de perfil já enviada/salva por Uploads::image(). */

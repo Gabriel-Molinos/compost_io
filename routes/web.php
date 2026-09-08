@@ -38,8 +38,10 @@ return static function (Router $router): void {
     $router->add('GET', '/', [HomeController::class, 'index'], auth: true);
     $router->add('GET', '/api/health/db', [HomeController::class, 'databaseHealth'], auth: true);
 
-    // Meu perfil (qualquer usuário logado — troca só a própria foto, nunca a de outro)
+    // Meu perfil (qualquer usuário logado — troca a própria foto e o próprio
+    // nome, nunca de outro usuário; e-mail/senha ficam só com o admin em /users)
     $router->add('GET',  '/profile',        [ProfileController::class, 'edit'],         auth: true);
+    $router->add('POST', '/profile/name',   [ProfileController::class, 'updateName'],   auth: true);
     $router->add('POST', '/profile/avatar', [ProfileController::class, 'updateAvatar'], auth: true);
 
     // Notificações (qualquer usuário logado — sempre só as próprias)

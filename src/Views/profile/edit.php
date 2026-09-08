@@ -10,6 +10,7 @@ use App\View;
 
 /** @var array<string, mixed>|null $user */
 /** @var string|null $error */
+/** @var array<string, string> $nameErrors */
 ?>
 <h1 class="font-display text-2xl font-bold text-text-primary">Meu perfil</h1>
 <p class="mt-2 text-sm text-text-secondary">
@@ -22,6 +23,21 @@ use App\View;
         <?= View::e($error) ?>
     </p>
 <?php endif; ?>
+
+<section class="mt-6 max-w-sm rounded-lg border border-border bg-surface p-5">
+    <h2 class="font-display text-base font-semibold text-text-primary">Nome</h2>
+    <p class="mt-1 text-sm text-text-secondary">
+        Como você aparece na sidebar e pra outros usuários da plataforma.
+    </p>
+
+    <form method="post" action="/profile/name" class="mt-4">
+        <?= Csrf::field() ?>
+        <?= Form::text('name', 'Nome', $user, $nameErrors, required: true) ?>
+        <button type="submit" class="mt-3 rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+            Salvar nome
+        </button>
+    </form>
+</section>
 
 <section class="mt-6 max-w-sm rounded-lg border border-border bg-surface p-5">
     <h2 class="font-display text-base font-semibold text-text-primary">Foto de perfil</h2>
@@ -52,7 +68,7 @@ use App\View;
 </section>
 
 <p class="mt-6 text-sm text-text-muted">
-    Nome, e-mail e senha ficam com o administrador —
+    E-mail e senha ficam com o administrador —
     <?php if (($user['role'] ?? null) === 'ADMIN'): ?>
         <a href="/users" class="text-cyan hover:text-cyan-bright">gerencie em Usuários</a>.
     <?php else: ?>

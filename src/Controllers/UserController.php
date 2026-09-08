@@ -126,7 +126,9 @@ final class UserController
         }
 
         if ($errors !== []) {
-            $this->renderForm('/users/' . $user['id'], $_POST + ['id' => $user['id']], $errors, false);
+            // 'name' não vem mais no POST de edição (não é mais campo do form) —
+            // repõe do registro atual pra continuar mostrando certo no reload.
+            $this->renderForm('/users/' . $user['id'], $_POST + ['id' => $user['id'], 'name' => $user['name']], $errors, false);
             return;
         }
 
@@ -156,15 +158,22 @@ final class UserController
         Http::redirect('/users/' . $user['id'] . '/edit');
     }
 
-    /** @param array<string, mixed> $data @return array<string, string> */
+    /**
+     * $requirePass só é true em store() (criação) — reaproveitado aqui pra
+     * também exigir 'name': só na criação o admin define o nome inicial do
+     * usuário; editar um usuário existente não mexe mais em nome (pedido do
+     * responsável, 2026-09-08 — ver UserService::updateName()).
+     *
+     * @param array<string, mixed> $data @return array<string, string>
+     */
     private function validate(array $data, bool $requirePass): array
     {
         $rules = [
-            'name'  => ['required', 'max:191'],
             'email' => ['required', 'email', 'max:191'],
             'role'  => ['required', 'in:ADMIN,REDATOR_CHEFE'],
         ];
         if ($requirePass) {
+            $rules['name'] = ['required', 'max:191'];
             $rules['password'] = ['required', 'min:8'];
         } elseif (trim((string) ($data['password'] ?? '')) !== '') {
             $rules['password'] = ['min:8'];

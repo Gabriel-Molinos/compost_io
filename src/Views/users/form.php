@@ -66,7 +66,15 @@ $role = $user['role'] ?? 'REDATOR_CHEFE';
         </div>
 
         <div class="mt-5 space-y-5">
-            <?= Form::text('name', 'Nome', $user, $errors, required: true) ?>
+            <?php if ($isEdit): ?>
+                <div>
+                    <span class="block text-sm font-medium text-text-secondary">Nome</span>
+                    <p class="mt-1 text-sm text-text-primary"><?= View::e($user['name'] ?? '') ?></p>
+                    <p class="mt-1 text-xs text-text-muted">Só o próprio usuário troca o nome, em "Meu perfil".</p>
+                </div>
+            <?php else: ?>
+                <?= Form::text('name', 'Nome', $user, $errors, required: true) ?>
+            <?php endif; ?>
             <?= Form::text('email', 'E-mail', $user, $errors, type: 'email', required: true) ?>
         </div>
     </section>

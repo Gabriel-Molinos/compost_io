@@ -51,6 +51,23 @@ final class Connection
             throw new PDOException('Falha ao conectar ao banco de dados.');
         }
 
+        // Achado real (2026-09-08): o cluster gerenciado (DigitalOcean) roda
+        // com o relógio da sessão em UTC (confirmado: NOW() = UTC_TIMESTAMP()
+        // nele) — 3h à frente de Brasília. Toda comparação/gravação que
+        // depende do relógio do BANCO (NOW(), CURDATE(), DEFAULT
+        // CURRENT_TIMESTAMP em created_at/updated_at) ficava em UTC enquanto
+        // o PHP (date_default_timezone_set em public/index.php e
+        // bin/worker.php) já calcula tudo em America/Sao_Paulo — publicação
+        // agendada disparava 3h cedo demais (dueForPublish comparando
+        // scheduled_date, gravado em horário de Brasília pela aplicação,
+        // contra NOW() em UTC), e todo created_at/updated_at exibido saía
+        // 3h atrasado. Offset numérico fixo (não o nome da zona) porque
+        // clusters gerenciados normalmente não têm as tabelas de fuso
+        // horário do MySQL carregadas — Brasil não observa horário de
+        // verão desde 2019, então -03:00 é sempre correto, sem precisar
+        // reavaliar por data.
+        self::$instance->exec("SET time_zone = '-03:00'");
+
         return self::$instance;
     }
 }

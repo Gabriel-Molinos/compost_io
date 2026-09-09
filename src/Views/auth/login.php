@@ -34,27 +34,28 @@ $describedBy = $error !== null ? 'login-error' : null;
     <?= Csrf::field() ?>
 
     <div>
-        <label for="email" class="block text-sm font-medium text-text-secondary">E-mail</label>
-        <div class="relative mt-1">
-            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-text-muted"><?= Icon::nav('mail') ?></span>
+        <label for="email" class="sr-only">E-mail</label>
+        <div class="relative">
+            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-text-muted"><?= Icon::nav('mail') ?></span>
             <input type="email" id="email" name="email" required autocomplete="username" autofocus
-                   value="<?= View::e($email) ?>"
+                   placeholder="E-mail" value="<?= View::e($email) ?>"
                    <?php if ($describedBy): ?>aria-describedby="<?= $describedBy ?>" aria-invalid="true"<?php endif; ?>
-                   class="w-full rounded-md border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-surface-2 py-2.5 pl-10 pr-3 text-text-primary
+                   class="w-full rounded-full border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-[#0A3247] py-3 pl-11 pr-4 text-text-primary
                           placeholder:text-text-muted focus:outline-none">
         </div>
     </div>
 
     <div>
-        <label for="password" class="block text-sm font-medium text-text-secondary">Senha</label>
-        <div class="relative mt-1">
-            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-text-muted"><?= Icon::nav('lock') ?></span>
+        <label for="password" class="sr-only">Senha</label>
+        <div class="relative">
+            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-text-muted"><?= Icon::nav('lock') ?></span>
             <input type="password" id="password" name="password" required autocomplete="current-password"
+                   placeholder="Senha"
                    <?php if ($describedBy): ?>aria-describedby="<?= $describedBy ?>" aria-invalid="true"<?php endif; ?>
-                   class="w-full rounded-md border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-surface-2 py-2.5 pl-10 pr-11 text-text-primary
+                   class="w-full rounded-full border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-[#0A3247] py-3 pl-11 pr-11 text-text-primary
                           focus:outline-none">
             <button type="button" id="toggle-password" aria-label="Mostrar senha" aria-pressed="false"
-                    class="absolute inset-y-0 right-0 flex items-center px-3 text-text-muted hover:text-text-primary">
+                    class="absolute inset-y-0 right-0 flex items-center px-4 text-text-muted hover:text-text-primary">
                 <svg data-icon="show" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
                      viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
@@ -69,7 +70,7 @@ $describedBy = $error !== null ? 'login-error' : null;
     </div>
 
     <button type="submit"
-            class="w-full rounded-md bg-cyan px-4 py-2.5 text-sm font-semibold text-[#050B0F] transition-colors
+            class="w-full rounded-full bg-cyan px-4 py-3 text-sm font-bold text-[#050B0F] transition-colors
                    hover:bg-cyan-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
         Entrar
     </button>

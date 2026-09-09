@@ -28,7 +28,7 @@ module.exports = {
         // pra tamanho (achado real: os números do seletor de intensidade em
         // /rules/new ficavam ilegíveis mesmo depois de trocar a cor deles).
         void: '#050B0F',
-        surface: '#061830',
+        surface: '#063F59',
         'surface-2': '#0A2647',
         border: '#3D5266',
         'border-strong': '#4A6076',

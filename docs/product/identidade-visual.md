@@ -63,12 +63,12 @@ anel de foco — [Parte 20, R-UI-06](../technical/ui-ux-frontend.md#102-regras-o
 | Token | Papel | Hex |
 |---|---|---|
 | `void` | Fundo geral da aplicação | `#050B0F` |
-| `surface` | Cards, inputs, painéis | `#061830` |
+| `surface` | Cards, inputs, painéis | `#063F59` |
 | `surface-2` | Superfície elevada, sidebar, modais, linhas destacadas | `#0A2647` |
 | `border` | Contorno de cards/inputs, divisórias | `#3D5266` |
 
-Diferença de luminância entre camadas é pequena (base→surface ~1,12:1,
-base→surface-2 ~1,31:1) — **por escolha estética**. Cards, inputs e sidebar
+Diferença de luminância entre camadas (base→surface ~1,76:1,
+base→surface-2 ~1,30:1) — **por escolha estética**. Cards, inputs e sidebar
 **não se apoiam só no preenchimento**: usar a **borda `#3D5266`**, sombra, e/ou um
 fio de glow ciano em estados ativos/foco. Onde precisar de um separador mais
 firme, usar `border` + o delta de fundo (agora perceptível graças ao azul) — ou
@@ -89,7 +89,7 @@ uma borda mais clara pontual `#4A6076`.
 |---|---|---|---|
 | `blue.light` | Links, realce secundário, estado **info** | `#6FCFFF` | ~11,4:1 ✅ |
 | `navy` | = `surface-2` (`#0A2647`) — fundo, não texto | `#0A2647` | — |
-| `navy.deep` | = `surface` (`#061830`) — fundo, não texto | `#061830` | — |
+| `navy.deep` | = `surface` (`#063F59`) — fundo, não texto | `#063F59` | — |
 
 ### Texto
 
@@ -171,7 +171,7 @@ não recriar em fonte.
 // tailwind.config.js — theme.extend
 colors: {
   base: '#050B0F',
-  surface: '#061830',
+  surface: '#063F59',
   'surface-2': '#0A2647',
   border: '#3D5266',
   'border-strong': '#4A6076',

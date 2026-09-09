@@ -35,11 +35,11 @@
   /* Scrollbar temática (Firefox + Chromium/WebKit). */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #3D5266 #061830;
+    scrollbar-color: #3D5266 #063F59;
   }
   ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: #061830; }
-  ::-webkit-scrollbar-thumb { background: #3D5266; border-radius: 6px; border: 2px solid #061830; }
+  ::-webkit-scrollbar-track { background: #063F59; }
+  ::-webkit-scrollbar-thumb { background: #3D5266; border-radius: 6px; border: 2px solid #063F59; }
   ::-webkit-scrollbar-thumb:hover { background: #00A8C4; }
 
   /* Transição suave em todo elemento interativo, sem precisar tocar cada View. */
@@ -139,7 +139,7 @@
     cursor: not-allowed;
     opacity: .5;
     border-color: rgba(61, 82, 102, .6);
-    background-color: #061830;
+    background-color: #063F59;
     box-shadow: none;
     background-image:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237B8FA1' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
@@ -201,20 +201,77 @@
 }
 
 @layer components {
-  /* Fundo do app: vinheta radial + scanline sutil + grade — textura única
-     permitida pela identidade visual, nunca acima disso. A grade (linhas
-     repetidas a cada 48px) reforça a leitura "painel digital/HUD" da
-     identidade Y2K; fica atrás de todo conteúdo (ver .app-bg::after e
-     `relative z-10` no wrapper em layout/base.php e layout/auth.php). */
+  /* Fundo do app: vinheta radial + scanline sutil + brilho de horizonte —
+     textura única permitida pela identidade visual, nunca acima disso.
+     A grade em si virou 3D (ver .app-bg::before abaixo) — não repete mais
+     aqui plana, senão competia com a de baixo. Fica atrás de todo
+     conteúdo (ver `relative z-10` no wrapper em layout/base.php e
+     layout/auth.php). */
   .app-bg {
     position: relative;
     background-color: #050B0F;
+    /* Degradê vertical (referência: céu escurecendo pra cima, mais claro/
+       azulado perto do "horizonte" onde a grade 3D começa) no lugar da
+       vinheta só no topo de antes — dá a profundidade de céu que a
+       imagem de referência tem, em vez de fundo liso atrás da grade. */
     background-image:
-      radial-gradient(ellipse 60% 40% at 50% -10%, rgba(0, 208, 240, .08), transparent 60%),
-      repeating-linear-gradient(0deg, rgba(240, 248, 255, .025) 0px, rgba(240, 248, 255, .025) 1px, transparent 1px, transparent 3px),
-      repeating-linear-gradient(90deg, rgba(0, 208, 240, .06) 0px, rgba(0, 208, 240, .06) 1px, transparent 1px, transparent 48px),
-      repeating-linear-gradient(0deg, rgba(0, 208, 240, .06) 0px, rgba(0, 208, 240, .06) 1px, transparent 1px, transparent 48px);
+      radial-gradient(ellipse 70% 45% at 50% 62%, rgba(56, 220, 255, .35), transparent 70%),
+      linear-gradient(to bottom, #010203 0%, #020509 34%, #05131f 58%, #0c3550 78%, #135a7a 88%, #010203 100%),
+      repeating-linear-gradient(0deg, rgba(240, 248, 255, .025) 0px, rgba(240, 248, 255, .025) 1px, transparent 1px, transparent 3px);
     background-attachment: fixed;
+  }
+
+  /* Grade 3D no rodapé — o "piso" que aparecia plano (repeating-linear-gradient
+     comum) virou de verdade uma grade em perspectiva, como um piso de HUD
+     recuando até o horizonte (referência: estética synthwave/Tron, mas bem
+     mais discreta — combinando com o resto do site, que é sóbrio). Técnica:
+     um retângulo bem mais alto que a área visível (140vh), com a grade
+     comum (repeating-linear-gradient nos dois eixos) desenhada nele, e só
+     então `perspective()+rotateX()` inclinando esse retângulo pra trás a
+     partir da borda de baixo — o navegador projeta a grade em 3D de
+     verdade (as linhas ficam naturalmente mais apertadas perto do topo,
+     sem precisar simular isso "à mão" no gradiente). `mask-image` apaga a
+     metade de cima do retângulo (o "horizonte") pra fundir com a vinheta
+     acima em vez de cortar num degrau. Estático (sem animação) — depois do
+     ajuste no brilho difuso (ver .app-bg::after), qualquer movimento a
+     mais no fundo competia por atenção; aqui o efeito é só de profundidade. */
+  .app-bg::before {
+    content: '';
+    position: fixed;
+    left: -50%;
+    right: -50%;
+    bottom: 0;
+    height: 85vh;
+    z-index: 0;
+    pointer-events: none;
+    /* SVG (não repeating-linear-gradient) — cada quadrado da grade é um
+       <rect> com contorno; lado a lado, os contornos vizinhos se somam e
+       formam a malha completa. Motivo da troca (2026-09-09, "não vejo as
+       verticais"/"fraco"): repeating-linear-gradient em duas camadas
+       (90deg + 0deg) sobrepostas, com transform 3D + mask-image por
+       cima, é sensível demais a arredondamento de sub-pixel do
+       navegador — a linha de 2px podia render nítida numa direção e
+       quase desaparecer na outra dependendo do ângulo final. Um <rect>
+       com stroke é uma linha vetorial de verdade nas DUAS direções ao
+       mesmo tempo, sem essa ambiguidade. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect x='1' y='1' width='118' height='118' fill='none' stroke='%2300E5FF' stroke-width='2.5' stroke-opacity='0.9'/%3E%3C/svg%3E");
+    background-size: 120px 120px;
+    filter: drop-shadow(0 0 2px rgba(0, 208, 240, .6));
+    /* Ângulo/distância ajustados: raso demais (rotateX alto/perspective
+       curta) faz a malha convergir tão rápido que quase tudo colapsa
+       numa faixa embolada perto do "horizonte" — mais moderado deixa a
+       malha legível numa faixa bem maior da tela. */
+    transform: perspective(900px) rotateX(62deg);
+    transform-origin: bottom center;
+    -webkit-mask-image: linear-gradient(to top, black 0%, black 35%, transparent 68%);
+    mask-image: linear-gradient(to top, black 0%, black 35%, transparent 68%);
+  }
+  @media (prefers-reduced-motion: reduce), (max-width: 640px) {
+    /* Em telas pequenas o ângulo raso amassa a grade num emaranhado sem
+       sentido (não é "menos motion", é ilegível) — some ali; em
+       reduced-motion, todo o resto do fundo já é estático, então tirar
+       esse elemento também não perde nenhuma informação nova. */
+    .app-bg::before { display: none; }
   }
 
   /* Brilho ambiente — refeito do zero (2026-09-08).
@@ -232,19 +289,39 @@
      radiais sobrepostos fora de centro um do outro — evita ficar um
      círculo perfeito e concêntrico, que ainda pareceria "gerado". Período
      longo (24s) com 3 pontos de destino diferentes (não so ida-e-volta
-     entre 2 pontos) pra não ficar óbvio que é um loop curto. */
+     entre 2 pontos) pra não ficar óbvio que é um loop curto.
+     Ancorado no fim da grade 3D (não no centro da tela, 2026-09-09):
+     bem na altura onde a grade (.app-bg::before) esmaece, esse brilho
+     reforça o "horizonte" e disfarça a costura entre a malha e o céu —
+     dois efeitos, uma peça só, em vez de competirem por atenção. */
   .app-bg::after {
     content: '';
     position: fixed;
-    top: 50%;
+    top: 82%;
     left: 50%;
     width: 1300px;
     height: 1300px;
     z-index: 0;
     pointer-events: none;
+    /* Raio em px fixo (não em %) — sem isso, "100%" significa "no canto
+       MAIS distante da caixa" (tamanho padrão farthest-corner do
+       radial-gradient); como o centro do círculo não é o centro da caixa,
+       os cantos mais PRÓXIMOS ficavam cortados no meio do degradê, ainda
+       com cor, formando uma borda reta visível bem onde a caixa de
+       1300×1300px termina (o bug reportado). Com raio fixo, o degradê
+       sempre termina em transparent bem antes de qualquer borda da caixa,
+       não importa a posição do centro. Vários estágios (não só
+       cor→transparent num stop só) — mesmo motivo do ajuste anterior no
+       brilho do mouse: um degradê de 2 pontos vai linear até zero e o
+       trecho final, fraco mas > 0, contra o fundo escuro também formava
+       um anel visível. */
     background:
-      radial-gradient(circle at 36% 38%, rgba(0, 208, 240, .22), transparent 52%),
-      radial-gradient(circle at 64% 58%, rgba(127, 232, 255, .16), transparent 52%);
+      radial-gradient(circle 420px at 36% 38%,
+        rgba(0, 208, 240, .22) 0%, rgba(0, 208, 240, .10) 40%,
+        rgba(0, 208, 240, .03) 70%, transparent 100%),
+      radial-gradient(circle 420px at 64% 58%,
+        rgba(127, 232, 255, .16) 0%, rgba(127, 232, 255, .07) 40%,
+        rgba(127, 232, 255, .02) 70%, transparent 100%);
     transform: translate(-50%, -50%);
     animation: aurora-drift 24s ease-in-out infinite;
   }
@@ -290,6 +367,113 @@
   .brand-icon:hover {
     filter: drop-shadow(0 0 6px rgba(0, 208, 240, .55));
     transform: scale(1.05);
+  }
+
+  /* Tutorial guiado (assets/js/tour.js) — três camadas fixas montadas via JS:
+     overlay (bloqueia clique no resto da página, sem cor própria — quem dá
+     o efeito de "apagado" é o box-shadow gigante do spotlight, técnica
+     clássica de "buraco" que deixa só o alvo com brilho normal), spotlight
+     (contorno ciano + o tal box-shadow) e tooltip (texto + ações). */
+  .tour-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 997;
+    background: transparent;
+  }
+  .tour-spotlight {
+    position: fixed;
+    z-index: 998;
+    pointer-events: none;
+    border-radius: 10px;
+    border: 2px solid #00D0F0;
+    box-shadow: 0 0 0 9999px rgba(5, 11, 15, .78), 0 0 22px rgba(0, 208, 240, .4);
+    transition: top .3s ease, left .3s ease, width .3s ease, height .3s ease;
+  }
+  .tour-tooltip {
+    position: fixed;
+    z-index: 999;
+    width: min(320px, calc(100vw - 24px));
+    background: #063F59;
+    border: 1px solid #3D5266;
+    border-radius: .625rem;
+    padding: 1rem;
+    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, .6);
+  }
+  .tour-tooltip-centered {
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%);
+  }
+  .tour-tooltip-title {
+    font-family: Orbitron, ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    font-size: .95rem;
+    color: #F0F8FF;
+  }
+  .tour-tooltip-text {
+    margin-top: .375rem;
+    font-size: .8125rem;
+    line-height: 1.5;
+    color: #8FA6BC;
+  }
+  .tour-tooltip-progress {
+    margin-top: .625rem;
+    font-size: .6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #7B8FA1;
+  }
+  .tour-tooltip-actions {
+    margin-top: .75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+  }
+  .tour-tooltip-actions-right {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+  .tour-skip {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: .8125rem;
+    color: #7B8FA1;
+    cursor: pointer;
+  }
+  .tour-skip:hover {
+    color: #8FA6BC;
+  }
+  .tour-back {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: .8125rem;
+    font-weight: 600;
+    color: #8FA6BC;
+    cursor: pointer;
+  }
+  .tour-back:hover {
+    color: #F0F8FF;
+  }
+  .tour-next {
+    background: #00D0F0;
+    color: #050B0F;
+    font-weight: 600;
+    font-size: .8125rem;
+    padding: .4rem 1rem;
+    border-radius: .375rem;
+    border: none;
+    cursor: pointer;
+  }
+  .tour-next:hover {
+    background: #7FE8FF;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tour-spotlight { transition: none; }
   }
 
   /* Entrada suave do conteúdo principal ao carregar a página. */
@@ -412,7 +596,7 @@
     cursor: not-allowed;
     opacity: .5;
     border-color: rgba(61, 82, 102, .6);
-    background-color: #061830;
+    background-color: #063F59;
     box-shadow: none;
     background-image:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237B8FA1' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"),
@@ -548,7 +732,7 @@
   .confirm-dialog-panel {
     border-radius: .75rem;
     border: 1px solid rgba(255, 92, 122, .35);
-    background-color: #061830;
+    background-color: #063F59;
     background-image: linear-gradient(180deg, rgba(255, 92, 122, .09), transparent 45%);
     padding: 1.5rem;
     box-shadow: 0 24px 60px -12px rgba(0, 0, 0, .7);
@@ -615,4 +799,63 @@
     background-color: #ff7a93;
     box-shadow: 0 0 16px rgba(255, 92, 122, .4);
   }
+
+  /* Borda animada do card de login — um "raio" ciano gira em volta da
+     borda (conic-gradient, não box-shadow: dá pra fazer um trecho luminoso
+     percorrendo o contorno, em vez de um brilho parado igual dos dois
+     lados). `.auth-card` precisa de position:relative (definida na própria
+     View) — o pseudo-elemento fica ATRÁS (z-index -1) e um pouco maior
+     (inset -2px); só o anel que sobra pra fora do card (que tem fundo
+     opaco) fica visível, sem precisar de mask. `@property --angle`
+     (declarada fora de @layer, é at-rule própria) registra o custom
+     property como ângulo animável — sem ela, navegador sem suporte
+     simplesmente não anima (o degradê ainda aparece, só fica parado, R-UI
+     de degradação graciosa). */
+  .auth-card::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    z-index: -1;
+    border-radius: inherit;
+    background: conic-gradient(from var(--angle, 0deg),
+      transparent 0%,
+      rgba(0, 208, 240, .95) 10%, rgba(160, 240, 255, 1) 16%, rgba(0, 208, 240, .95) 22%,
+      transparent 38%, transparent 100%);
+    filter: blur(2.5px);
+    animation: auth-border-spin 4.5s linear infinite;
+  }
+  /* Segunda camada, sem blur, por cima — o núcleo nítido do "raio" (o
+     blur acima sozinho ficava uma mancha difusa demais, sem núcleo
+     brilhante de verdade). Mesmo ângulo (herda a mesma custom property),
+     então as duas sempre giram juntas. */
+  .auth-card::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    background: conic-gradient(from var(--angle, 0deg),
+      transparent 0%, transparent 12%, rgba(220, 250, 255, .95) 16%, transparent 20%, transparent 100%);
+    animation: auth-border-spin 4.5s linear infinite;
+  }
+  @keyframes auth-border-spin {
+    to { --angle: 360deg; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .auth-card::before, .auth-card::after {
+      animation: none;
+    }
+    .auth-card::before {
+      background: conic-gradient(rgba(0, 208, 240, .5), transparent 40%, transparent 60%, rgba(0, 208, 240, .5));
+    }
+    .auth-card::after {
+      content: none;
+    }
+  }
+}
+
+@property --angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
 }

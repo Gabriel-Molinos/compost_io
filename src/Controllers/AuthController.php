@@ -57,7 +57,6 @@ final class AuthController
     {
         if (Csrf::check($_POST['_token'] ?? null)) {
             AuthService::logout();
-            Session::flash('status', 'Sessão encerrada.');
         }
 
         Http::redirect('/login');

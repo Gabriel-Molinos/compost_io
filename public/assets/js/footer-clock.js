@@ -4,8 +4,12 @@
 // converte pra Brasília na exibição — sem precisar sincronizar com o
 // servidor nem confiar no relógio/fuso configurado no navegador do usuário.
 (function () {
-    var el = document.querySelector('[data-clock]');
-    if (!el) {
+    // querySelectorAll (não só o primeiro): sidebar (desktop) e o menu
+    // mobile carregam seu próprio [data-clock] — os dois existem no DOM ao
+    // mesmo tempo (só um visível por vez via CSS), então precisam dos dois
+    // atualizando juntos.
+    var els = document.querySelectorAll('[data-clock]');
+    if (els.length === 0) {
         return;
     }
 
@@ -18,7 +22,8 @@
     });
 
     function tick() {
-        el.textContent = fmt.format(new Date());
+        var text = fmt.format(new Date());
+        els.forEach(function (el) { el.textContent = text; });
     }
 
     tick();

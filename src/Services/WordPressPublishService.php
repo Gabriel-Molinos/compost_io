@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Database\Connection;
 use App\Support\ImageConverter;
 use App\Integrations\WordPress\BodyImageInjector;
+use App\Integrations\WordPress\ExternalLinkVerifier;
 use App\Integrations\WordPress\InternalLinkResolver;
 use App\Integrations\WordPress\WordPressClient;
 use App\Integrations\WordPress\WordPressException;
@@ -34,7 +35,7 @@ final class WordPressPublishService
     }
 
     /**
-     * @return array{post_id:int, link:string, status:string, links_rewritten:int, links_unwrapped:int, body_images:int}
+     * @return array{post_id:int, link:string, status:string, links_rewritten:int, links_unwrapped:int, links_broken:int, body_images:int}
      */
     public function publish(int $articleId, int $siteId): array
     {
@@ -89,6 +90,7 @@ final class WordPressPublishService
             'status'          => (string) ($post['status'] ?? $payload['status']),
             'links_rewritten' => $built['links_rewritten'],
             'links_unwrapped' => $built['links_unwrapped'],
+            'links_broken'    => $built['links_broken'],
             'body_images'     => count($built['media_ids']) - ($built['has_featured'] ? 1 : 0),
         ];
     }
@@ -97,7 +99,7 @@ final class WordPressPublishService
      * Reenvia conteúdo e imagens ao post já criado (sobrescreve edições feitas
      * direto no WordPress). Mantém status e data que o post tiver lá.
      *
-     * @return array{post_id:int, links_rewritten:int, links_unwrapped:int, body_images:int}
+     * @return array{post_id:int, links_rewritten:int, links_unwrapped:int, links_broken:int, body_images:int}
      */
     public function update(int $articleId, int $siteId): array
     {
@@ -126,6 +128,7 @@ final class WordPressPublishService
             'post_id'         => $postId,
             'links_rewritten' => $built['links_rewritten'],
             'links_unwrapped' => $built['links_unwrapped'],
+            'links_broken'    => $built['links_broken'],
             'body_images'     => count($built['media_ids']) - ($built['has_featured'] ? 1 : 0),
         ];
     }
@@ -177,7 +180,13 @@ final class WordPressPublishService
     {
         $links = (new InternalLinkResolver($client, (string) ($this->connections->forSite($siteId)['url'] ?? '')))
             ->resolve($rawContent);
-        $content = $links['html'];
+
+        // Fontes externas citadas no corpo — confirma que a URL existe de
+        // verdade antes de publicar (achado real, 2026-09-09: a IA às vezes
+        // "lembra" uma URL plausível em vez de usar uma real da pesquisa, e
+        // ninguém verificava; o leitor caía num 404 na fonte citada).
+        $externalCheck = (new ExternalLinkVerifier())->verify($links['html']);
+        $content = $externalCheck['html'];
 
         $mediaIds = [];
 
@@ -235,6 +244,7 @@ final class WordPressPublishService
             'has_featured'    => $featuredMediaId > 0,
             'links_rewritten' => $links['rewritten'],
             'links_unwrapped' => $links['unwrapped'],
+            'links_broken'    => $externalCheck['unwrapped'],
         ];
     }
 

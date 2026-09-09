@@ -138,7 +138,7 @@ final class ScheduleController extends Controller
         return $schedule !== null && $schedule['created_by'] !== null ? (int) $schedule['created_by'] : null;
     }
 
-    /** @param array{links_rewritten:int, links_unwrapped:int, body_images:int} $r */
+    /** @param array{links_rewritten:int, links_unwrapped:int, links_broken:int, body_images:int} $r */
     private static function extras(array $r): string
     {
         $bits = [];
@@ -147,6 +147,9 @@ final class ScheduleController extends Controller
         }
         if ($r['links_rewritten'] > 0 || $r['links_unwrapped'] > 0) {
             $bits[] = sprintf('links internos: %d resolvido(s), %d removido(s)', $r['links_rewritten'], $r['links_unwrapped']);
+        }
+        if ($r['links_broken'] > 0) {
+            $bits[] = sprintf('%d link(s) de fonte removido(s) por estarem fora do ar (404)', $r['links_broken']);
         }
 
         return $bits === [] ? '' : ' (' . implode(' · ', $bits) . ')';

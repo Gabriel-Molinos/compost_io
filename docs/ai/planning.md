@@ -14,8 +14,11 @@ período e ainda não tenha sido coberto pelo site.
 3. Proponha **um** tema: título de trabalho, palavra-chave principal, categoria,
    ângulo (o que este artigo faz de diferente) e por que ele serve à meta.
 4. **Verifique duplicação / canibalização:** compare a palavra-chave e o ângulo
-   com os artigos já publicados do site. Se houver sobreposição de palavra-chave,
-   sinalize e proponha um recorte diferente ou marque para revisão humana.
+   com a seção "POSTS JÁ PUBLICADOS NO WORDPRESS DESTE SITE" (quando ela vier
+   no prompt — é a lista real do site, não um palpite). Se houver sobreposição
+   de tema/palavra-chave com algum post dessa lista, sinalize e proponha um
+   recorte diferente ou marque para revisão humana. Sem essa seção (site ainda
+   sem WordPress conectado), siga só com o que souber pelas categorias/metas.
 
 ## Saída esperada (JSON)
 

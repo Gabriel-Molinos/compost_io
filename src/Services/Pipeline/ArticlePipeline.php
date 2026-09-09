@@ -13,6 +13,7 @@ use App\Integrations\Image\ImagePricing;
 use App\Integrations\Image\ImageProvider;
 use App\Integrations\Image\ImageRequest;
 use App\Integrations\Image\NanoBanana\NanoBananaProvider;
+use App\Integrations\WordPress\WordPressException;
 use App\Queue\RetryPolicy;
 use App\Queue\RetryRunner;
 use App\Services\AiExecutionService;
@@ -25,6 +26,7 @@ use App\Services\FeedbackService;
 use App\Services\ImageService;
 use App\Services\NotificationService;
 use App\Services\PromptBuilder;
+use App\Services\WordPressConnectionService;
 use App\Support\ImageConverter;
 use App\Support\ImageStorage;
 use Throwable;
@@ -68,6 +70,7 @@ final class ArticlePipeline
     private ?ImageProvider $imageProvider;
     private RetryRunner $retry;
     private NotificationService $notifications;
+    private WordPressConnectionService $wpConnections;
 
     public function __construct(
         ?AIProvider $ai = null,
@@ -80,6 +83,7 @@ final class ArticlePipeline
         ?ImageService $imageStore = null,
         ?ImageProvider $imageProvider = null,
         ?NotificationService $notifications = null,
+        ?WordPressConnectionService $wpConnections = null,
     ) {
         $this->ai = $ai ?? new GeminiProvider();
         $this->prompts = $prompts ?? new PromptBuilder();
@@ -91,6 +95,7 @@ final class ArticlePipeline
         $this->memory = new EditorialMemoryService();
         $this->imageStore = $imageStore ?? new ImageService();
         $this->notifications = $notifications ?? new NotificationService();
+        $this->wpConnections = $wpConnections ?? new WordPressConnectionService();
         // Instanciado sob demanda em generateImages() — não exige IMAGE_API_KEY
         // quando o pipeline roda sem a etapa de imagem (ex.: testes).
         $this->imageProvider = $imageProvider;
@@ -230,7 +235,9 @@ final class ArticlePipeline
         $warnings = [];
 
         // --- planning ---------------------------------------------------------
+        $this->prompts->setExistingContentContext($this->existingWordPressPostsDigest($siteId));
         $plan = $this->step('planning', $articleId, $siteId, $goalId, $categoryId);
+        $this->prompts->setExistingContentContext(null); // escopo só do planning — não faz sentido nos passos depois
 
         $resolvedCategoryId = $categoryId ?? $this->matchCategory($siteId, (string) ($plan['category'] ?? ''));
         if ($resolvedCategoryId === null) {
@@ -471,6 +478,34 @@ final class ArticlePipeline
         }
 
         $this->executions->markSuccessCost($execId, $cost);
+    }
+
+    /**
+     * Lista (texto) dos posts publicados no WordPress do site, pro passo
+     * `planning` checar duplicação contra o site de verdade — não só contra
+     * a tabela local `articles` (ver PromptBuilder::existingContentLayer()).
+     * Null quando o site ainda não tem WordPress conectado, ou a chamada
+     * falha (rede, credencial) — nunca deve travar a geração por isso, é
+     * só um insumo extra, o pipeline já funciona sem ele.
+     */
+    private function existingWordPressPostsDigest(int $siteId): ?string
+    {
+        try {
+            $posts = $this->wpConnections->client($siteId)->listRecentPosts();
+        } catch (WordPressException) {
+            return null;
+        }
+
+        if ($posts === []) {
+            return null;
+        }
+
+        $lines = array_map(
+            static fn (array $p): string => '- ' . $p['title'] . ' (' . $p['link'] . ')',
+            $posts,
+        );
+
+        return implode("\n", $lines);
     }
 
     /**

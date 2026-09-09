@@ -33,6 +33,9 @@ final class PromptBuilder
     /** Texto de "memória editorial" injetado pelo pipeline (regeneração — Fase 6, feedback da linhagem). */
     private ?string $editorialContext = null;
 
+    /** Texto dos posts existentes no WordPress, injetado pelo pipeline só pro passo `planning` (Fase 9.3). */
+    private ?string $existingContentContext = null;
+
     public function __construct(?string $promptsDir = null)
     {
         $this->promptsDir = $promptsDir ?? dirname(__DIR__, 2) . '/docs/ai';
@@ -82,6 +85,9 @@ final class PromptBuilder
         $layers[] = $this->memoryLayer();
         if ($step === 'writing') {
             $layers[] = $this->internalLinksLayer($siteId, (string) ($site['wordpress_url'] ?? ''));
+        }
+        if ($step === 'planning') {
+            $layers[] = $this->existingContentLayer();
         }
 
         $layers = array_values(array_filter($layers, static fn (string $l): bool => trim($l) !== ''));
@@ -243,6 +249,37 @@ final class PromptBuilder
         return $this->editorialContext === null
             ? ''
             : "# MEMÓRIA EDITORIAL\n\n" . $this->editorialContext;
+    }
+
+    /**
+     * Posts já existentes no WordPress do site (achado real, 2026-09-09):
+     * o passo `planning` já era instruído a "comparar com os artigos já
+     * publicados do site" pra evitar canibalização, mas nunca recebia
+     * nenhuma lista de verdade — só chutava. Diferente de
+     * `internalLinksLayer()` (que só sabe dos artigos que ESTE app já
+     * publicou, via tabela local `articles`), esta lista vem direto do
+     * WordPress (`ArticlePipeline::run()`, antes do passo `planning`) —
+     * pega também posts que já existiam no site antes dele entrar na
+     * plataforma, ou publicados por fora. `setExistingContentContext()`
+     * fica de fora do `memoryLayer()` de propósito: memória editorial é
+     * sobre feedback de tentativas passadas, isto aqui é sobre o que já
+     * existe no site — confundir os dois numa seção só ("MEMÓRIA
+     * EDITORIAL") deixaria a instrução ambígua pra IA.
+     */
+    public function setExistingContentContext(?string $text): void
+    {
+        $this->existingContentContext = ($text !== null && trim($text) !== '') ? trim($text) : null;
+    }
+
+    private function existingContentLayer(): string
+    {
+        return $this->existingContentContext === null
+            ? ''
+            : "# POSTS JÁ PUBLICADOS NO WORDPRESS DESTE SITE\n\n"
+                . "Antes de propor o tema, confira esta lista de verdade (não é só o que este sistema já gerou — "
+                . "inclui qualquer post que já exista no site). Se o tema/ângulo pedido for muito parecido com "
+                . "algum destes, ajuste o ângulo pra não duplicar ou marque `cannibalization_risk`.\n\n"
+                . $this->existingContentContext;
     }
 
     /**

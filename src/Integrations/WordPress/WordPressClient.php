@@ -126,6 +126,32 @@ final class WordPressClient
     }
 
     /**
+     * Títulos publicados no site (mais recentes primeiro) — insumo pro passo
+     * `planning` checar duplicação/canibalização contra o WordPress de
+     * verdade, não só contra os artigos que este app já publicou (post
+     * antigo, feito direto no WordPress antes de o site entrar na
+     * plataforma, nunca aparece na tabela `articles` local).
+     *
+     * @return list<array<string, mixed>> cada item com `title` (string já
+     *         "desembrulhada" de `title.rendered`) e `link`
+     */
+    public function listRecentPosts(int $perPage = 100): array
+    {
+        $rows = $this->requestList('GET', 'wp/v2/posts', [
+            'per_page' => max(1, min(100, $perPage)),
+            'status'   => 'publish',
+            'orderby'  => 'date',
+            'order'    => 'desc',
+            '_fields'  => 'title,link',
+        ]);
+
+        return array_map(
+            static fn (array $r): array => ['title' => (string) ($r['title']['rendered'] ?? ''), 'link' => (string) ($r['link'] ?? '')],
+            $rows,
+        );
+    }
+
+    /**
      * Primeiro post ou página com aquele slug (qualquer status), ou null.
      *
      * @return array<string, mixed>|null

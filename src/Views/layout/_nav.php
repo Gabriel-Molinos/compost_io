@@ -15,6 +15,7 @@ use App\View;
 /** @var int $quickSitesTotal */
 /** @var int $unreadNotifications */
 /** @var bool $showNotifications */
+/** @var int|null $tourSiteId — site que o tutorial guiado abre a partir daqui (assets/js/tour.js) */
 
 // Fundo do chip do ícone varia por item (pedido do responsável, 2026-09-08:
 // "mal distribuída"/monótona com todo ícone igual) — paleta fixa dentro da
@@ -35,7 +36,7 @@ $iconChip = static function (string $icon) use ($iconChipPalette): string {
     return $iconChipPalette[$hash % count($iconChipPalette)];
 };
 
-$navLink = static function (string $href, string $label, string $icon, bool $active, int $badge = 0) use ($iconChip): void {
+$navLink = static function (string $href, string $label, string $icon, bool $active, int $badge = 0, ?string $tourId = null) use ($iconChip): void {
     // Ativo reforça "onde estou" com tinta de fundo + barra de acento à
     // esquerda (não só cor — a barra é uma pista de forma, R-UI-07 — e o
     // fundo cyan/10 sozinho era sutil demais pra ler rápido na sidebar).
@@ -49,7 +50,8 @@ $navLink = static function (string $href, string $label, string $icon, bool $act
     // Chip some quando ativo — o item ativo já tem sua própria cor de estado
     // (cyan sólido); manter o chip por baixo brigava com esse acento.
     $chipClass = $active ? 'text-cyan' : 'rounded-md p-1 ' . $iconChip($icon);
-    echo '<a href="' . View::e($href) . '" class="flex items-center gap-2.5 rounded-r-md py-1.5 pr-3 text-sm font-medium transition-colors ' . $tone . '">'
+    $tourAttr = $tourId !== null ? ' data-tour="' . View::e($tourId) . '"' : '';
+    echo '<a href="' . View::e($href) . '"' . $tourAttr . ' class="flex items-center gap-2.5 rounded-r-md py-1.5 pr-3 text-sm font-medium transition-colors ' . $tone . '">'
         . '<span class="flex shrink-0 items-center justify-center ' . $chipClass . '">' . Icon::nav($icon) . '</span>'
         . '<span class="truncate">' . View::e($label) . '</span>' . $badgeHtml . '</a>';
 };
@@ -69,19 +71,20 @@ $navLink = static function (string $href, string $label, string $icon, bool $act
            class="block truncate px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-text-muted hover:text-cyan">
             <?= View::e($site['name']) ?>
         </a>
-        <nav aria-label="Seções do site" class="flex flex-col gap-1">
+        <nav aria-label="Seções do site" data-tour="site-tabs" class="flex flex-col gap-1">
             <?php foreach ($tabs as [$key, $label, $href, $visible]): ?>
                 <?php if (!$visible) { continue; } ?>
-                <?php $navLink($href, $label, $key, ($activeTab ?? '') === $key); ?>
+                <?php $navLink($href, $label, $key, ($activeTab ?? '') === $key, tourId: 'tab-' . $key); ?>
             <?php endforeach; ?>
         </nav>
     </div>
 <?php elseif ($quickSites !== []): ?>
-    <div class="mt-6 border-t border-border pt-4">
+    <div class="mt-6 border-t border-border pt-4" data-tour="quick-sites">
         <p class="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Meus sites</p>
         <nav aria-label="Meus sites" class="flex flex-col gap-1">
             <?php foreach ($quickSites as $s): ?>
                 <a href="/sites/<?= View::e($s['id']) ?>"
+                   <?= isset($tourSiteId) && (int) $s['id'] === $tourSiteId ? 'data-tour="quick-sites-target"' : '' ?>
                    class="truncate rounded-md px-3 py-1.5 text-sm text-text-secondary transition-colors hover:bg-surface-2 hover:text-text-primary">
                     <?= View::e($s['name']) ?>
                 </a>

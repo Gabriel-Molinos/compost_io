@@ -74,7 +74,7 @@ require __DIR__ . '/../_tabs.php';
 <?php endif; ?>
 
 <?php if ($article['status'] === 'IN_REVIEW'): ?>
-    <section class="mt-8 rounded-lg border border-border bg-surface p-4">
+    <section data-tour="review-actions" class="mt-8 rounded-lg border border-border bg-surface p-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Revisão</h3>
         <p class="mt-1 text-sm text-text-secondary">Aprovar libera o agendamento. Rejeitar registra o motivo e permite regenerar.</p>
         <div class="mt-3 flex flex-wrap items-start gap-6">

@@ -77,6 +77,19 @@ final class SiteService
         return (int) $stmt->fetchColumn();
     }
 
+    /** Site do tutorial guiado (layout/base.php) — o primeiro site vinculado ao usuário, ou null se nenhum. */
+    public function firstIdForUser(int $userId): ?int
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT s.id FROM sites s JOIN user_site us ON us.site_id = s.id
+             WHERE us.user_id = :id ORDER BY s.name LIMIT 1'
+        );
+        $stmt->execute(['id' => $userId]);
+        $id = $stmt->fetchColumn();
+
+        return $id !== false ? (int) $id : null;
+    }
+
     /** @return array<string, mixed>|null */
     public function find(int $id): ?array
     {

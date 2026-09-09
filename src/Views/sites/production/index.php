@@ -44,7 +44,7 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
     um extra quando quiser.
 </p>
 
-<section class="mt-5 overflow-hidden rounded-lg border border-border bg-surface">
+<section data-tour="generate-form" class="mt-5 overflow-hidden rounded-lg border border-border bg-surface">
     <div class="border-b border-border bg-surface-2/40 px-5 py-3">
         <h3 class="font-display text-base font-semibold text-text-primary">Gerar novo rascunho</h3>
     </div>
@@ -101,7 +101,22 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
         </div>
     </div>
 
-    <ul class="mt-3 space-y-2">
+    <?php
+    // Tutorial guiado (assets/js/tour.js): quando existe um rascunho em
+    // revisão, o passo "Revisar um rascunho" pode navegar direto pra ele e
+    // mostrar Aprovar/Rejeitar de verdade em vez de só descrever em texto.
+    $tourReviewArticle = null;
+    foreach ($articles as $a) {
+        if ($a['status'] === 'IN_REVIEW') {
+            $tourReviewArticle = $a;
+            break;
+        }
+    }
+    $tourReviewHref = $tourReviewArticle !== null
+        ? '/sites/' . $site['id'] . '/production/' . $tourReviewArticle['id']
+        : '';
+    ?>
+    <ul data-tour="article-list" data-tour-review-href="<?= View::e($tourReviewHref) ?>" class="mt-3 space-y-2">
         <?php foreach ($articles as $a): ?>
             <?php
             $tone = Labels::articleStatusTone((string) $a['status']);
@@ -138,9 +153,17 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
                     </form>
                 </div>
                 <?php if ($isGenerating): ?>
-                    <div class="loading-bar-track" role="progressbar" aria-label="A IA está gerando este rascunho">
-                        <div class="loading-bar-fill"></div>
-                    </div>
+                    <?php $isStale = strtotime((string) $a['created_at']) <= strtotime('-15 minutes'); ?>
+                    <?php if ($isStale): ?>
+                        <p class="text-xs text-warning">
+                            Isso está demorando mais que o esperado — provavelmente o processo em
+                            segundo plano (worker) não está rodando. Avise o time técnico.
+                        </p>
+                    <?php else: ?>
+                        <div class="loading-bar-track" role="progressbar" aria-label="A IA está gerando este rascunho">
+                            <div class="loading-bar-fill"></div>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             </li>
         <?php endforeach; ?>

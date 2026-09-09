@@ -57,7 +57,7 @@ $statBar = static function (array $cols, string $gridCols): void {
     echo '</dl>';
 };
 ?>
-<div class="mt-6 space-y-px">
+<div class="mt-6 space-y-px" data-tour="reports-summary">
     <?php
     $statBar([
         ['Produzidos', (string) $report['produced'], null],

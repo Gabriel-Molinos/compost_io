@@ -74,7 +74,7 @@ $totalNonInterest = count($grouped['NON_INTEREST']);
     </div>
 </dl>
 
-<div class="mt-5 grid gap-5 lg:grid-cols-2">
+<div class="mt-5 grid gap-5 lg:grid-cols-2" data-tour="rules-panels">
     <section class="rounded-lg border border-border bg-surface p-5" aria-labelledby="h-interesses">
         <div class="flex items-center justify-between gap-3">
             <h3 id="h-interesses" class="flex items-center gap-2 font-display text-base font-semibold text-text-primary">

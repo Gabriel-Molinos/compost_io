@@ -35,7 +35,7 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
         <h2 class="font-display text-lg font-semibold text-text-primary">Metas editoriais</h2>
         <p class="mt-1 text-sm text-text-secondary">Cada meta cobre um mês e define quantos artigos produzir, no total e por categoria.</p>
     </div>
-    <a href="<?= $base ?>/new"
+    <a href="<?= $base ?>/new" data-tour="new-goal"
        class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
         Nova meta
     </a>

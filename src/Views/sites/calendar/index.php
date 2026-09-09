@@ -82,7 +82,7 @@ $diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 <!-- Grade mensal — telas lg+. Em telas menores vira agenda (abaixo): uma
      grade de 7 colunas apertadas com pílulas de evento não cabe legível
      num celular, então a página troca de layout em vez de só encolher. -->
-<div class="mt-5 hidden overflow-hidden rounded-lg border border-border bg-surface lg:block">
+<div data-tour="calendar-grid" class="mt-5 hidden overflow-hidden rounded-lg border border-border bg-surface lg:block">
     <div class="grid grid-cols-7 border-b border-border bg-surface-2/40">
         <?php foreach ($diasSemana as $d): ?>
             <div class="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wide text-text-muted"><?= $d ?></div>

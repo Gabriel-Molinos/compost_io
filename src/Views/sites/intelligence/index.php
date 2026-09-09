@@ -44,7 +44,7 @@ $toneDot = static fn (string $t): string => match ($t) {
     'success' => 'bg-success', 'danger' => 'bg-danger', 'warning' => 'bg-warning', default => 'bg-cyan',
 };
 ?>
-<div class="flex flex-wrap items-start justify-between gap-4">
+<div class="flex flex-wrap items-start justify-between gap-4" data-tour="intelligence-header">
     <div class="flex items-start gap-3">
         <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan"><?= Icon::nav('intelligence') ?></span>
         <div>

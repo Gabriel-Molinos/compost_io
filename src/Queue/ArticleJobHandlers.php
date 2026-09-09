@@ -41,6 +41,13 @@ use Throwable;
  * `ProductionController`) e só ele é avisado; a automática diária nunca
  * manda esse campo (não tem humano por trás daquele clique), então cai no
  * fallback de avisar a equipe inteira do site.
+ *
+ * Sucesso avisa também (achado real, 2026-09-09: pediram uma regeneração,
+ * ela terminou de verdade — ficou "Em revisão" — e ninguém foi avisado,
+ * porque só o caminho de FALHA notificava; o usuário só descobriu
+ * perguntando sobre o rascunho no dia seguinte). Mesma regra de
+ * destinatário do `$onFailure`: `user_id` do payload quando existe, senão
+ * a equipe do site (geração automática diária).
  */
 final class ArticleJobHandlers
 {
@@ -71,32 +78,47 @@ final class ArticleJobHandlers
             $notifications->notifySiteTeam($siteId, NotificationService::TYPE_ATTENTION, $notifTitle, $message, $link);
         };
 
-        $queue->register('article.generate', function (Job $job) use ($pipeline, $onFailure): void {
+        $onSuccess = static function (array $result, int $siteId, ?int $userId) use ($notifications): void {
+            $title = !empty($result['title']) ? (string) $result['title'] : 'Rascunho #' . $result['article_id'];
+            $notifTitle = 'Rascunho pronto para revisão';
+            $message = "\"{$title}\" terminou de ser gerado e já está em revisão.";
+            $link = '/sites/' . $siteId . '/production/' . $result['article_id'];
+
+            if ($userId !== null) {
+                $notifications->notify($userId, NotificationService::TYPE_ARTICLE_READY, $notifTitle, $message, $siteId, $link);
+                return;
+            }
+            $notifications->notifySiteTeam($siteId, NotificationService::TYPE_ARTICLE_READY, $notifTitle, $message, $link);
+        };
+
+        $queue->register('article.generate', function (Job $job) use ($pipeline, $onFailure, $onSuccess): void {
+            $userId = isset($job->payload['user_id']) && $job->payload['user_id'] !== null ? (int) $job->payload['user_id'] : null;
             try {
-                $pipeline->runGenerate(
+                $result = $pipeline->runGenerate(
                     (int) $job->payload['article_id'],
                     (int) $job->payload['site_id'],
                     $job->payload['goal_id'] !== null ? (int) $job->payload['goal_id'] : null,
                     $job->payload['category_id'] !== null ? (int) $job->payload['category_id'] : null,
                 );
+                $onSuccess($result, (int) $job->payload['site_id'], $userId);
             } catch (Throwable $e) {
-                $userId = isset($job->payload['user_id']) && $job->payload['user_id'] !== null ? (int) $job->payload['user_id'] : null;
                 $onFailure($e, (int) $job->payload['site_id'], $userId);
                 throw $e;
             }
         });
 
-        $queue->register('article.regenerate', function (Job $job) use ($pipeline, $onFailure): void {
+        $queue->register('article.regenerate', function (Job $job) use ($pipeline, $onFailure, $onSuccess): void {
+            $userId = isset($job->payload['user_id']) && $job->payload['user_id'] !== null ? (int) $job->payload['user_id'] : null;
             try {
-                $pipeline->runRegenerate(
+                $result = $pipeline->runRegenerate(
                     (int) $job->payload['article_id'],
                     (int) $job->payload['site_id'],
                     $job->payload['goal_id'] !== null ? (int) $job->payload['goal_id'] : null,
                     $job->payload['category_id'] !== null ? (int) $job->payload['category_id'] : null,
                     (int) $job->payload['lineage_id'],
                 );
+                $onSuccess($result, (int) $job->payload['site_id'], $userId);
             } catch (Throwable $e) {
-                $userId = isset($job->payload['user_id']) && $job->payload['user_id'] !== null ? (int) $job->payload['user_id'] : null;
                 $onFailure($e, (int) $job->payload['site_id'], $userId);
                 throw $e;
             }

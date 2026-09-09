@@ -124,6 +124,7 @@ final class Labels
             'PUBLISH_FAILED'  => 'danger',
             'SITE_ASSIGNED'   => 'cyan',
             'ATTENTION'       => 'warning',
+            'ARTICLE_READY'   => 'success',
             default           => 'muted',
         };
     }
@@ -136,6 +137,7 @@ final class Labels
             'PUBLISH_FAILED'  => 'Falha',
             'SITE_ASSIGNED'   => 'Site',
             'ATTENTION'       => 'Atenção',
+            'ARTICLE_READY'   => 'Rascunho',
             default           => 'Aviso',
         };
     }

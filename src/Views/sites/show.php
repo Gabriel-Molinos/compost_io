@@ -15,6 +15,7 @@ use App\View;
 /** @var bool $canEditSite */
 /** @var array{spent: float, limit: float, percent: int, over: bool}|null $costBudget */
 /** @var array{blocked: int, error: int} $attention */
+/** @var int $staleCount */
 /** @var array{periods:list<string>,produced:list<int>,published:list<int>,ai_cost:list<float>} $trend */
 
 $activeTab = 'overview';
@@ -49,6 +50,13 @@ require __DIR__ . '/_tabs.php';
     ?>
     <p role="alert" class="mt-5 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
         Precisam de atenção: <?= implode(' · ', $parts) ?>.
+        <a href="/sites/<?= View::e($site['id']) ?>/production" class="underline">Ver em Produção</a>.
+    </p>
+<?php endif; ?>
+<?php if ($staleCount > 0): ?>
+    <p role="alert" class="mt-3 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning">
+        <?= $staleCount ?> rascunho<?= $staleCount > 1 ? 's' : '' ?> parado<?= $staleCount > 1 ? 's' : '' ?> "planejado/em produção" há mais de 15 min —
+        provavelmente o processo em segundo plano (worker) não está rodando. Avise o time técnico.
         <a href="/sites/<?= View::e($site['id']) ?>/production" class="underline">Ver em Produção</a>.
     </p>
 <?php endif; ?>

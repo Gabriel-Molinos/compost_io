@@ -188,6 +188,26 @@ final class ArticleService
         return $counts;
     }
 
+    /**
+     * Rascunhos "Planejado"/"Em produção" há mais de $minutes sem sair
+     * desse estado — sintoma de job parado na fila (achado real, 2026-09-09:
+     * job dispatchado no Redis, mas sem bin/worker.php rodando pra consumir,
+     * ficava preso em PLANNED indefinidamente, sem nenhum aviso na tela).
+     * Diferente de BLOCKED/ERROR (falha que a IA já reportou): aqui a IA
+     * nem chegou a rodar — o problema é operacional (worker), não editorial.
+     */
+    public function staleGeneratingCount(int $siteId, int $minutes = 15): int
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT COUNT(*) FROM articles
+             WHERE site_id = :s AND deleted_at IS NULL AND status IN ('PLANNED', 'IN_PROGRESS')
+               AND created_at <= DATE_SUB(NOW(), INTERVAL :m MINUTE)"
+        );
+        $stmt->execute(['s' => $siteId, 'm' => $minutes]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
     /** @param 'MANUAL'|'AUTO' $source MANUAL = clique no botão "Gerar rascunho"; AUTO = geração diária automática (bin/worker.php). */
     public function create(int $siteId, ?int $goalId, string $source = 'MANUAL'): int
     {

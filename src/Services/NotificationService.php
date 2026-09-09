@@ -20,6 +20,7 @@ final class NotificationService
     public const TYPE_PUBLISH_FAILED = 'PUBLISH_FAILED';
     public const TYPE_SITE_ASSIGNED = 'SITE_ASSIGNED';
     public const TYPE_ATTENTION = 'ATTENTION';
+    public const TYPE_ARTICLE_READY = 'ARTICLE_READY';
 
     public function notify(int $userId, string $type, string $title, string $message, ?int $siteId = null, ?string $link = null): void
     {

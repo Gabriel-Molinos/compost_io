@@ -36,6 +36,7 @@ validada (que vêm no brief).
    abaixo), 1 a 2 externos (nova aba, `rel="noopener"`). Não ancore link na
    própria palavra-chave.
    - **Toda fonte citada no texto vira link externo** `<a href="URL" target="_blank" rel="noopener">` para a URL exata que veio na pesquisa — nunca cite "segundo a APA" sem o link.
+   - **A URL do link externo é sempre copiada literalmente de `source_url` da pesquisa** (docs/ai/research.md) — nunca digitada de novo, completada, corrigida ou "arrumada" de memória. Se a URL de uma afirmação não veio da pesquisa (ou você não tem mais certeza de onde veio), **não cite**: escreva a frase sem link em vez de reconstruir a URL — é sempre melhor um artigo com menos fontes do que um com uma URL fabricada, que quebra a confiança do leitor no artigo inteiro quando dá 404.
    - **Link interno só pra uma URL da lista "ARTIGOS JÁ PUBLICADOS NESTE SITE"** (se essa camada vier no prompt) — nunca invente ou "chute" um caminho. Sem artigo relevante na lista (ou sem a lista), **não invente**: escreva a frase sem link e liste em `open_questions` que faltou um link interno ali.
 9. **Imagens não são sua tarefa aqui:** não insira `<img>` — a foto de cada
    seção é gerada e distribuída à parte, depois da escrita (Fase 7.5). Se o

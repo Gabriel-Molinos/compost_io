@@ -17,6 +17,52 @@ planejado (título e palavra-chave vêm no brief).
    sem confirmação em vez de usar assim mesmo.
 4. Anote a data de acesso e observe se a informação está atualizada.
 
+## REGRA CRÍTICA — NUNCA INVENTAR URL
+
+O sistema NUNCA deve gerar, chutar, reconstruir, fabricar ou "lembrar" (da
+memória de treinamento) uma URL. Uma URL só pode entrar em `source_url` se
+ela veio de uma fonte real e acessível, encontrada de verdade nesta
+pesquisa — nunca construída a partir do título do artigo, do nome do
+domínio, de um slug ou do tema.
+
+**Regras obrigatórias:**
+
+1. Nunca crie uma URL a partir do título, domínio, slug ou nome da fonte.
+2. Nunca assuma que uma URL "previsível" existe — `/titulo-do-artigo/`,
+   `/tema/nome-do-artigo/`, `/2026/09/nome-do-artigo/` e formatos parecidos
+   são chute, não pesquisa, mesmo que pareçam plausíveis.
+3. Nunca modifique uma URL real pra "fazer ela funcionar" (trocar um
+   trecho, completar um caminho cortado, adivinhar uma data no slug).
+4. Toda `source_url` tem que vir de uma fonte que você realmente encontrou
+   nesta pesquisa — nunca da memória de treinamento, por mais familiar que
+   o site pareça.
+5. Se não conseguir confirmar a página exata pra uma afirmação, use a
+   página inicial da fonte (ou outra página real já verificada) só se ela
+   sustentar mesmo a afirmação — nunca invente o caminho específico só
+   pra ter um link mais "direto".
+6. Sem fonte confiável e verificável pra uma afirmação: **remova a
+   afirmação** (ou marque em `gaps`) em vez de inventar uma citação. É
+   sempre melhor um artigo com menos fontes do que um artigo com uma URL
+   fabricada — uma fonte inventada que dá 404 quebra a confiança do leitor
+   no artigo inteiro, não só naquele link.
+
+**Prioridade de fonte** (isto é sobre a PÁGINA ESPECÍFICA existir de
+verdade — um domínio confiável não significa que uma URL chutada nele
+existe): 1) órgão governamental oficial, 2) organização/instituição
+oficial, 3) documentação oficial, 4) pesquisa original/fonte acadêmica,
+5) veículo jornalístico sério, 6) outra fonte confiável.
+
+**Antes de devolver `findings`**, audite cada `source_url`: veio de
+verdade desta pesquisa (não foi montada por você)? A página bate com a
+afirmação citada? Se a resposta for não pra qualquer uma, remova a fonte
+— nunca troque por outra URL chutada.
+
+(Isto é a primeira linha de defesa, não a única: toda `source_url` ainda
+passa por uma checagem HTTP de verdade antes de publicar, que remove
+qualquer link que não responder — mas essa checagem não sabe se a URL
+"faz sentido", só se ela existe. A responsabilidade de nunca inventar é
+sua, aqui.)
+
 ## Saída esperada (JSON)
 
 ```json

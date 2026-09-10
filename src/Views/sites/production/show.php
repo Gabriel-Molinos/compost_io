@@ -52,6 +52,18 @@ require __DIR__ . '/../_tabs.php';
     <p class="mt-2 text-sm text-text-secondary"><strong>Meta descrição:</strong> <?= View::e($article['meta_description']) ?></p>
 <?php endif; ?>
 
+<?php $pipelineWarnings = (array) ($notes['pipeline']['warnings'] ?? []); ?>
+<?php if ($pipelineWarnings !== []): ?>
+    <div role="alert" class="mt-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-warning">
+        <p class="font-semibold">Avisos automáticos da geração</p>
+        <ul class="mt-1 list-disc space-y-1 pl-5">
+            <?php foreach ($pipelineWarnings as $w): ?>
+                <li><?= View::e((string) $w) ?></li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+<?php endif; ?>
+
 <?php if (in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true)): ?>
     <p role="status" class="mt-4 flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
         <span aria-hidden="true" class="status-dot text-cyan">●</span>

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Integrations\WordPress\ExternalLinkVerifier;
+use App\Integrations\WordPress\InternalLinkResolver;
+use App\Integrations\WordPress\WordPressException;
 use App\Services\AiExecutionService;
 use App\Services\ArticleNoteService;
 use App\Services\ArticleReviewService;
@@ -15,6 +18,7 @@ use App\Services\FeedbackService;
 use App\Services\GoalService;
 use App\Services\ImageService;
 use App\Services\ScheduleService;
+use App\Services\WordPressConnectionService;
 use App\Queue\ArticleJobHandlers;
 use App\Queue\Job;
 use App\Queue\Queue;
@@ -235,9 +239,38 @@ final class ProductionController extends Controller
             return;
         }
 
+        // Mesma checagem que a geração automática já faz (ArticlePipeline::run())
+        // — edição manual também pode introduzir um link interno inventado ou
+        // uma fonte morta, e essa era a única porta de entrada de conteúdo que
+        // não passava por nenhum verificador (achado real, 2026-09-09).
+        $noteBits = [];
+        try {
+            $client = (new WordPressConnectionService())->client((int) $site['id']);
+            $internal = (new InternalLinkResolver($client, (string) ($site['wordpress_url'] ?? '')))->resolve($content);
+            $content = $internal['html'];
+            if ($internal['unwrapped'] > 0) {
+                $noteBits[] = $internal['unwrapped'] . ' link(s) interno(s) removido(s) por não bater com nenhum post real';
+            }
+        } catch (WordPressException) {
+            // Site ainda sem WordPress conectado — segue sem essa checagem específica.
+        }
+
+        $external = (new ExternalLinkVerifier())->verify($content);
+        $content = $external['html'];
+        if ($external['unwrapped'] > 0) {
+            $noteBits[] = $external['unwrapped'] . ' link(s) de fonte removido(s) por estarem fora do ar (404)';
+        }
+        if ($external['ambiguous'] !== []) {
+            $noteBits[] = count($external['ambiguous']) . ' link(s) não confirmado(s) automaticamente (confira à mão): '
+                . implode(', ', $external['ambiguous']);
+        }
+
         $wordCount = str_word_count(strip_tags($content));
         $this->articles->addVersion((int) $article['id'], $content, $wordCount);
-        Session::flash('success', 'Corpo atualizado.');
+        if ($noteBits !== []) {
+            (new ArticleNoteService())->save((int) $article['id'], 'pipeline', ['warnings' => $noteBits]);
+        }
+        Session::flash('success', 'Corpo atualizado.' . ($noteBits !== [] ? ' (' . implode(' · ', $noteBits) . ')' : ''));
         Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id']);
     }
 

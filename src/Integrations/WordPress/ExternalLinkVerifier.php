@@ -19,11 +19,22 @@ use DOMElement;
  * perde o `<a>`, mas o TEXTO fica — nunca publica um link morto, nunca
  * também some com a citação inteira), só que a verificação aqui é uma
  * requisição HTTP de verdade, não uma comparação de slug contra o
- * WordPress. Só desembrulha em sinal de alta confiança de que o link
- * está morto (404/410, DNS não resolve, conexão recusada/timeout) — um
- * 403/429/500 é ambíguo (comum em servidor que bloqueia acesso automatizado
- * mesmo a página existindo pra humano de verdade) e fica como está, pra não
- * arriscar remover uma fonte legítima por falso positivo.
+ * WordPress. Só desembrulha em sinal de alta confiança de que o link está
+ * morto (404/410, DNS não resolve, conexão recusada/timeout).
+ *
+ * Achado real #2 (2026-09-09, mesmo dia): um 403/429/500 é ambíguo — muito
+ * comum em domínio grande com proteção de bot (Akamai/Cloudflare bloqueiam
+ * QUALQUER requisição automatizada, `curl` ou até um Chrome de verdade
+ * headless, com o MESMO 403 de "Access Denied", pág real ou não — testado
+ * contra tesla.com: três URLs, uma real e confirmada (`/powerwall`) e duas
+ * nunca confirmadas de outra forma, todas voltaram o mesmíssimo bloqueio).
+ * Ou seja: pra esses domínios, HTTP sozinho **não decide nada** — nem "existe"
+ * nem "não existe". A versão anterior tratava esse caso como "mantém e
+ * segue" silenciosamente, o que na prática escondia do humano revisor
+ * exatamente os casos que mais precisavam de um olhar manual. Agora esses
+ * casos voltam num terceiro grupo (`ambiguous`) pro chamador avisar
+ * explicitamente "não consegui confirmar isto, confira você mesmo" — nunca
+ * decide por adivinhação.
  */
 final class ExternalLinkVerifier
 {
@@ -31,14 +42,19 @@ final class ExternalLinkVerifier
     private const TOTAL_TIMEOUT = 7;
     private const USER_AGENT = 'Mozilla/5.0 (compatible; COMPOST-LinkCheck/1.0)';
 
-    /** @var array<string, bool> URL => existe (true) ou morto (false) */
+    private const ALIVE = 'alive';
+    private const DEAD = 'dead';
+    private const AMBIGUOUS = 'ambiguous';
+    private const RETRY_WITH_GET = 'retry';
+
+    /** @var array<string, string> URL => self::ALIVE|self::DEAD|self::AMBIGUOUS */
     private array $cache = [];
 
-    /** @return array{html:string, checked:int, unwrapped:int} */
+    /** @return array{html:string, checked:int, unwrapped:int, ambiguous:list<string>} */
     public function verify(string $html): array
     {
         if (trim($html) === '' || stripos($html, '<a') === false) {
-            return ['html' => $html, 'checked' => 0, 'unwrapped' => 0];
+            return ['html' => $html, 'checked' => 0, 'unwrapped' => 0, 'ambiguous' => []];
         }
 
         $prev = libxml_use_internal_errors(true);
@@ -52,11 +68,12 @@ final class ExternalLinkVerifier
 
         $root = $doc->getElementById('__root__');
         if ($root === null) {
-            return ['html' => $html, 'checked' => 0, 'unwrapped' => 0];
+            return ['html' => $html, 'checked' => 0, 'unwrapped' => 0, 'ambiguous' => []];
         }
 
         $checked = 0;
         $unwrapped = 0;
+        $ambiguous = [];
 
         foreach (iterator_to_array($doc->getElementsByTagName('a')) as $a) {
             if (!$a instanceof DOMElement) {
@@ -70,12 +87,16 @@ final class ExternalLinkVerifier
             }
 
             $checked++;
-            if ($this->isDead($href)) {
+            $status = $this->classify($href);
+
+            if ($status === self::DEAD) {
                 while ($a->firstChild !== null) {
                     $a->parentNode?->insertBefore($a->firstChild, $a);
                 }
                 $a->parentNode?->removeChild($a);
                 $unwrapped++;
+            } elseif ($status === self::AMBIGUOUS) {
+                $ambiguous[] = $href;
             }
         }
 
@@ -84,30 +105,31 @@ final class ExternalLinkVerifier
             $out .= $doc->saveHTML($child);
         }
 
-        return ['html' => trim($out), 'checked' => $checked, 'unwrapped' => $unwrapped];
+        return ['html' => trim($out), 'checked' => $checked, 'unwrapped' => $unwrapped, 'ambiguous' => $ambiguous];
     }
 
-    private function isDead(string $url): bool
+    /** @return self::ALIVE|self::DEAD|self::AMBIGUOUS */
+    private function classify(string $url): string
     {
         if (array_key_exists($url, $this->cache)) {
-            return !$this->cache[$url];
+            return $this->cache[$url];
         }
 
-        $alive = $this->request($url, head: true);
-        if ($alive === null) {
+        $result = $this->request($url, head: true);
+        if ($result === self::RETRY_WITH_GET) {
             // Alguns servidores rejeitam HEAD especificamente (405/501) mesmo
             // com a página existindo — confirma com GET antes de concluir.
-            $alive = $this->request($url, head: false);
+            $result = $this->request($url, head: false);
+            if ($result === self::RETRY_WITH_GET) {
+                $result = self::AMBIGUOUS; // nem GET deu um status conclusivo
+            }
         }
 
-        // null (erro de rede/DNS/timeout) tratado como morto, igual 404/410.
-        $this->cache[$url] = $alive ?? false;
-
-        return !$this->cache[$url];
+        return $this->cache[$url] = $result;
     }
 
-    /** true = existe, false = 404/410 confirmado, null = ambíguo/erro de rede (chamador decide). */
-    private function request(string $url, bool $head): ?bool
+    /** @return self::ALIVE|self::DEAD|self::AMBIGUOUS|self::RETRY_WITH_GET */
+    private function request(string $url, bool $head): string
     {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -133,15 +155,18 @@ final class ExternalLinkVerifier
         curl_close($ch);
 
         if ($errno !== 0) {
-            return null; // DNS, conexão recusada, timeout, TLS — sem resposta HTTP nenhuma
+            return self::DEAD; // DNS, conexão recusada, timeout, TLS — sem resposta HTTP nenhuma
         }
         if ($status === 404 || $status === 410) {
-            return false;
+            return self::DEAD;
         }
         if ($status === 405 || $status === 501 || $status === 0) {
-            return null; // método não suportado (tenta de novo com GET) ou sem status nenhum
+            return self::RETRY_WITH_GET;
+        }
+        if ($status >= 200 && $status < 400) {
+            return self::ALIVE;
         }
 
-        return true; // 2xx/3xx e qualquer outro 4xx/5xx ambíguo (403/429/500...) — não desembrulha
+        return self::AMBIGUOUS; // 403/429/500/502/503... — bloqueio comum, não decide nada por si só
     }
 }

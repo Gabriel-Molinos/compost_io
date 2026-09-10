@@ -13,6 +13,8 @@ use App\Integrations\Image\ImagePricing;
 use App\Integrations\Image\ImageProvider;
 use App\Integrations\Image\ImageRequest;
 use App\Integrations\Image\NanoBanana\NanoBananaProvider;
+use App\Integrations\WordPress\ExternalLinkVerifier;
+use App\Integrations\WordPress\InternalLinkResolver;
 use App\Integrations\WordPress\WordPressException;
 use App\Queue\RetryPolicy;
 use App\Queue\RetryRunner;
@@ -286,6 +288,34 @@ final class ArticlePipeline
         if (trim($html) === '') {
             throw new PipelineException('O passo writing não retornou content_html.', $articleId, 'writing');
         }
+
+        // Links internos e fontes externas — confere os dois aqui, na
+        // geração, não só na publicação (achado real, 2026-09-09: rascunho em
+        // revisão nunca passava por nenhuma dessas checagens — só rodavam
+        // depois de publicado —, então quem revisava via link morto/inventado
+        // que só ia ser corrigido bem mais tarde, ou nunca, se o rascunho
+        // fosse rejeitado antes de publicar). `WordPressPublishService`
+        // continua rodando os dois de novo na publicação — rede de segurança
+        // pra quando o site cair entre a geração e a publicação de verdade.
+        $internalCheck = $this->resolveInternalLinks($siteId, $html);
+        $html = $internalCheck['html'];
+        if ($internalCheck['unwrapped'] > 0) {
+            $warnings[] = $internalCheck['unwrapped'] . ' link(s) interno(s) removido(s) por não bater com nenhum post real do WordPress.';
+        }
+
+        $externalCheck = (new ExternalLinkVerifier())->verify($html);
+        $html = $externalCheck['html'];
+        if ($externalCheck['unwrapped'] > 0) {
+            $warnings[] = $externalCheck['unwrapped'] . ' link(s) de fonte removido(s) por estarem fora do ar (404) — texto da citação mantido.';
+        }
+        if ($externalCheck['ambiguous'] !== []) {
+            // Não decide por adivinhação (ver ExternalLinkVerifier) — devolve
+            // a decisão pro humano, com a URL exata de cada um.
+            $warnings[] = count($externalCheck['ambiguous']) . ' link(s) de fonte não puderam ser confirmados automaticamente '
+                . '(bloqueio comum de bot em domínio grande — não significa que estão mortos) — confira à mão: '
+                . implode(', ', $externalCheck['ambiguous']);
+        }
+
         $wordCount = (int) ($writing['word_count'] ?? 0);
         if ($wordCount <= 0) {
             $wordCount = str_word_count(strip_tags($html));
@@ -355,6 +385,16 @@ final class ArticlePipeline
             $this->generateImages($articleId, $siteId, $goalId, $resolvedCategoryId, $brief, $draft, $warnings);
         } catch (Throwable $e) {
             $warnings[] = 'Geração de imagens falhou: ' . $e->getMessage();
+        }
+
+        // Achado real (2026-09-09): $warnings era calculado o pipeline todo
+        // (link removido, canibalização, pesquisa sem fonte, palavra abaixo
+        // do mínimo...) mas NINGUÉM lia esse retorno — nem ArticleJobHandlers
+        // nem ProductionController pegam a chave 'warnings' de runGenerate()/
+        // runRegenerate(). Gravar como nota persiste de verdade e deixa
+        // visível em production/show.php (mesmo padrão dos outros passos).
+        if ($warnings !== []) {
+            $this->notes->save($articleId, 'pipeline', ['warnings' => $warnings]);
         }
 
         return [
@@ -478,6 +518,29 @@ final class ArticlePipeline
         }
 
         $this->executions->markSuccessCost($execId, $cost);
+    }
+
+    /**
+     * Resolve os links internos que a IA escreveu contra o WordPress de
+     * verdade (mesma lógica do `InternalLinkResolver`, já usado na
+     * publicação) — aqui rodando na geração, pra quem revisa o rascunho já
+     * ver o link certo ou nenhum, nunca um `/blog/slug-inventado`. Sem
+     * WordPress conectado (ou falha de rede), devolve o HTML sem mexer —
+     * o `InternalLinkResolver` na publicação continua sendo a rede de
+     * segurança final de qualquer forma.
+     *
+     * @return array{html:string, rewritten:int, unwrapped:int}
+     */
+    private function resolveInternalLinks(int $siteId, string $html): array
+    {
+        try {
+            $client = $this->wpConnections->client($siteId);
+            $baseUrl = (string) ($this->wpConnections->forSite($siteId)['url'] ?? '');
+        } catch (WordPressException) {
+            return ['html' => $html, 'rewritten' => 0, 'unwrapped' => 0];
+        }
+
+        return (new InternalLinkResolver($client, $baseUrl))->resolve($html);
     }
 
     /**

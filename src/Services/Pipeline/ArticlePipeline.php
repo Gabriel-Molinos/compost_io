@@ -282,8 +282,9 @@ final class ArticlePipeline
         if ($sourceCount === 0) {
             $warnings[] = 'A pesquisa não retornou nenhuma fonte com URL.';
         }
-        if ((array) ($research['gaps'] ?? []) !== []) {
-            $warnings[] = 'Pesquisa com lacunas: ' . implode('; ', array_map('strval', (array) $research['gaps']));
+        $researchGaps = array_values(array_map('strval', (array) ($research['gaps'] ?? [])));
+        if ($researchGaps !== []) {
+            $warnings[] = 'Pesquisa com lacunas: ' . implode('; ', $researchGaps);
         }
 
         // --- writing --------------------------------------------------------
@@ -409,6 +410,12 @@ final class ArticlePipeline
             $this->notes->save($articleId, 'pipeline', [
                 'warnings' => $warnings,
                 'ambiguous_links' => $ambiguousLinks,
+                // Cópia separada de $researchGaps (achado real 2026-09-15, recomendação
+                // do relatório de Inteligência): dentro de `warnings` a lacuna vira só
+                // texto solto, misturada com avisos de link/canibalização/SEO — sem
+                // isolar, não dá pra agregar "lacunas de pesquisa do site" sem parsear
+                // a frase de novo (ver ArticleNoteService::researchGapsForSite()).
+                'research_gaps' => $researchGaps,
             ]);
         }
 

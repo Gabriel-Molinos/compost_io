@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Services\ArticleNoteService;
 use App\Services\SiteSourceService;
 use App\Support\Csrf;
 use App\Support\Http;
@@ -29,6 +30,7 @@ final class SiteSourceController extends Controller
             'title'   => 'Fontes · ' . $site['name'],
             'site'    => $site,
             'sources' => $this->sources->allForSite((int) $site['id']),
+            'researchGaps' => (new ArticleNoteService())->researchGapsForSite((int) $site['id']),
         ]);
     }
 

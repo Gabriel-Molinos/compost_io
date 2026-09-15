@@ -8,6 +8,7 @@ use App\View;
 
 /** @var array<string, mixed> $site */
 /** @var list<array<string, mixed>> $sources */
+/** @var list<array{article_id:int, title:string, updated_at:string, gaps:list<string>}> $researchGaps */
 
 $activeTab = 'sources';
 require __DIR__ . '/../_tabs.php';
@@ -86,6 +87,36 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
                             <?= $deleteIcon ?>
                         </button>
                     </form>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
+</section>
+
+<section class="mt-6" aria-labelledby="h-lacunas">
+    <h2 id="h-lacunas" class="flex items-center gap-2 font-display text-lg font-semibold text-text-primary">
+        <span class="text-warning"><?= Icon::nav('sources') ?></span> Lacunas de pesquisa (<?= count($researchGaps) ?>)
+    </h2>
+    <p class="mt-1 text-sm text-text-secondary">
+        O que a IA não conseguiu confirmar em fonte confiável ao pesquisar — ideia de pauta pra
+        aprofundar a apuração nos próximos conteúdos, ou pra cadastrar uma fonte acima que cubra o assunto.
+    </p>
+    <?php if ($researchGaps === []): ?>
+        <p class="mt-3 text-sm text-text-secondary">Nenhuma lacuna registrada ainda.</p>
+    <?php else: ?>
+        <ul class="mt-3 space-y-2">
+            <?php foreach ($researchGaps as $g): ?>
+                <li class="rounded-lg border-l-2 border-l-warning border-y border-r border-border bg-surface px-4 py-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($g['article_id']) ?>"
+                           class="font-medium text-text-primary hover:text-cyan"><?= View::e($g['title'] ?: 'Rascunho #' . $g['article_id']) ?></a>
+                        <span class="text-xs text-text-muted"><?= View::e(date('d/m/Y', strtotime($g['updated_at']))) ?></span>
+                    </div>
+                    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-text-secondary">
+                        <?php foreach ($g['gaps'] as $gap): ?>
+                            <li><?= View::e($gap) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
                 </li>
             <?php endforeach; ?>
         </ul>

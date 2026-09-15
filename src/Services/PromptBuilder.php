@@ -29,6 +29,7 @@ final class PromptBuilder
     private CategoryService $categories;
     private GoalService $goals;
     private ArticleService $articles;
+    private SiteSourceService $siteSources;
 
     /** Texto de "memória editorial" injetado pelo pipeline (regeneração — Fase 6, feedback da linhagem). */
     private ?string $editorialContext = null;
@@ -47,6 +48,7 @@ final class PromptBuilder
         $this->categories = new CategoryService();
         $this->goals = new GoalService();
         $this->articles = new ArticleService();
+        $this->siteSources = new SiteSourceService();
     }
 
     /**
@@ -92,6 +94,9 @@ final class PromptBuilder
         if ($step === 'planning') {
             $layers[] = $this->categoriesLayer($siteId);
             $layers[] = $this->existingContentLayer();
+        }
+        if ($step === 'research') {
+            $layers[] = $this->siteSourcesLayer($siteId);
         }
 
         $layers = array_values(array_filter($layers, static fn (string $l): bool => trim($l) !== ''));
@@ -329,6 +334,30 @@ final class PromptBuilder
     public function setInternalLinkCandidates(?string $text): void
     {
         $this->internalLinkCandidatesContext = ($text !== null && trim($text) !== '') ? trim($text) : null;
+    }
+
+    /**
+     * Fontes confiáveis cadastradas pelo redator pra este site (achado real
+     * 2026-09-15): o passo `research` não tem busca na web de verdade — só a
+     * memória de treinamento da IA, daí toda a regra "nunca inventar URL" em
+     * docs/ai/research.md. Isto dá um pool prioritário de fontes já validadas
+     * por um humano; a IA ainda pode citar outras fontes conhecidas (mesma
+     * regra de nunca inventar se aplica a elas também). Consulta o banco
+     * direto (`SiteSourceService`), sem precisar de injeção pelo pipeline —
+     * diferente de `internalLinkCandidatesContext`/`existingContentContext`,
+     * que dependem de uma chamada HTTP real ao WordPress.
+     */
+    private function siteSourcesLayer(int $siteId): string
+    {
+        $digest = $this->siteSources->digestForPrompt($siteId);
+
+        return $digest === null
+            ? ''
+            : "# FONTES CONFIÁVEIS CADASTRADAS PELO REDATOR DESTE SITE\n\n"
+                . "Priorize estas fontes quando forem relevantes ao tema deste artigo — foram validadas por um "
+                . "humano de antemão. Não são a única opção: se nenhuma cobrir a afirmação, ainda pode citar outra "
+                . "fonte confiável conhecida, seguindo a mesma regra de nunca inventar URL.\n\n"
+                . $digest;
     }
 
     private function internalLinksLayer(): string

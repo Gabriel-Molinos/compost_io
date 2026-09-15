@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 /**
- * Validação mínima. Regras suportadas: required, email, min:N, max:N, in:a,b,c.
+ * Validação mínima. Regras suportadas: required, email, url, min:N, max:N, in:a,b,c.
  * Uniqueness / regras que dependem do banco ficam no Service/Controller.
  */
 final class Validator
@@ -53,6 +53,7 @@ final class Validator
         $ok = match ($name) {
             'required' => $value !== '',
             'email'    => $value === '' || filter_var($value, FILTER_VALIDATE_EMAIL) !== false,
+            'url'      => $value === '' || filter_var($value, FILTER_VALIDATE_URL) !== false,
             'min'      => $value === '' || mb_strlen($value) >= (int) $arg,
             'max'      => mb_strlen($value) <= (int) $arg,
             'in'       => $value === '' || in_array($value, explode(',', (string) $arg), true),
@@ -66,6 +67,7 @@ final class Validator
         $this->errors[$field] = match ($name) {
             'required' => "{$label} é obrigatório.",
             'email'    => "{$label} não é um e-mail válido.",
+            'url'      => "{$label} não é uma URL válida.",
             'min'      => "{$label} precisa ter ao menos {$arg} caracteres.",
             'max'      => "{$label} pode ter no máximo {$arg} caracteres.",
             'in'       => "{$label} tem um valor inválido.",

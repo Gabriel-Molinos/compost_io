@@ -12,6 +12,7 @@ use App\Controllers\GoalController;
 use App\Controllers\HomeController;
 use App\Controllers\IntelligenceController;
 use App\Controllers\LinksController;
+use App\Controllers\SiteSourceController;
 use App\Controllers\NotificationController;
 use App\Controllers\ProductionController;
 use App\Controllers\ProfileController;
@@ -148,4 +149,9 @@ return static function (Router $router): void {
     $router->add('POST', '/sites/{id}/links/{aid}/confirm',   [LinksController::class, 'confirm'], auth: true);
     $router->add('POST', '/sites/{id}/links/{aid}/backlink/apply',   [LinksController::class, 'applyBacklink'],   auth: true);
     $router->add('POST', '/sites/{id}/links/{aid}/backlink/dismiss', [LinksController::class, 'dismissBacklink'], auth: true);
+
+    // Fontes confiáveis do site — cadastro humano, consultado pelo passo research (docs/ai/research.md)
+    $router->add('GET',  '/sites/{id}/sources',              [SiteSourceController::class, 'index'],   auth: true);
+    $router->add('POST', '/sites/{id}/sources',              [SiteSourceController::class, 'store'],   auth: true);
+    $router->add('POST', '/sites/{id}/sources/{sid}/delete', [SiteSourceController::class, 'destroy'], auth: true);
 };

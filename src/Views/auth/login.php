@@ -84,9 +84,17 @@ $describedBy = $error !== null ? 'login-error' : null;
 </div>
 
 <div class="mt-4 flex justify-center">
+    <?php
+    // data-login_uri PRECISA ser absoluta (com esquema/host) — achado real
+    // 2026-09-15: com só "/callback.php" (relativo), o Google devolvia
+    // "Erro 400: redirect_uri_mismatch" mesmo com a URL certa cadastrada em
+    // "URIs de redirecionamento autorizados" no Cloud Console, porque o GIS
+    // não consegue casar um caminho relativo contra o que está lá.
+    $loginUri = rtrim((string) Env::get('APP_URL', ''), '/') . '/callback.php';
+    ?>
     <div id="g_id_onload"
          data-client_id="<?= View::e(Env::get('GOOGLE_CLIENT_ID', '')) ?>"
-         data-login_uri="/callback.php"
+         data-login_uri="<?= View::e($loginUri) ?>"
          data-ux_mode="redirect">
     </div>
     <div class="g_id_signin"

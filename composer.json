@@ -9,6 +9,7 @@
         "ext-openssl": "*",
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
+        "google/apiclient": "^2.18",
         "predis/predis": "^3.6"
     },
     "autoload": {

@@ -65,6 +65,7 @@
 - Rotas protegidas via flag `auth` no `Router`: `GET` sem sessão redireciona para `/login`, demais métodos → `401`.
 - Primeiro `ADMIN` criado por `database/seeds/create_admin.php` (senha só por variável de ambiente).
 - Sem "lembrar-me" / token de longa duração na primeira versão — pode entrar depois ([Mudança de escopo, seção 57](../ai/regras-claude-code.md#57-mudança-de-escopo)).
+- **Login com Google (opcional, complementar)** — segunda opção na mesma tela `/login`, via Google Identity Services (modo redirect-POST, `data-login_uri="/callback.php"`) + `google/apiclient` (`Google\Client::verifyIdToken`). **Sem auto-cadastro**: só autentica e-mails já existentes em `users` com `is_active = 1` (`AuthService::attemptGoogle()`); vincula `users.google_id` no primeiro login bem-sucedido (migration `0022_users_google_id.sql`). Endpoint dedicado `public/callback.php`, fora do `Router` — exceção deliberada ao front-controller único, porque o POST do Google chega sem passar pelo fluxo normal de rotas. CSRF verificado via double-submit `g_csrf_token` (cookie + corpo), já que este POST não carrega o `_token` de `App\Support\Csrf`. *(Decisão registrada nesta sessão — pendente de confirmação do responsável, como as demais decisões desta seção.)*
 
 Alternativas registradas e não escolhidas: JWT stateless, ou sessão no Redis (útil com múltiplas instâncias na Fase 9). Ambas adicionam complexidade não justificada agora.
 

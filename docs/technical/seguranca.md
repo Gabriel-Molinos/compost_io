@@ -40,6 +40,8 @@ GEMINI_API_KEY=
 
 REDIS_URL=
 
+GOOGLE_CLIENT_ID=
+
 IMAGE_API_KEY=
 ```
 
@@ -103,6 +105,8 @@ Toda integração deverá seguir estas regras:
 Somente o backend pode acessar: Gemini API, banco de dados, Redis, credenciais WordPress, serviços externos.
 
 O navegador (HTML/JavaScript entregue ao usuário) **nunca** deve receber `GEMINI_API_KEY`, `DATABASE_PASSWORD`, `WORDPRESS_PASSWORD` ou qualquer outro secret — mesmo sendo uma aplicação PHP única, essas credenciais ficam restritas à camada de Services/Integrations, nunca chegam a uma View ou resposta enviada ao navegador.
+
+**Exceção deliberada: `GOOGLE_CLIENT_ID`** (Login com Google, `docs/technical/requisitos.md §64.2`) — este SIM aparece no HTML (`data-client_id` em `src/Views/auth/login.php`), porque um Client ID OAuth 2.0 não é secreto por natureza (é público em qualquer app que usa Google Identity Services). O que nunca existe neste projeto é um **client secret** do Google — o fluxo implementado só verifica o ID token (`Google\Client::verifyIdToken`), nunca faz troca de authorization code no servidor, então não há secret nenhum pra proteger.
 
 Fluxo correto:
 ```

@@ -257,6 +257,17 @@ docs/
 
 Cada documento deve conter: objetivo, como funciona, configuração, variáveis necessárias, endpoints utilizados, tratamento de erros, limitações, documentação oficial, exemplos sem credenciais reais.
 
+### 43. Google Identity Services (Login com Google)
+
+Responsável por: autenticação alternativa de usuários já cadastrados (sem auto-cadastro) via conta Google, na tela `/login`.
+
+> **Implementado nesta sessão.** Front-end: Google Identity Services (`accounts.google.com/gsi/client`, carregado em `src/Views/layout/auth.php`), botão em modo redirect-POST (`data-login_uri="/callback.php"`, `src/Views/auth/login.php`). Back-end: `public/callback.php` (standalone, fora do `Router` — exceção deliberada) + `google/apiclient` (`Google\Client::verifyIdToken`) + `AuthService::attemptGoogle()`. CSRF via double-submit `g_csrf_token` (`App\Support\GoogleCsrf`). Vínculo em `users.google_id` (migration `0022_users_google_id.sql`). Ver [docs/technical/requisitos.md §64.2](requisitos.md#642-autenticação).
+
+Documentação:
+- Sign In With Google (HTML API): https://developers.google.com/identity/gsi/web/guides/overview
+- Verificação do ID token no servidor: https://developers.google.com/identity/sign-in/web/backend-auth
+- `google/apiclient` (Packagist): https://packagist.org/packages/google/apiclient
+
 ## Ver também
 
 - [Segurança — credenciais por site](seguranca.md#46-credenciais-específicas-por-site)

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Config\Env;
 use App\Support\Csrf;
 use App\Support\Icon;
 use App\View;
@@ -75,6 +76,28 @@ $describedBy = $error !== null ? 'login-error' : null;
         Entrar
     </button>
 </form>
+
+<div class="mt-6 flex items-center gap-3 text-xs text-text-muted">
+    <span class="h-px flex-1 bg-border"></span>
+    <span>ou continue com</span>
+    <span class="h-px flex-1 bg-border"></span>
+</div>
+
+<div class="mt-4 flex justify-center">
+    <div id="g_id_onload"
+         data-client_id="<?= View::e(Env::get('GOOGLE_CLIENT_ID', '')) ?>"
+         data-login_uri="/callback.php"
+         data-ux_mode="redirect">
+    </div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-shape="pill"
+         data-theme="filled_black"
+         data-text="continue_with"
+         data-size="large"
+         data-logo_alignment="left">
+    </div>
+</div>
 
 <script>
     (function () {

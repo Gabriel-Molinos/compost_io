@@ -263,8 +263,20 @@ Responsável por: autenticação alternativa de usuários já cadastrados (sem a
 
 > **Implementado nesta sessão.** Front-end: Google Identity Services (`accounts.google.com/gsi/client`, carregado em `src/Views/layout/auth.php`), botão em modo redirect-POST (`data-login_uri="/callback.php"`, `src/Views/auth/login.php`). Back-end: `public/callback.php` (standalone, fora do `Router` — exceção deliberada) + `google/apiclient` (`Google\Client::verifyIdToken`) + `AuthService::attemptGoogle()`. CSRF via double-submit `g_csrf_token` (`App\Support\GoogleCsrf`). Vínculo em `users.google_id` (migration `0022_users_google_id.sql`). Ver [docs/technical/requisitos.md §64.2](requisitos.md#642-autenticação).
 
+**Configuração no Google Cloud Console** (achado real 2026-09-15: faltou isso
+na primeira configuração e deu `Erro 400: redirect_uri_mismatch`) — como
+`data-ux_mode="redirect"` faz o GIS usar o mecanismo de redirect do OAuth de
+verdade por baixo dos panos, o `data-login_uri` precisa estar cadastrado em
+**"URIs de redirecionamento autorizados"** do Client ID (Credenciais → OAuth
+2.0 Client ID), não só em "Origens JavaScript autorizadas":
+```
+http://localhost:8000/callback.php   (dev)
+https://SEU-DOMINIO/callback.php     (produção, quando existir)
+```
+
 Documentação:
 - Sign In With Google (HTML API): https://developers.google.com/identity/gsi/web/guides/overview
+- Modos de UX (popup vs. redirect — é aqui que o requisito de redirect URI está documentado): https://developers.google.com/identity/gsi/web/guides/UX-modes
 - Verificação do ID token no servidor: https://developers.google.com/identity/sign-in/web/backend-auth
 - `google/apiclient` (Packagist): https://packagist.org/packages/google/apiclient
 

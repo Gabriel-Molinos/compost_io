@@ -34,6 +34,10 @@ artificialmente; posicionar links colados a blocos de anúncio.
 
 ## Saída esperada (JSON)
 
+Todo texto livre abaixo (`rule`, `evidence`, `fix`, `note`) é pro Redator-Chefe
+ler — **sempre em português do Brasil**, mesmo que o artigo seja publicado em
+outro idioma.
+
 ```json
 {
   "approved": true,

@@ -75,6 +75,10 @@ sua, aqui.)
 
 ## Saída esperada (JSON)
 
+`gaps` é só pro Redator-Chefe ler (vira aviso da geração e pauta na aba
+Fontes) — **sempre em português do Brasil**, mesmo que o site publique em
+outro idioma.
+
 ```json
 {
   "findings": [

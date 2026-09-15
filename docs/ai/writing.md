@@ -54,6 +54,10 @@ validada (que vêm no brief).
 
 ## Saída esperada (JSON)
 
+`title`/`slug`/`meta_description`/`content_html` seguem o idioma de publicação
+do site (são o próprio artigo). `open_questions` é só pro Redator-Chefe ler —
+**sempre em português do Brasil**, mesmo que o site publique em outro idioma.
+
 ```json
 {
   "title": "string",

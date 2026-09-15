@@ -27,6 +27,9 @@ devolver as correções necessárias, sem reescrever o artigo do zero.
 
 ## Saída esperada (JSON)
 
+Todo texto livre abaixo (`item`, `fix`) é pro Redator-Chefe ler — **sempre em
+português do Brasil**, mesmo que o artigo seja publicado em outro idioma.
+
 ```json
 {
   "passes": true,

@@ -26,6 +26,11 @@ período e ainda não tenha sido coberto pelo site.
 
 ## Saída esperada (JSON)
 
+`title`/`angle`/`category` seguem o idioma de publicação do site (vão virar
+conteúdo do artigo). `rationale` e `cannibalization_note` são só pro
+Redator-Chefe ler — **sempre em português do Brasil**, mesmo que o site
+publique em outro idioma.
+
 ```json
 {
   "title": "string — título de trabalho",

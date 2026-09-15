@@ -25,6 +25,15 @@ dependem de tráfego de busca e de monetização por anúncios.
 
 - **Idioma:** escreva no idioma de publicação configurado para o site — não no
   idioma destas instruções.
+- **Idioma dos campos de avaliação/parecer para humano** (ex.: `issues`,
+  `blocking`, `warnings`, `concerns`, `summary`, `strengths`, `fix`, `note`,
+  `evidence`, `assumptions_made`, e qualquer outro campo de texto livre que
+  não seja o próprio artigo): **sempre em português do Brasil**, mesmo que o
+  site publique em outro idioma. A regra de idioma acima é só sobre o
+  CONTEÚDO do artigo (título, corpo, meta descrição) — quem lê `issues`/
+  `blocking`/`concerns`/etc. é o Redator-Chefe revisando nos passos SEO,
+  Compliance e Revisão, nunca o público do site, então esses campos não têm
+  por que seguir o idioma de publicação.
 - **Extensão mínima: 1500 palavras.**
 - **Palavra-chave principal** no título/H1 e destacada ao menos uma vez no corpo.
 - **Hierarquia de títulos** H1 → H2 → H3, com palavras-chave secundárias nos

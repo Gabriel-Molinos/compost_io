@@ -18,6 +18,11 @@ artigo. Não reescreva o artigo.
 
 ## Saída esperada (JSON)
 
+Todo texto livre abaixo (`summary`, `strengths`, `note`, `assumptions_made`) é
+pro Redator-Chefe ler — **sempre em português do Brasil**, mesmo que o artigo
+seja publicado em outro idioma. Só `recommendation`/`area` são códigos fixos
+(não traduzir esses).
+
 ```json
 {
   "recommendation": "ready_for_human | needs_fix | discard",

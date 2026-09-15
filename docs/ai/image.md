@@ -48,7 +48,7 @@ imagens de corpo necessárias.
       "placement": "string — vazio se FEATURED; se BODY, o H2/trecho perto do qual entra"
     }
   ],
-  "notes": ["string — avisos ou suposições, vazio se não houver"]
+  "notes": ["string — avisos ou suposições pro Redator-Chefe, sempre em português do Brasil, vazio se não houver"]
 }
 ```
 

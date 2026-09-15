@@ -46,6 +46,38 @@ final class Uploads
             throw new RuntimeException('Não foi possível ler o arquivo enviado.');
         }
 
+        return self::fromBytes($bytes, $subdir, $id, $maxWidth);
+    }
+
+    /**
+     * Mesmo pipeline de `image()` (valida, redimensiona, salva), mas a
+     * partir de um arquivo já em disco no servidor — usado pela biblioteca
+     * de logos por domínio (`SiteLogoLibraryService`), que não passa por
+     * `$_FILES`/upload HTTP nenhum, então não faz sentido (nem passaria)
+     * pelo `is_uploaded_file()` de `image()`.
+     *
+     * @throws RuntimeException mensagem já em pt-BR, pronta para virar erro de formulário
+     */
+    public static function fromLocalFile(string $localPath, string $subdir, int $id, int $maxWidth = 480): string
+    {
+        if (!is_file($localPath)) {
+            throw new RuntimeException('Arquivo de origem não encontrado.');
+        }
+        if (filesize($localPath) > self::MAX_BYTES) {
+            throw new RuntimeException('Imagem maior que 5 MB.');
+        }
+
+        $bytes = file_get_contents($localPath);
+        if ($bytes === false || $bytes === '') {
+            throw new RuntimeException('Não foi possível ler o arquivo de origem.');
+        }
+
+        return self::fromBytes($bytes, $subdir, $id, $maxWidth);
+    }
+
+    /** @throws RuntimeException mensagem já em pt-BR, pronta para virar erro de formulário */
+    private static function fromBytes(string $bytes, string $subdir, int $id, int $maxWidth): string
+    {
         // getimagesizefromstring() em vez de finfo/ext-fileinfo — essa extensão
         // não está garantida no ambiente (confirmado ausente aqui), enquanto
         // `gd` já é uma dependência obrigatória do upload (ImageConverter

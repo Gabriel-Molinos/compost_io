@@ -11,6 +11,7 @@ use App\Services\CostBudgetService;
 use App\Services\EditorialRuleService;
 use App\Services\GoalService;
 use App\Services\ReportService;
+use App\Services\SiteLogoLibraryService;
 use App\Services\SiteService;
 use App\Support\Csrf;
 use App\Support\Http;
@@ -110,6 +111,9 @@ final class SiteController extends Controller
 
         try {
             $logo = Uploads::image($_FILES['logo'] ?? null, 'logos', $newId);
+            if ($logo === null) {
+                $logo = $this->autoLogoFromLibrary($newId, (string) ($_POST['wordpress_url'] ?? ''));
+            }
             if ($logo !== null) {
                 $this->sites->setLogo($newId, $logo);
             }
@@ -160,6 +164,12 @@ final class SiteController extends Controller
         } else {
             try {
                 $logo = Uploads::image($_FILES['logo'] ?? null, 'logos', (int) $site['id']);
+                if ($logo === null && empty($site['logo_path'])) {
+                    // Só tenta casar pela biblioteca se o site ainda não tem
+                    // logo nenhuma — nunca troca uma logo já definida
+                    // manualmente por trás do admin.
+                    $logo = $this->autoLogoFromLibrary((int) $site['id'], (string) ($_POST['wordpress_url'] ?? ''));
+                }
                 if ($logo !== null) {
                     $this->sites->setLogo((int) $site['id'], $logo);
                 }
@@ -172,6 +182,20 @@ final class SiteController extends Controller
 
         Session::flash('success', 'Site atualizado.');
         Http::redirect('/sites/' . $site['id'] . '/edit');
+    }
+
+    /**
+     * Casa o domínio (`wordpress_url`) com a biblioteca de logos prontas
+     * (`storage/site-logos-library/`, achado real 2026-09-15) e processa
+     * pelo mesmo pipeline de um upload manual — mesma pasta de destino,
+     * mesmo redimensionamento/conversão pra WebP. Sem match, devolve null
+     * silenciosamente (não é erro, é só "essa logo não existe pronta").
+     */
+    private function autoLogoFromLibrary(int $siteId, string $wordpressUrl): ?string
+    {
+        $match = (new SiteLogoLibraryService())->findForDomain($wordpressUrl);
+
+        return $match !== null ? Uploads::fromLocalFile($match, 'logos', $siteId) : null;
     }
 
     /** @param array<string, mixed> $data @return array<string, string> */

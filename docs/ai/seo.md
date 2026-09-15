@@ -17,7 +17,7 @@ devolver as correções necessárias, sem reescrever o artigo do zero.
 | Meta descrição | com palavra-chave + CTA |
 | Slug | amigável, com a palavra-chave |
 | Hierarquia H1 → H2 → H3 | correta, palavras-chave secundárias nos H2/H3 |
-| Links internos | 3 a 5 |
+| Links internos | 3 a 5 **quando a seção "ARTIGOS JÁ PUBLICADOS NESTE SITE" (vem no prompt) listar pelo menos 3 artigos relevantes ao tema e o rascunho não usou nenhum/poucos deles**. Se a lista vier vazia ou sem pelo menos 3 alvos relevantes ao tema, **não é `block`** — no máximo `warn`, o site ainda não tem estoque suficiente pra exigir isso. |
 | Links externos | 1 a 2, nova aba |
 | Link na própria palavra-chave | proibido |
 | Densidade da palavra-chave | sem keyword stuffing |

@@ -55,9 +55,11 @@ Levantamento (sem fatia numerada nos requisitos originais — feito sob demanda 
 - **Índices faltando** nos filtros de período mais usados (`ReportService`, `CostBudgetService`) — `articles.created_at`/`reviewed_at`, `ai_executions.cost`/`created_at`, `feedback.created_at` não tinham índice, forçando scan de todas as linhas do site (ou, na consulta de custo máximo global, de `ai_executions` inteira, todos os sites) a cada carregamento. Corrigido pela migration `0011` (só índices, nenhuma coluna nova).
 - **`SiteController::show()`** (Visão Geral do site) rodava `ReportService::monthly()` inteiro — 10 queries — só para extrair `goal_total`/`ai_cost` usados pelo `CostBudgetService`. Como a Visão Geral é carregada a cada visita (não só a aba Relatórios), isso rodava a cada page load, de qualquer site. `ReportService::currentSpend()` (2 queries) substitui essa chamada; `monthly()` continua intacto para a aba Relatórios, que precisa do relatório completo.
 
-**Adiado, registrado como pendência:**
-- **Cache** do custo máximo global (`CostBudgetService::maxObservedCostPerArticle()`) — hoje recalculado a cada carregamento; um cache curto (minutos) evitaria isso, mas não há camada de cache no projeto ainda (nem Redis usado pra isso, só pra fila) e o volume atual não justifica introduzir uma. Decisão: só quando o volume real pedir.
-- **Paginação** de `ArticleService::allForSite()` (listagem de artigos do site, aba Produção) — sem `LIMIT`, cresce com o histórico de cada site. Mudança de UX (controles de página), mais invasiva que os itens acima — fica para quando um site tiver histórico grande o suficiente pra doer de verdade.
+**Implementado (2026-09-14):**
+- **Cache** — ver [`docs/technical/cache.md`](cache.md): `App\Cache\CacheService` (cache-aside sobre o mesmo Redis/Memurai da fila) agora envolve `CostBudgetService::maxObservedCostPerArticle()` (10 min, global), `ReportService::currentSpend()`/`trend()`/`monthly()` (2-5 min, ou 24h para meses já fechados) e `WordPressClient::listRecentPosts()` (5 min, a chamada HTTP mais repetida do app — disparada em toda visita à página de um artigo). Nunca uma dependência: sem `REDIS_URL`, ou com o Redis fora do ar, tudo continua funcionando igual, só sem o ganho de velocidade.
+
+**Implementado (2026-09-15):**
+- **Paginação** de `ArticleService::allForSite()` (listagem de artigos do site, aba Produção) — antes buscava tudo sem `LIMIT`. `allForSite()` ganhou `$statusGroup`/`$page`/`$perPage` (20 por página, `LIMIT`/`OFFSET`), com `countsByStatusGroup()` (badges das abas de filtro, contagem real do site, independente da página) e `firstInReview()` (hint do tutorial guiado) como consultas próprias e leves. O filtro por status, que antes era só JS escondendo linhas já carregadas, virou navegação de verdade (`?status=...&page=...`) — necessário porque com a lista paginada um filtro client-side só teria as linhas da página atual pra mostrar, dando contagem incoerente com o badge.
 
 ## Ver também
 

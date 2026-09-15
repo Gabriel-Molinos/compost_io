@@ -20,7 +20,7 @@ use App\Integrations\Gemini\GeminiPricing;
  */
 final class AiExecutionService
 {
-    public const STEPS = ['planning', 'research', 'writing', 'seo', 'compliance', 'image', 'review'];
+    public const STEPS = ['planning', 'research', 'writing', 'seo', 'compliance', 'image', 'review', 'backlink_suggestions', 'external_link_suggestions', 'internal_link_suggestions'];
 
     public function create(int $articleId, string $step, string $provider, ?string $queueJobId = null): int
     {

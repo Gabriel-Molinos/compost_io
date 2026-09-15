@@ -13,6 +13,12 @@ compliance de conteúdo. Não reescreva o artigo — aponte o que impede a aprov
 - Corpo em HTML com headings, parágrafos curtos, listas onde couber
 - Categoria: exatamente uma das categorias já cadastradas do site (não criar nova)
 - Slug amigável e coerente com o título
+- Links internos (3 a 5) e externos (1 a 2): mesma regra do passo SEO —
+  só bloqueie por "poucos links internos" se a seção "ARTIGOS JÁ
+  PUBLICADOS NESTE SITE" (vem no prompt) listar pelo menos 3 artigos
+  relevantes ao tema e o artigo não tiver usado nenhum/poucos. Lista
+  vazia ou sem alvo relevante suficiente: não é `blocking`, no máximo
+  `warnings`.
 - (Autor e imagem destacada são definidos no agendamento — fora deste passo)
 
 ## Regras de qualidade / AdSense

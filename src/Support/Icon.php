@@ -43,6 +43,7 @@ final class Icon
         'memory'       => '<path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M3 13l9 5 9-5"/>',
         'goals'        => '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/>',
         'production'   => '<path d="M4 20l1-4.5L15.5 5l3.5 3.5L8.5 19 4 20Z"/><path d="M13 7l3.5 3.5"/>',
+        'links'        => '<path d="M9 15l6-6"/><path d="M11 6.5l1-1a3.5 3.5 0 0 1 5 5l-1 1"/><path d="M13 17.5l-1 1a3.5 3.5 0 0 1-5-5l1-1"/>',
         'calendar'     => '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9.5h18"/><path d="M8 3v4M16 3v4"/>',
         'reports'      => '<path d="M3 17l5-6 4 3 7-9"/><path d="M14 5h5v5"/>',
         'intelligence' => '<path d="M12 3l1.4 4.6L18 9l-4.6 1.4L12 15l-1.4-4.6L6 9l4.6-1.4L12 3Z"/>'

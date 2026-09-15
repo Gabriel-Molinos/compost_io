@@ -33,13 +33,16 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 use App\Config\Env;
+use App\Integrations\WordPress\ExternalLinkVerifier;
 use App\Queue\ArticleJobHandlers;
 use App\Queue\Job;
 use App\Queue\Queue;
 use App\Queue\RetryPolicy;
 use App\Queue\RetryRunner;
 use App\Queue\ScheduleJobHandlers;
+use App\Services\ArticleNoteService;
 use App\Services\ArticleService;
+use App\Services\BacklinkSuggestionService;
 use App\Services\CostBudgetService;
 use App\Services\GoalService;
 use App\Services\Pipeline\ArticlePipeline;
@@ -99,6 +102,16 @@ const SCHEDULE_SCAN_INTERVAL = 60; // segundos
 $lastAutoGenScan = 0;
 const AUTO_GEN_SCAN_INTERVAL = 300; // 5 min — granularidade de sobra pra "já gerou hoje?"
 
+// Revarredura de link rot (achado real 2026-09-10): a checagem de link só
+// rodava na geração, na edição manual e na publicação — depois de publicado,
+// nada revisitava. Um link real na publicação pode morrer meses depois.
+// Não edita o post ao vivo sozinho (reescrever conteúdo já publicado sem
+// humano decidir é destrutivo demais) — só grava um aviso pra alguém agir.
+$lastLinkRotScan = 0;
+const LINK_ROT_SCAN_INTERVAL = 86400; // 24h
+const LINK_ROT_BATCH_PER_SITE = 20; // por site a cada ciclo — evita travar o worker num site com muito conteúdo
+$linkRotOffsets = []; // siteId => próximo offset — round-robin em memória entre ciclos deste processo
+
 // Um agendamento continua `PENDING` (logo, aparece em dueForPublish()) até o
 // job dele terminar de verdade — sucesso (PUBLISHED) ou dead-letter (FAILED,
 // via ScheduleJobHandlers). Sem essa guarda em memória, um job ainda em
@@ -108,6 +121,25 @@ const AUTO_GEN_SCAN_INTERVAL = 300; // 5 min — granularidade de sobra pra "já
 // durante a vida deste processo — reinício reavalia do zero (o job em si não
 // some: fica em processingKey, recuperável com bin/queue_requeue_stuck.php).
 $dispatchedScheduleIds = [];
+
+// Sugestão de link interno retroativo (achado real 2026-09-10): o passo
+// `writing` já sabe linkar um artigo novo pros antigos, mas nunca o
+// contrário — artigo antigo nunca ganhava um link de volta pro artigo novo
+// que acabou de publicar. Varre 1 artigo publicado ainda não conferido por
+// site a cada ciclo (throttle — cada varredura é uma chamada de IA de
+// verdade, custo real). Nunca aplica sozinho: só grava sugestão pro
+// Redator-Chefe aprovar na Central de Links (`BacklinkSuggestionService`).
+$lastBacklinkScan = 0;
+const BACKLINK_SCAN_INTERVAL = 86400; // 24h
+
+// Sincronização de post apagado por fora (achado real 2026-09-14): um post
+// marcado PUBLISHED aqui pode ir pra lixeira direto no WordPress, sem passar
+// pelo botão "Retirar" — o dashboard nunca ficava sabendo, e esse artigo
+// continuava sendo sugerido como link interno (painel do editor, Central de
+// Links) mesmo morto. Corrige o estado local pra bater com a realidade —
+// mesmo efeito de `WordPressPublishService::retract()`, sem apagar de novo.
+$lastPublishSyncScan = 0;
+const PUBLISH_SYNC_SCAN_INTERVAL = 86400; // 24h
 
 while (true) {
     if (time() - $lastScheduleScan >= SCHEDULE_SCAN_INTERVAL) {
@@ -179,6 +211,101 @@ while (true) {
             }
         } catch (\Throwable $e) {
             fwrite(STDERR, 'Falha ao rodar a geração automática diária: ' . $e->getMessage() . "\n");
+        }
+    }
+
+    if (time() - $lastLinkRotScan >= LINK_ROT_SCAN_INTERVAL) {
+        $lastLinkRotScan = time();
+        try {
+            $linkVerifier = new ExternalLinkVerifier();
+            $notesService = new ArticleNoteService();
+            $rotFound = 0;
+            foreach ($siteService->all() as $site) {
+                $siteId = (int) $site['id'];
+                $ids = $articleService->publishedIds($siteId);
+                if ($ids === []) {
+                    continue;
+                }
+
+                $offset = $linkRotOffsets[$siteId] ?? 0;
+                if ($offset >= count($ids)) {
+                    $offset = 0;
+                }
+                $batch = array_slice($ids, $offset, LINK_ROT_BATCH_PER_SITE);
+                $linkRotOffsets[$siteId] = $offset + count($batch) >= count($ids) ? 0 : $offset + count($batch);
+
+                foreach ($batch as $articleId) {
+                    $version = $articleService->latestVersion($articleId);
+                    if ($version === null) {
+                        continue;
+                    }
+
+                    // Conteúdo já publicado não tinha link morto sobrevivendo
+                    // (a checagem na publicação já removia) — qualquer `unwrapped`
+                    // agora é morte nova desde então, isto é, link rot de verdade.
+                    $result = $linkVerifier->verify((string) $version['content']);
+                    if ($result['unwrapped'] === 0) {
+                        continue;
+                    }
+
+                    $note = $notesService->forArticle($articleId)['pipeline'] ?? [];
+                    $note['link_rot_detected_at'] = date('Y-m-d H:i:s');
+                    $note['link_rot_dead_urls'] = $result['dead'];
+                    $notesService->save($articleId, 'pipeline', $note);
+                    $rotFound++;
+                }
+            }
+            if ($rotFound > 0) {
+                fwrite(STDERR, "{$rotFound} artigo(s) publicado(s) com link rot detectado (link que morreu depois de publicado).\n");
+            }
+        } catch (\Throwable $e) {
+            fwrite(STDERR, 'Falha na revarredura de link rot: ' . $e->getMessage() . "\n");
+        }
+    }
+
+    if (time() - $lastBacklinkScan >= BACKLINK_SCAN_INTERVAL) {
+        $lastBacklinkScan = time();
+        try {
+            $notesService = new ArticleNoteService();
+            $backlinkService = new BacklinkSuggestionService();
+            $scanned = 0;
+            foreach ($siteService->all() as $site) {
+                $siteId = (int) $site['id'];
+                foreach ($articleService->publishedIds($siteId) as $articleId) {
+                    $note = $notesService->forArticle($articleId)['pipeline'] ?? [];
+                    if (!empty($note['backlink_scan_done'])) {
+                        continue;
+                    }
+                    $backlinkService->scan($articleId, $siteId);
+                    $scanned++;
+                    break; // só 1 por site a cada ciclo — cada varredura é uma chamada de IA de verdade
+                }
+            }
+            if ($scanned > 0) {
+                fwrite(STDERR, "{$scanned} artigo(s) conferido(s) pra sugestão de link interno retroativo.\n");
+            }
+        } catch (\Throwable $e) {
+            fwrite(STDERR, 'Falha na varredura de sugestão de link retroativo: ' . $e->getMessage() . "\n");
+        }
+    }
+
+    if (time() - $lastPublishSyncScan >= PUBLISH_SYNC_SCAN_INTERVAL) {
+        $lastPublishSyncScan = time();
+        try {
+            $publishService = new \App\Services\WordPressPublishService();
+            $fixed = 0;
+            foreach ($siteService->all() as $site) {
+                try {
+                    $fixed += $publishService->syncPublishedState((int) $site['id']);
+                } catch (\App\Integrations\WordPress\WordPressException) {
+                    continue; // site sem WordPress conectado, ou falha de rede — pula, tenta de novo no próximo ciclo
+                }
+            }
+            if ($fixed > 0) {
+                fwrite(STDERR, "{$fixed} artigo(s) corrigido(s) pra APROVADO (post tinha sido apagado/despublicado direto no WordPress).\n");
+            }
+        } catch (\Throwable $e) {
+            fwrite(STDERR, 'Falha na sincronização de posts apagados: ' . $e->getMessage() . "\n");
         }
     }
 

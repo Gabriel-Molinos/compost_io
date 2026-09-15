@@ -237,7 +237,13 @@ final class ArticlePipeline
         $warnings = [];
 
         // --- planning ---------------------------------------------------------
-        $this->prompts->setExistingContentContext($this->existingWordPressPostsDigest($siteId));
+        // Mesma lista (posts publicados de verdade no WordPress, qualquer um,
+        // antigo ou novo) alimenta duas checagens diferentes: `planning` usa
+        // pra evitar canibalização, `writing`/`seo`/`compliance` usam pra
+        // linkar internamente (ver setInternalLinkCandidates() abaixo) — uma
+        // chamada só à API, reaproveitada nos dois lugares.
+        $publishedDigest = $this->existingWordPressPostsDigest($siteId);
+        $this->prompts->setExistingContentContext($publishedDigest);
         $plan = $this->step('planning', $articleId, $siteId, $goalId, $categoryId);
         $this->prompts->setExistingContentContext(null); // escopo só do planning — não faz sentido nos passos depois
 
@@ -281,6 +287,7 @@ final class ArticlePipeline
         }
 
         // --- writing --------------------------------------------------------
+        $this->prompts->setInternalLinkCandidates($publishedDigest);
         $writeBrief = $brief + ['notes' => $this->researchDigest($research)];
         $writing = $this->step('writing', $articleId, $siteId, $goalId, $resolvedCategoryId, $writeBrief);
 
@@ -308,12 +315,16 @@ final class ArticlePipeline
         if ($externalCheck['unwrapped'] > 0) {
             $warnings[] = $externalCheck['unwrapped'] . ' link(s) de fonte removido(s) por estarem fora do ar (404) — texto da citação mantido.';
         }
-        if ($externalCheck['ambiguous'] !== []) {
+        $ambiguousLinks = $externalCheck['ambiguous'];
+        if ($ambiguousLinks !== []) {
             // Não decide por adivinhação (ver ExternalLinkVerifier) — devolve
-            // a decisão pro humano, com a URL exata de cada um.
-            $warnings[] = count($externalCheck['ambiguous']) . ' link(s) de fonte não puderam ser confirmados automaticamente '
+            // a decisão pro humano, com a URL exata de cada um. Guardado
+            // também de forma estruturada (não só no texto de `warnings`)
+            // porque o agendamento passa a exigir confirmação manual de cada
+            // um antes de publicar (achado real, 2026-09-10).
+            $warnings[] = count($ambiguousLinks) . ' link(s) de fonte não puderam ser confirmados automaticamente '
                 . '(bloqueio comum de bot em domínio grande — não significa que estão mortos) — confira à mão: '
-                . implode(', ', $externalCheck['ambiguous']);
+                . implode(', ', $ambiguousLinks);
         }
 
         $wordCount = (int) ($writing['word_count'] ?? 0);
@@ -366,6 +377,7 @@ final class ArticlePipeline
                 $warnings[] = 'Compliance (bloqueio): ' . (string) ($b['rule'] ?? '') . ' — ' . (string) ($b['fix'] ?? $b['evidence'] ?? '');
             }
         }
+        $this->prompts->setInternalLinkCandidates(null); // escopo só de writing/seo/compliance
 
         // --- review (parecer pré-humano) --------------------------------
         $reviewBrief = $brief + ['notes' => $this->auditDigest($seo, $compliance)];
@@ -393,8 +405,11 @@ final class ArticlePipeline
         // nem ProductionController pegam a chave 'warnings' de runGenerate()/
         // runRegenerate(). Gravar como nota persiste de verdade e deixa
         // visível em production/show.php (mesmo padrão dos outros passos).
-        if ($warnings !== []) {
-            $this->notes->save($articleId, 'pipeline', ['warnings' => $warnings]);
+        if ($warnings !== [] || $ambiguousLinks !== []) {
+            $this->notes->save($articleId, 'pipeline', [
+                'warnings' => $warnings,
+                'ambiguous_links' => $ambiguousLinks,
+            ]);
         }
 
         return [
@@ -431,6 +446,12 @@ final class ArticlePipeline
             if ($prompt === '') {
                 continue;
             }
+            // Reforço determinístico (achado real 2026-09-10): docs/ai/image.md
+            // já pede "sem texto embutido", mas isso só vale se a IA do passo
+            // `image` obedecer — o gerador em si não impõe nada. Mesmo
+            // princípio já usado pros links (não confiar só na IA obedecer):
+            // todo prompt enviado ao gerador leva este sufixo, sempre.
+            $prompt .= ', no text, no letters, no words, no writing, no captions, no signage in the image';
             $ar = (string) ($b['aspect_ratio'] ?? '16:9');
             $specs[] = [
                 'role'   => ($b['role'] ?? 'BODY') === 'FEATURED' ? 'FEATURED' : 'BODY',
@@ -544,9 +565,16 @@ final class ArticlePipeline
     }
 
     /**
-     * Lista (texto) dos posts publicados no WordPress do site, pro passo
-     * `planning` checar duplicação contra o site de verdade — não só contra
-     * a tabela local `articles` (ver PromptBuilder::existingContentLayer()).
+     * Lista (texto) dos posts publicados no WordPress do site — direto da
+     * API, não da tabela local `articles`. Serve dois propósitos:
+     * `planning` usa pra checar duplicação contra o site de verdade
+     * (`PromptBuilder::existingContentLayer()`); `writing`/`seo`/`compliance`
+     * usam a MESMA lista pra saber quais artigos são alvo válido de link
+     * interno (`PromptBuilder::setInternalLinkCandidates()`, achado real
+     * 2026-09-14 — antes disso, o alvo de link interno vinha só da tabela
+     * local `articles`, que só rastreia o que foi gerado por este app e pode
+     * sair de sincronia com o WordPress de verdade; qualquer post publicado
+     * antes deste app existir, ou por fora dele, nunca era considerado).
      * Null quando o site ainda não tem WordPress conectado, ou a chamada
      * falha (rede, credencial) — nunca deve travar a geração por isso, é
      * só um insumo extra, o pipeline já funciona sem ele.
@@ -712,7 +740,18 @@ final class ArticlePipeline
         return null;
     }
 
-    /** @param array<string, mixed> $research */
+    /**
+     * Achado real (2026-09-10): este resumo incluía o NOME da fonte mas nunca
+     * a `source_url` — a pesquisa achava links reais, mas o passo `writing`
+     * nunca recebia a URL em si, só o rótulo ("fonte: Buffer"). Com o
+     * protocolo anti-alucinação (docs/ai/research.md) funcionando, a IA
+     * corretamente se recusava a citar sem link real disponível — resultado
+     * prático: artigo saía com ZERO links externos, mesmo a pesquisa tendo
+     * fontes de verdade. Não é o prompt que estava errado, era este dado
+     * que nunca chegava.
+     *
+     * @param array<string, mixed> $research
+     */
     private function researchDigest(array $research): string
     {
         $lines = [];
@@ -721,10 +760,13 @@ final class ArticlePipeline
                 continue;
             }
             $claim = trim((string) ($f['claim'] ?? ''));
-            $src = trim((string) ($f['source_title'] ?? $f['publisher'] ?? $f['source_url'] ?? ''));
-            if ($claim !== '') {
-                $lines[] = '- ' . $claim . ($src !== '' ? " (fonte: {$src})" : '');
+            $src = trim((string) ($f['source_title'] ?? $f['publisher'] ?? ''));
+            $url = trim((string) ($f['source_url'] ?? ''));
+            if ($claim === '') {
+                continue;
             }
+            $tag = array_values(array_filter([$src, $url]));
+            $lines[] = '- ' . $claim . ($tag !== [] ? ' (fonte: ' . implode(' — ', $tag) . ')' : '');
         }
 
         return $lines === [] ? '(pesquisa sem fatos utilizáveis)' : "Fatos da pesquisa:\n" . implode("\n", $lines);

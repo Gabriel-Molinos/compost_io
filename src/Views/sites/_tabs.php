@@ -20,6 +20,7 @@ $tabs = [
     ['memory',     'Memória',     '/sites/' . $site['id'] . '/memory',     true],
     ['goals',      'Metas',       '/sites/' . $site['id'] . '/goals',      true],
     ['production', 'Produção',    '/sites/' . $site['id'] . '/production', true],
+    ['links',      'Links',       '/sites/' . $site['id'] . '/links',      true],
     ['calendar',   'Calendário',  '/sites/' . $site['id'] . '/calendar',   true],
     ['reports',    'Relatórios',  '/sites/' . $site['id'] . '/reports',    true],
     ['intelligence', 'Inteligência', '/sites/' . $site['id'] . '/intelligence', true],

@@ -70,4 +70,4 @@ composer install
 php -S localhost:8000 -t public
 ```
 
-Node.js **não** é necessário (ver [ADR-008](docs/decisions/adr-008-frontend-php-puro.md)). Guia completo, pré-requisitos e comandos úteis: [docs/technical/setup-e-operacoes.md](docs/technical/setup-e-operacoes.md).
+Node.js **não** é necessário (ver [ADR-008](docs/decisions/adr-008-frontend-php-puro.md)). Guia completo, pré-requisitos e comandos úteis: [docs/technical/setup-e-operacoes.md](docs/technical/setup-e-operacoes.md). 

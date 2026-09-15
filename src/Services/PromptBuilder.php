@@ -36,6 +36,9 @@ final class PromptBuilder
     /** Texto dos posts existentes no WordPress, injetado pelo pipeline só pro passo `planning` (Fase 9.3). */
     private ?string $existingContentContext = null;
 
+    /** Texto dos alvos válidos de link interno, injetado pelo pipeline pros passos writing/seo/compliance (ver setInternalLinkCandidates()). */
+    private ?string $internalLinkCandidatesContext = null;
+
     public function __construct(?string $promptsDir = null)
     {
         $this->promptsDir = $promptsDir ?? dirname(__DIR__, 2) . '/docs/ai';
@@ -83,10 +86,11 @@ final class PromptBuilder
         $layers[] = $this->briefLayer($brief);
         $layers[] = $this->draftLayer($draft);
         $layers[] = $this->memoryLayer();
-        if ($step === 'writing') {
-            $layers[] = $this->internalLinksLayer($siteId, (string) ($site['wordpress_url'] ?? ''));
+        if (in_array($step, ['writing', 'seo', 'compliance'], true)) {
+            $layers[] = $this->internalLinksLayer();
         }
         if ($step === 'planning') {
+            $layers[] = $this->categoriesLayer($siteId);
             $layers[] = $this->existingContentLayer();
         }
 
@@ -175,6 +179,30 @@ final class PromptBuilder
         }
 
         return trim($out);
+    }
+
+    /**
+     * Lista real das categorias cadastradas do site (achado real, 2026-09-10):
+     * sem isso, o passo `planning` só via categoria pela meta (`goalLayer()`,
+     * condicional a ter meta com distribuição por categoria) — sem meta, a IA
+     * chutava um nome que nunca batia com o cadastro real, e o artigo ficava
+     * sem categoria (`ArticlePipeline::matchCategory()` reprova em silêncio).
+     */
+    private function categoriesLayer(int $siteId): string
+    {
+        $categories = $this->categories->allForSite($siteId);
+        if ($categories === []) {
+            return "# CATEGORIAS CADASTRADAS DO SITE\n\n"
+                . "(Nenhuma cadastrada ainda — deixe `category` vazio em vez de inventar uma.)";
+        }
+
+        $names = array_map(fn (array $c): string => '- ' . $this->val($c['name']), $categories);
+
+        return "# CATEGORIAS CADASTRADAS DO SITE\n\n"
+            . "Escolha `category` como exatamente um destes nomes (cópia exata, sem inventar variação) — "
+            . "o que melhor encaixa o tema. Se nenhum encaixar bem, deixe `category` vazio em vez de forçar um "
+            . "nome que não está na lista.\n\n"
+            . implode("\n", $names);
     }
 
     private function categoryLayer(int $siteId, int $categoryId): string
@@ -283,35 +311,39 @@ final class PromptBuilder
     }
 
     /**
-     * Alvos reais de link interno (Fase 9): sem isso, o passo `writing` era
-     * instruído a linkar artigos internos "chutando" um slug — o
-     * `InternalLinkResolver` já limpa o `<a>` na publicação se não bater com
-     * nada no WordPress, mas o resultado prático era quase nenhum link
-     * interno sobrevivendo. Usa `?p=ID`, formato de permalink que funciona em
-     * qualquer WordPress independente da estrutura de URL configurada — não
-     * precisa de resolução posterior.
+     * Alvos reais de link interno (Fase 9, revisto 2026-09-14): sem isso, o
+     * passo `writing` era instruído a linkar artigos internos "chutando" um
+     * slug — o `InternalLinkResolver` já limpa o `<a>` na publicação se não
+     * bater com nada no WordPress, mas o resultado prático era quase nenhum
+     * link interno sobrevivendo. Antes vinha só da tabela local `articles`
+     * (limitada aos artigos gerados por este app, mais recentes primeiro, e
+     * vulnerável a ficar desatualizada — achado real: chegou a zerar
+     * enquanto o site tinha 165 posts reais publicados). Agora recebe a
+     * mesma lista, vinda direto do WordPress, que `existingContentLayer()`
+     * usa pro `planning` — qualquer post publicado de verdade no site,
+     * antigo ou novo, é um alvo válido (injetado por
+     * `ArticlePipeline::run()` via setInternalLinkCandidates(), com a URL
+     * (`link`) real do post — já é o permalink canônico, não precisa de
+     * resolução posterior).
      */
-    private function internalLinksLayer(int $siteId, string $wordpressUrl): string
+    public function setInternalLinkCandidates(?string $text): void
     {
-        $wordpressUrl = rtrim($wordpressUrl, '/');
-        if ($wordpressUrl === '') {
-            return '';
-        }
+        $this->internalLinkCandidatesContext = ($text !== null && trim($text) !== '') ? trim($text) : null;
+    }
 
-        $recent = $this->articles->recentPublishedForLinking($siteId);
-        if ($recent === []) {
-            return "# ARTIGOS JÁ PUBLICADOS NESTE SITE\n\n(Nenhum ainda — não há artigo interno pra linkar. Não invente.)";
-        }
-
-        $lines = array_map(
-            fn (array $a): string => '- ' . $this->val($a['title']) . ': ' . $wordpressUrl . '/?p=' . $a['wordpress_post_id'],
-            $recent
-        );
-
-        return "# ARTIGOS JÁ PUBLICADOS NESTE SITE\n\n"
-            . "Únicos alvos válidos pra link interno — use a URL exata de um destes se algum for relevante ao tema. "
-            . "Não existe nenhum outro artigo além dos listados aqui.\n\n"
-            . implode("\n", $lines);
+    private function internalLinksLayer(): string
+    {
+        return $this->internalLinkCandidatesContext === null
+            ? "# ARTIGOS JÁ PUBLICADOS NESTE SITE\n\n(Nenhum ainda — não há artigo interno pra linkar. Não invente.)"
+            : "# ARTIGOS JÁ PUBLICADOS NESTE SITE\n\n"
+                . "Únicos alvos válidos pra link interno — nunca invente ou use uma URL fora desta lista. Mas a "
+                . "lista inteira NÃO é relevante: é só o inventário de tudo que já existe publicado, pode ter "
+                . "assunto bem diferente do artigo atual. Antes de linkar, julgue pelo título: o artigo de destino "
+                . "precisa ter relação genuína com o trecho onde o link vai entrar — complementa, aprofunda ou dá "
+                . "contexto pro que está sendo dito ali. Nunca linke só pra bater a cota de 3 a 5 — é melhor um "
+                . "artigo com 1 link interno de verdade relevante do que 5 forçados sem relação real com o "
+                . "tema.\n\n"
+                . $this->internalLinkCandidatesContext;
     }
 
     private function val(mixed $value): string

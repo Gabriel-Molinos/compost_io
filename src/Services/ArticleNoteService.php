@@ -26,6 +26,47 @@ final class ArticleNoteService
         )->execute(['a' => $articleId, 's' => $step, 'p' => $json]);
     }
 
+    /**
+     * Artigos do site com link pendente de ação humana — Central de Links
+     * (`/sites/{id}/links`, achado real 2026-09-10): ambíguo (bloqueio de bot,
+     * não confirmado) ou link rot (morreu depois de publicado,
+     * `bin/worker.php`). Busca tudo e filtra em PHP — mesmo padrão já usado
+     * no projeto pra payload JSON, sem índice JSON do MySQL.
+     *
+     * @return list<array{article_id:int, title:string, status:string, ambiguous_links:list<string>, link_rot_dead_urls:list<string>, backlink_suggestions:list<array<string,mixed>>}>
+     */
+    public function flaggedLinksForSite(int $siteId): array
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT n.article_id, n.payload, a.title, a.status
+             FROM article_ai_notes n
+             JOIN articles a ON a.id = n.article_id
+             WHERE n.step = 'pipeline' AND a.site_id = :s AND a.deleted_at IS NULL"
+        );
+        $stmt->execute(['s' => $siteId]);
+
+        $out = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $payload = json_decode((string) $row['payload'], true);
+            $ambiguous = is_array($payload) ? (array) ($payload['ambiguous_links'] ?? []) : [];
+            $deadUrls = is_array($payload) ? (array) ($payload['link_rot_dead_urls'] ?? []) : [];
+            $backlinks = is_array($payload) ? (array) ($payload['backlink_suggestions'] ?? []) : [];
+            if ($ambiguous === [] && $deadUrls === [] && $backlinks === []) {
+                continue;
+            }
+            $out[] = [
+                'article_id' => (int) $row['article_id'],
+                'title' => (string) $row['title'],
+                'status' => (string) $row['status'],
+                'ambiguous_links' => array_values(array_map('strval', $ambiguous)),
+                'link_rot_dead_urls' => array_values(array_map('strval', $deadUrls)),
+                'backlink_suggestions' => array_values(array_filter($backlinks, 'is_array')),
+            ];
+        }
+
+        return $out;
+    }
+
     /** @return array<string, array<string, mixed>> passo => payload decodificado */
     public function forArticle(int $articleId): array
     {

@@ -14,9 +14,11 @@ use App\Services\ArticleService;
 use App\Services\AuthService;
 use App\Services\CategoryService;
 use App\Services\DailyLimitExceededException;
+use App\Services\ExternalLinkSuggestionService;
 use App\Services\FeedbackService;
 use App\Services\GoalService;
 use App\Services\ImageService;
+use App\Services\InternalLinkSuggestionService;
 use App\Services\ScheduleService;
 use App\Services\WordPressConnectionService;
 use App\Queue\ArticleJobHandlers;
@@ -52,12 +54,26 @@ final class ProductionController extends Controller
     {
         $site = $this->requireSite($siteId);
 
+        $counts = $this->articles->countsByStatusGroup((int) $site['id']);
+        $statusGroup = (string) ($_GET['status'] ?? 'all');
+        if (!isset($counts[$statusGroup])) {
+            $statusGroup = 'all';
+        }
+        $totalForGroup = $counts[$statusGroup];
+        $totalPages = max(1, (int) ceil($totalForGroup / ArticleService::PER_PAGE));
+        $page = max(1, min($totalPages, (int) ($_GET['page'] ?? 1)));
+
         View::render('sites/production/index', [
-            'title'      => 'Produção · ' . $site['name'],
-            'site'       => $site,
-            'articles'   => $this->articles->allForSite((int) $site['id']),
-            'goals'      => (new GoalService())->allForSite((int) $site['id']),
-            'categories' => (new CategoryService())->allForSite((int) $site['id']),
+            'title'        => 'Produção · ' . $site['name'],
+            'site'         => $site,
+            'articles'     => $this->articles->allForSite((int) $site['id'], $statusGroup, $page),
+            'goals'        => (new GoalService())->allForSite((int) $site['id']),
+            'categories'   => (new CategoryService())->allForSite((int) $site['id']),
+            'counts'       => $counts,
+            'statusGroup'  => $statusGroup,
+            'page'         => $page,
+            'totalPages'   => $totalPages,
+            'tourReviewArticle' => $this->articles->firstInReview((int) $site['id']),
         ]);
     }
 
@@ -146,6 +162,14 @@ final class ProductionController extends Controller
         // Enquanto o worker ainda está rodando (Fase 9.1b), a página se atualiza sozinha.
         $generating = in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true);
 
+        $internalCandidates = $this->publishedWordPressPosts((int) $site['id']);
+        // A checagem de sugestão travada (freshNotes) usa o pool local, que é
+        // o mesmo que `InternalLinkSuggestionService` consultou pra gerar a
+        // sugestão em primeiro lugar (tem o wordpress_post_id que a sugestão
+        // guardou) — diferente do painel acima, que agora mostra QUALQUER
+        // post publicado de verdade, direto do WordPress.
+        $notes = $this->freshNotes((int) $article['id'], $this->articles->recentPublishedForLinking((int) $site['id']));
+
         View::render('sites/production/show', [
             'title'       => ($article['title'] ?: 'Rascunho #' . $article['id']) . ' · ' . $site['name'],
             'metaRefresh' => $generating ? 5 : null,
@@ -153,9 +177,10 @@ final class ProductionController extends Controller
             'article'    => $article,
             'version'    => $this->articles->latestVersion((int) $article['id']),
             'sources'    => $this->articles->sources((int) $article['id']),
+            'internalCandidates' => $internalCandidates,
             'executions' => $this->executions->forArticle((int) $article['id']),
             'totalCost'  => $this->executions->totalCostForArticle((int) $article['id']),
-            'notes'      => (new ArticleNoteService())->forArticle((int) $article['id']),
+            'notes'      => $notes,
             'images'     => (new ImageService())->forArticle((int) $article['id']),
             'schedule'   => $schedules->activeForArticle((int) $article['id']),
             'lastSchedule' => $schedules->latestForArticle((int) $article['id']),
@@ -170,6 +195,65 @@ final class ProductionController extends Controller
                 $article['lineage_id'] !== null ? (int) $article['lineage_id'] : null,
             ),
         ]);
+    }
+
+    /**
+     * Posts publicados de verdade no WordPress do site — qualquer um,
+     * antigo ou novo (achado real 2026-09-14, mesmo ajuste do passo de
+     * escrita — ver `ArticlePipeline::existingWordPressPostsDigest()`):
+     * o painel "Links internos disponíveis" antes só listava os artigos que
+     * a tabela local `articles` rastreava como publicados, que pode sair de
+     * sincronia com a realidade (chegou a mostrar 0 enquanto o site tinha
+     * 165 posts publicados de verdade). Direto da API, sem WordPress
+     * conectado (ou falha de rede) devolve lista vazia — o painel já lida
+     * com isso mostrando "nenhum artigo publicado".
+     *
+     * @return list<array{title:string, link:string}>
+     */
+    private function publishedWordPressPosts(int $siteId): array
+    {
+        try {
+            return (new WordPressConnectionService())->client($siteId)->listRecentPosts();
+        } catch (WordPressException) {
+            return [];
+        }
+    }
+
+    /**
+     * Notas do artigo, mas descartando sugestões de link interno que
+     * apontam pra um artigo que não está mais na lista real de publicados
+     * (achado real 2026-09-14): a sugestão fica guardada na nota de quando
+     * foi gerada — se o post-alvo foi apagado/despublicado no WordPress
+     * depois disso, a nota velha continuava mostrando o link morto direto,
+     * sem passar pela verificação ao vivo que `$internalCandidates` já tem.
+     * Se alguma sugestão foi descartada, regrava a nota já limpa — não
+     * precisa checar de novo nas próximas visitas a esta página.
+     *
+     * @param list<array{title:string, wordpress_post_id:int}> $internalCandidates
+     * @return array<string, array<string, mixed>>
+     */
+    private function freshNotes(int $articleId, array $internalCandidates): array
+    {
+        $notesService = new ArticleNoteService();
+        $notes = $notesService->forArticle($articleId);
+
+        $suggestions = $notes['pipeline']['internal_link_suggestions'] ?? null;
+        if (!is_array($suggestions) || $suggestions === []) {
+            return $notes;
+        }
+
+        $validPostIds = array_map(static fn (array $c): int => (int) $c['wordpress_post_id'], $internalCandidates);
+        $fresh = array_values(array_filter(
+            $suggestions,
+            static fn ($s): bool => is_array($s) && in_array((int) ($s['wordpress_post_id'] ?? 0), $validPostIds, true)
+        ));
+
+        if (count($fresh) !== count($suggestions)) {
+            $notes['pipeline']['internal_link_suggestions'] = $fresh;
+            $notesService->save($articleId, 'pipeline', $notes['pipeline']);
+        }
+
+        return $notes;
     }
 
     /** Regenera um artigo rejeitado (RF-010): nova tentativa na mesma linhagem. */
@@ -226,6 +310,13 @@ final class ProductionController extends Controller
         Csrf::verify();
         $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
 
+        // Verifica cada link interno/externo do corpo com requisição HTTP de
+        // verdade (`InternalLinkResolver`/`ExternalLinkVerifier`) — com vários
+        // links, retry e backoff de rate-limit somados passam fácil dos 30s
+        // padrão do PHP (achado real 2026-09-14: artigo com fontes suficientes
+        // já bateu esse limite e voltou erro fatal pro redator no meio do salvamento).
+        set_time_limit(120);
+
         if ($article['status'] !== 'IN_REVIEW') {
             Session::flash('error', 'Só é possível editar o corpo enquanto o artigo está em revisão.');
             Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id']);
@@ -260,18 +351,89 @@ final class ProductionController extends Controller
         if ($external['unwrapped'] > 0) {
             $noteBits[] = $external['unwrapped'] . ' link(s) de fonte removido(s) por estarem fora do ar (404)';
         }
-        if ($external['ambiguous'] !== []) {
-            $noteBits[] = count($external['ambiguous']) . ' link(s) não confirmado(s) automaticamente (confira à mão): '
-                . implode(', ', $external['ambiguous']);
+        $ambiguousLinks = $external['ambiguous'];
+        if ($ambiguousLinks !== []) {
+            $noteBits[] = count($ambiguousLinks) . ' link(s) não confirmado(s) automaticamente (confira à mão): '
+                . implode(', ', $ambiguousLinks);
         }
 
         $wordCount = str_word_count(strip_tags($content));
         $this->articles->addVersion((int) $article['id'], $content, $wordCount);
-        if ($noteBits !== []) {
-            (new ArticleNoteService())->save((int) $article['id'], 'pipeline', ['warnings' => $noteBits]);
+        if ($noteBits !== [] || $ambiguousLinks !== []) {
+            (new ArticleNoteService())->save((int) $article['id'], 'pipeline', [
+                'warnings' => $noteBits,
+                'ambiguous_links' => $ambiguousLinks,
+            ]);
         }
         Session::flash('success', 'Corpo atualizado.' . ($noteBits !== [] ? ' (' . implode(' · ', $noteBits) . ')' : ''));
         Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id']);
+    }
+
+    /**
+     * "Gerar mais links externos relacionados" (editor de corpo, achado real
+     * 2026-09-10) — sob demanda, o redator clica quando quer mais opções pra
+     * citar. Cada sugestão só aparece se confirmar viva de verdade
+     * (`ExternalLinkSuggestionService`); as que já existiam continuam lá,
+     * isso só acrescenta.
+     */
+    public function suggestExternalLinks(string $siteId, string $articleId): void
+    {
+        $site = $this->requireSite($siteId);
+        Csrf::verify();
+        $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
+
+        // Chamada de IA + até 6 verificações HTTP de verdade (cada uma com
+        // retry/backoff próprio) — soma fácil mais que os 30s padrão do PHP
+        // (mesmo achado real de updateContent(), 2026-09-14).
+        set_time_limit(120);
+
+        try {
+            $added = (new ExternalLinkSuggestionService())->suggest((int) $article['id'], (int) $site['id']);
+            Session::flash(
+                'success',
+                $added === []
+                    ? 'Nenhuma fonte nova confirmada como confiável agora — tente de novo em um momento.'
+                    : count($added) . ' fonte(s) nova(s) adicionada(s) ao painel de links externos.'
+            );
+        } catch (Throwable $e) {
+            Session::flash('error', $e->getMessage());
+        }
+
+        Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id'] . '#editar-corpo');
+    }
+
+    /**
+     * "Sugerir por relevância" pro painel de links internos (editor de corpo,
+     * achado real 2026-09-10) — sob demanda, a IA olha o conteúdo do artigo
+     * atual e escolhe quais artigos antigos já publicados genuinamente
+     * combinam, em vez do redator ter que julgar uma lista só por recência.
+     * Nunca edita conteúdo — só reordena/filtra a lista que o próprio
+     * redator copia e cola.
+     */
+    public function suggestInternalLinks(string $siteId, string $articleId): void
+    {
+        $site = $this->requireSite($siteId);
+        Csrf::verify();
+        $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
+
+        // Só uma chamada de IA aqui (sem verificação HTTP em lote) — tempo
+        // de resposta varia, mesma margem de segurança dos outros dois
+        // botões deste editor.
+        set_time_limit(120);
+
+        try {
+            $suggestions = (new InternalLinkSuggestionService())->suggest((int) $article['id'], (int) $site['id']);
+            Session::flash(
+                'success',
+                $suggestions === []
+                    ? 'Nenhum artigo antigo relevante encontrado pra este conteúdo agora.'
+                    : count($suggestions) . ' sugestão(ões) de link interno por relevância.'
+            );
+        } catch (Throwable $e) {
+            Session::flash('error', $e->getMessage());
+        }
+
+        Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id'] . '#editar-corpo');
     }
 
     /** Redator-Chefe aprova o artigo (RF-008): IN_REVIEW → APPROVED. */

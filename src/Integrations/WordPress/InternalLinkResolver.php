@@ -10,11 +10,14 @@ use DOMElement;
 /**
  * Resolve os links internos que a IA escreve no corpo do artigo (fluxo-editorial
  * §31). A escrita costuma "chutar" caminhos como `/blog/algum-slug` que podem não
- * existir no site. Antes de publicar:
+ * existir no site, ou usar `?p=ID` (formato que `PromptBuilder::internalLinksLayer()`
+ * pede de propósito — funciona em qualquer estrutura de permalink). Antes de publicar:
  *
- *   - link interno cujo slug bate com um post/página do WordPress → vira o
- *     permalink real;
- *   - link interno sem correspondência → o texto fica, o `<a>` sai (sem 404);
+ *   - link interno cujo slug OU `?p=ID`/`?page_id=ID` bate com um post/página
+ *     publicado de verdade no WordPress → vira o permalink real;
+ *   - link interno sem correspondência (post não existe, ou existe mas não está
+ *     `publish` — foi apagado/despublicado depois, achado real 2026-09-14) →
+ *     o texto fica, o `<a>` sai (sem 404);
  *   - links externos, `mailto:`, `tel:` e âncoras `#` → intocados.
  */
 final class InternalLinkResolver
@@ -63,12 +66,13 @@ final class InternalLinkResolver
                 continue;
             }
 
-            $slug = $this->internalSlug(trim($a->getAttribute('href')));
-            if ($slug === null) {
+            $href = trim($a->getAttribute('href'));
+            if (!$this->isInternal($href)) {
                 continue; // externo / âncora / mailto — não mexe
             }
 
-            $match = $this->lookup($slug);
+            $postId = $this->postIdFromQuery($href);
+            $match = $postId !== null ? $this->lookupById($postId) : $this->lookupBySlug($this->slugFromPath($href));
             if ($match !== null && !empty($match['link'])) {
                 $a->setAttribute('href', (string) $match['link']);
                 $a->removeAttribute('target');
@@ -92,26 +96,52 @@ final class InternalLinkResolver
         return ['html' => trim($out), 'rewritten' => $rewritten, 'unwrapped' => $unwrapped];
     }
 
-    /** Slug de um href interno, ou null se o link não for interno/navegável. */
-    private function internalSlug(string $href): ?string
+    /** Se o href é navegável dentro do próprio site (não externo/âncora/mailto/tel). */
+    private function isInternal(string $href): bool
     {
         if ($href === '' || str_starts_with($href, '#')
             || preg_match('#^(mailto:|tel:)#i', $href)) {
-            return null;
+            return false;
         }
 
         $scheme = parse_url($href, PHP_URL_SCHEME);
         if ($scheme !== null && !in_array(strtolower($scheme), ['http', 'https'], true)) {
-            return null;
+            return false;
         }
 
         if ($scheme !== null) {
             $host = parse_url($href, PHP_URL_HOST);
             if (!is_string($host) || $this->siteHost === null || strtolower($host) !== $this->siteHost) {
-                return null; // link externo
+                return false; // link externo
             }
         }
 
+        return true;
+    }
+
+    /**
+     * `?p=123` ou `?page_id=123` — formato que `PromptBuilder::internalLinksLayer()`
+     * pede pra IA usar, independente da estrutura de permalink do site.
+     */
+    private function postIdFromQuery(string $href): ?int
+    {
+        $query = parse_url($href, PHP_URL_QUERY);
+        if (!is_string($query) || $query === '') {
+            return null;
+        }
+        parse_str($query, $params);
+        foreach (['p', 'page_id'] as $key) {
+            if (isset($params[$key]) && is_string($params[$key]) && ctype_digit($params[$key])) {
+                return (int) $params[$key];
+            }
+        }
+
+        return null;
+    }
+
+    /** Slug de um href interno (último segmento do caminho), ou null se não der pra extrair. */
+    private function slugFromPath(string $href): ?string
+    {
         $path = parse_url($href, PHP_URL_PATH);
         if (!is_string($path)) {
             return null;
@@ -125,16 +155,41 @@ final class InternalLinkResolver
     }
 
     /** @return array<string,mixed>|null */
-    private function lookup(string $slug): ?array
+    private function lookupBySlug(?string $slug): ?array
     {
-        if (!array_key_exists($slug, $this->cache)) {
+        if ($slug === null) {
+            return null;
+        }
+        $key = 'slug:' . $slug;
+        if (!array_key_exists($key, $this->cache)) {
             try {
-                $this->cache[$slug] = $this->client->findContentBySlug($slug);
+                $this->cache[$key] = $this->client->findContentBySlug($slug);
             } catch (WordPressException) {
-                $this->cache[$slug] = null;
+                $this->cache[$key] = null;
             }
         }
 
-        return $this->cache[$slug];
+        return $this->cache[$key];
+    }
+
+    /**
+     * @return array<string,mixed>|null null também quando o post existe mas não
+     * está `publish` — foi apagado/despublicado depois de outro passo ter
+     * guardado esse id (achado real 2026-09-14, post existia quando o artigo
+     * que linka pra ele foi gerado, mas foi deletado no WordPress depois).
+     */
+    private function lookupById(int $postId): ?array
+    {
+        $key = 'id:' . $postId;
+        if (!array_key_exists($key, $this->cache)) {
+            try {
+                $post = $this->client->getPost($postId);
+                $this->cache[$key] = ($post['status'] ?? null) === 'publish' ? $post : null;
+            } catch (WordPressException) {
+                $this->cache[$key] = null;
+            }
+        }
+
+        return $this->cache[$key];
     }
 }

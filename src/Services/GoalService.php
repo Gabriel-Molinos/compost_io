@@ -25,8 +25,7 @@ final class GoalService
             "SELECT g.id, g.period, g.total_articles, g.general_guidelines,
                     COALESCE(SUM(gc.target_count), 0) AS allocated,
                     (SELECT COUNT(*) FROM articles a
-                      WHERE a.site_id = g.site_id AND a.deleted_at IS NULL
-                        AND DATE_FORMAT(a.reviewed_at, '%Y-%m') = g.period
+                      WHERE a.goal_id = g.id AND a.deleted_at IS NULL
                         AND a.status IN ('APPROVED','SCHEDULED','PUBLISHED')) AS approved
              FROM goals g
              LEFT JOIN goal_categories gc ON gc.goal_id = g.id

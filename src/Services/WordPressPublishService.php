@@ -166,6 +166,62 @@ final class WordPressPublishService
         }
     }
 
+    /**
+     * Corrige o estado local quando um post marcado como PUBLISHED aqui foi
+     * apagado/despublicado direto no WordPress, por fora do dashboard (achado
+     * real 2026-09-14 — post foi pra lixeira lá, mas aqui continuava
+     * "publicado" pra sempre, inclusive sendo sugerido como link interno pros
+     * painéis de `ProductionController` e pra Central de Links). Mesmo efeito
+     * local de `retract()`, sem tentar apagar de novo no WordPress (o post já
+     * não está `publish` — só sincroniza o que já é realidade lá). Roda como
+     * varredura periódica (`bin/worker.php`), mesmo padrão do link rot.
+     *
+     * @return int quantos artigos foram corrigidos
+     */
+    public function syncPublishedState(int $siteId): int
+    {
+        $client = $this->connections->client($siteId); // lança WordPressException se site sem conexão — deixa propagar, quem chama decide se pula o site
+        $pdo = Connection::get();
+
+        $stmt = $pdo->prepare(
+            "SELECT s.id, s.article_id, s.wordpress_post_id
+             FROM schedules s
+             JOIN articles a ON a.id = s.article_id
+             WHERE a.site_id = :s AND s.status = 'PUBLISHED' AND s.wordpress_post_id IS NOT NULL AND a.deleted_at IS NULL"
+        );
+        $stmt->execute(['s' => $siteId]);
+
+        $fixed = 0;
+        foreach ($stmt->fetchAll() as $row) {
+            $stillLive = false;
+            try {
+                $post = $client->getPost((int) $row['wordpress_post_id']);
+                $stillLive = ($post['status'] ?? null) === 'publish';
+            } catch (WordPressException) {
+                $stillLive = false; // 404 — sumiu de vez
+            }
+
+            if ($stillLive) {
+                continue;
+            }
+
+            $pdo->beginTransaction();
+            try {
+                $pdo->prepare(
+                    "UPDATE schedules SET status = 'CANCELED', wordpress_post_id = NULL, wp_media_ids = NULL WHERE id = :id"
+                )->execute(['id' => (int) $row['id']]);
+                $this->articles->setStatus((int) $row['article_id'], 'APPROVED');
+                $pdo->commit();
+                $fixed++;
+            } catch (\Throwable $e) {
+                $pdo->rollBack();
+                throw $e;
+            }
+        }
+
+        return $fixed;
+    }
+
     // -----------------------------------------------------------------
 
     /**

@@ -19,9 +19,14 @@ imagens de corpo necessárias.
    (um texto de 1500 palavras tem ~2 imagens de corpo, além da destacada).
    Cada uma ilustra uma seção específica — indique perto de qual trecho entra.
 4. **`prompt` (descrição para o gerador):** escreva em **inglês**, concreto e
-   visual (cena, enquadramento, luz, estilo, paleta). Sem texto embutido na
-   imagem, sem logotipos de terceiros, sem rostos de pessoas reais/públicas.
-   Nada que gere problema de compliance/AdSense (`docs/editorial/compliance.md`).
+   visual (cena, enquadramento, luz, estilo, paleta). **Sem texto embutido na
+   imagem** — nenhuma letra, palavra, número ou legenda visível na cena.
+   Modelos de imagem tendem a "alucinar" texto garranchado mesmo sem pedir,
+   principalmente quando a composição inclui objetos com texto (placa, tela
+   com conteúdo legível, livro/página aberta, cartaz, embalagem com rótulo) —
+   **evite esses objetos na composição**, não só evite pedir texto neles.
+   Sem logotipos de terceiros, sem rostos de pessoas reais/públicas. Nada que
+   gere problema de compliance/AdSense (`docs/editorial/compliance.md`).
 5. **`alt_text`:** descreve a imagem para leitores de tela, no idioma de
    publicação do site. Inclua a palavra-chave **só quando for pertinente** —
    não em todas (`seo.md#imagens`).

@@ -10,22 +10,25 @@ use App\View;
 /** @var list<array<string,mixed>> $articles */
 /** @var list<array<string,mixed>> $goals */
 /** @var list<array<string,mixed>> $categories */
+/** @var array{all: int, done: int, attention: int, progress: int, discarded: int} $counts */
+/** @var string $statusGroup */
+/** @var int $page */
+/** @var int $totalPages */
+/** @var array{id: int}|null $tourReviewArticle */
 
 $activeTab = 'production';
 require __DIR__ . '/../_tabs.php';
 
-// Agrupamento por status pra stat-bar + filtro por aba (client-side, sem
-// recarregar) — os mesmos grupos usados no alerta de atenção da Visão Geral.
-$statusGroup = static fn (string $s): string => match ($s) {
-    'APPROVED', 'SCHEDULED', 'PUBLISHED' => 'done',
-    'BLOCKED', 'ERROR'                   => 'attention',
-    'DISCARDED'                          => 'discarded',
-    default                              => 'progress', // PLANNED/IN_PROGRESS/IN_REVIEW/REVISION_REQUESTED
-};
-$counts = ['done' => 0, 'attention' => 0, 'progress' => 0, 'discarded' => 0];
-foreach ($articles as $a) {
-    $counts[$statusGroup((string) $a['status'])]++;
-}
+// Agrupamento por status pra stat-bar + filtro por aba — desde a paginação
+// (2026-09-15) os dados já chegam prontos do controller (`$counts` é sempre
+// o total real do site, `$articles` é só a página atual), então o filtro
+// virou navegação de verdade (?status=...&page=...) em vez de JS
+// client-side escondendo linhas — com a lista paginada, filtrar em cima só
+// da página atual dava contagem errada (achado real, mesma pendência).
+$statusUrl = static fn (string $group): string => '/sites/' . $site['id'] . '/production'
+    . ($group === 'all' ? '' : '?status=' . $group);
+$pageUrl = static fn (int $p): string => '/sites/' . $site['id'] . '/production?page=' . $p
+    . ($statusGroup !== 'all' ? '&status=' . $statusGroup : '');
 
 $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" '
     . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/>'
@@ -76,12 +79,12 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
     </form>
 </section>
 
-<?php if ($articles === []): ?>
+<?php if ($counts['all'] === 0): ?>
     <p class="mt-6 text-text-secondary">Nenhum artigo produzido ainda.</p>
 <?php else: ?>
     <?php
     $filterTabs = [
-        ['all', 'Todos', count($articles)],
+        ['all', 'Todos', $counts['all']],
         ['progress', 'Em andamento', $counts['progress']],
         ['done', 'Aprovados', $counts['done']],
         ['attention', 'Atenção', $counts['attention']],
@@ -89,14 +92,15 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
     ];
     ?>
     <div class="mt-8 flex items-center justify-between gap-3">
-        <h3 class="font-display text-lg font-semibold text-text-primary">Rascunhos (<?= count($articles) ?>)</h3>
-        <div class="flex flex-wrap gap-1.5" data-filter-tabs role="tablist" aria-label="Filtrar por status">
+        <h3 class="font-display text-lg font-semibold text-text-primary">Rascunhos (<?= $counts[$statusGroup] ?>)</h3>
+        <div class="flex flex-wrap gap-1.5" role="tablist" aria-label="Filtrar por status">
             <?php foreach ($filterTabs as [$key, $label, $n]): ?>
                 <?php if ($key !== 'all' && $n === 0) continue; ?>
-                <button type="button" data-filter="<?= $key ?>" role="tab" aria-selected="<?= $key === 'all' ? 'true' : 'false' ?>"
-                        class="rounded-full border px-3 py-1 text-xs font-medium transition-colors <?= $key === 'all' ? 'border-cyan bg-cyan/10 text-cyan' : 'border-border text-text-secondary hover:border-border-strong' ?>">
+                <?php $active = $key === $statusGroup; ?>
+                <a href="<?= View::e($statusUrl($key)) ?>" role="tab" aria-selected="<?= $active ? 'true' : 'false' ?>"
+                   class="rounded-full border px-3 py-1 text-xs font-medium transition-colors <?= $active ? 'border-cyan bg-cyan/10 text-cyan' : 'border-border text-text-secondary hover:border-border-strong' ?>">
                     <?= View::e($label) ?> <span class="font-mono"><?= $n ?></span>
-                </button>
+                </a>
             <?php endforeach; ?>
         </div>
     </div>
@@ -105,26 +109,22 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
     // Tutorial guiado (assets/js/tour.js): quando existe um rascunho em
     // revisão, o passo "Revisar um rascunho" pode navegar direto pra ele e
     // mostrar Aprovar/Rejeitar de verdade em vez de só descrever em texto.
-    $tourReviewArticle = null;
-    foreach ($articles as $a) {
-        if ($a['status'] === 'IN_REVIEW') {
-            $tourReviewArticle = $a;
-            break;
-        }
-    }
+    // Vem do controller (`ArticleService::firstInReview()`) desde a
+    // paginação — o rascunho em revisão pode estar em qualquer página.
     $tourReviewHref = $tourReviewArticle !== null
         ? '/sites/' . $site['id'] . '/production/' . $tourReviewArticle['id']
         : '';
     ?>
+    <?php if ($articles === []): ?>
+        <p class="mt-3 text-sm text-text-secondary">Nenhum rascunho neste filtro.</p>
+    <?php endif; ?>
     <ul data-tour="article-list" data-tour-review-href="<?= View::e($tourReviewHref) ?>" class="mt-3 space-y-2">
         <?php foreach ($articles as $a): ?>
             <?php
             $tone = Labels::articleStatusTone((string) $a['status']);
-            $group = $statusGroup((string) $a['status']);
             $isGenerating = in_array($a['status'], ['PLANNED', 'IN_PROGRESS'], true);
             ?>
-            <li data-status-group="<?= $group ?>"
-                class="flex flex-col gap-2.5 rounded-lg border-l-2 <?= $toneBorder($tone) ?> border-y border-r border-border bg-surface px-4 py-3.5">
+            <li class="flex flex-col gap-2.5 rounded-lg border-l-2 <?= $toneBorder($tone) ?> border-y border-r border-border bg-surface px-4 py-3.5">
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
                         <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>"
@@ -168,43 +168,20 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
             </li>
         <?php endforeach; ?>
     </ul>
-    <p data-filter-empty class="mt-3 hidden text-sm text-text-secondary">Nenhum rascunho neste filtro.</p>
+
+    <?php if ($totalPages > 1): ?>
+        <nav class="mt-5 flex items-center justify-center gap-3 text-sm" aria-label="Paginação">
+            <?php if ($page > 1): ?>
+                <a href="<?= View::e($pageUrl($page - 1)) ?>" class="rounded-md border border-border px-3 py-1.5 text-text-secondary hover:border-border-strong">← Anterior</a>
+            <?php else: ?>
+                <span class="rounded-md border border-border px-3 py-1.5 text-text-muted opacity-40">← Anterior</span>
+            <?php endif; ?>
+            <span class="text-text-secondary">Página <?= $page ?> de <?= $totalPages ?></span>
+            <?php if ($page < $totalPages): ?>
+                <a href="<?= View::e($pageUrl($page + 1)) ?>" class="rounded-md border border-border px-3 py-1.5 text-text-secondary hover:border-border-strong">Próxima →</a>
+            <?php else: ?>
+                <span class="rounded-md border border-border px-3 py-1.5 text-text-muted opacity-40">Próxima →</span>
+            <?php endif; ?>
+        </nav>
+    <?php endif; ?>
 <?php endif; ?>
-
-<script>
-    // Progressive enhancement: filtro por status sem recarregar a página —
-    // some/mostra as linhas já renderizadas via data-status-group.
-    (function () {
-        var tabs = document.querySelectorAll('[data-filter]');
-        var rows = document.querySelectorAll('[data-status-group]');
-        var empty = document.querySelector('[data-filter-empty]');
-        if (!tabs.length) return;
-
-        tabs.forEach(function (tab) {
-            tab.addEventListener('click', function () {
-                var filter = tab.getAttribute('data-filter');
-                tabs.forEach(function (t) {
-                    var active = t === tab;
-                    t.setAttribute('aria-selected', String(active));
-                    t.classList.toggle('border-cyan', active);
-                    t.classList.toggle('bg-cyan/10', active);
-                    t.classList.toggle('text-cyan', active);
-                    t.classList.toggle('border-border', !active);
-                    t.classList.toggle('text-text-secondary', !active);
-                });
-                var visible = 0;
-                rows.forEach(function (row) {
-                    var show = filter === 'all' || row.getAttribute('data-status-group') === filter;
-                    // classList.toggle('hidden', ...) em vez do atributo/propriedade
-                    // `hidden` nativo — a linha tem `class="flex ..."`, e o `.flex`
-                    // do Tailwind tem a mesma especificidade do reset de `[hidden]`
-                    // (que usa :where(), especificidade zero); a classe `.hidden`
-                    // do próprio Tailwind vem depois no CSS compilado e vence.
-                    row.classList.toggle('hidden', !show);
-                    if (show) visible++;
-                });
-                if (empty) empty.classList.toggle('hidden', visible > 0);
-            });
-        });
-    })();
-</script>

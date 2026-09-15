@@ -190,4 +190,72 @@ final class StepSchemas
             'required' => ['recommendation', 'summary'],
         ];
     }
+
+    /** Não é um passo do pipeline de geração — usado por `BacklinkSuggestionService` (Central de Links). */
+    public static function backlinkSuggestions(): array
+    {
+        return [
+            'type'       => 'object',
+            'properties' => [
+                'suggestions' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'article_id'  => ['type' => 'integer'],
+                            'anchor_text' => ['type' => 'string'],
+                            'reason'      => ['type' => 'string'],
+                        ],
+                        'required' => ['article_id', 'anchor_text', 'reason'],
+                    ],
+                ],
+            ],
+            'required' => ['suggestions'],
+        ];
+    }
+
+    /** Não é um passo do pipeline de geração — usado por `ExternalLinkSuggestionService` (editor de corpo). */
+    public static function externalLinkSuggestions(): array
+    {
+        return [
+            'type'       => 'object',
+            'properties' => [
+                'suggestions' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'url'       => ['type' => 'string'],
+                            'title'     => ['type' => 'string'],
+                            'publisher' => ['type' => 'string'],
+                        ],
+                        'required' => ['url', 'title', 'publisher'],
+                    ],
+                ],
+            ],
+            'required' => ['suggestions'],
+        ];
+    }
+
+    /** Não é um passo do pipeline de geração — usado por `InternalLinkSuggestionService` (editor de corpo). */
+    public static function internalLinkSuggestions(): array
+    {
+        return [
+            'type'       => 'object',
+            'properties' => [
+                'suggestions' => [
+                    'type'  => 'array',
+                    'items' => [
+                        'type'       => 'object',
+                        'properties' => [
+                            'article_id' => ['type' => 'integer'],
+                            'reason'     => ['type' => 'string'],
+                        ],
+                        'required' => ['article_id', 'reason'],
+                    ],
+                ],
+            ],
+            'required' => ['suggestions'],
+        ];
+    }
 }

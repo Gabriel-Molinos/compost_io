@@ -11,6 +11,7 @@ use App\Controllers\EditorialRuleController;
 use App\Controllers\GoalController;
 use App\Controllers\HomeController;
 use App\Controllers\IntelligenceController;
+use App\Controllers\LinksController;
 use App\Controllers\NotificationController;
 use App\Controllers\ProductionController;
 use App\Controllers\ProfileController;
@@ -127,6 +128,8 @@ return static function (Router $router): void {
     $router->add('POST', '/sites/{id}/production/{aid}/reject',  [ProductionController::class, 'reject'],  auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/regenerate', [ProductionController::class, 'regenerate'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/content',   [ProductionController::class, 'updateContent'], auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/sources/suggest', [ProductionController::class, 'suggestExternalLinks'], auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/internal-links/suggest', [ProductionController::class, 'suggestInternalLinks'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/images/select',      [ProductionController::class, 'selectImage'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/images/{iid}/delete', [ProductionController::class, 'deleteImage'], auth: true);
 
@@ -137,4 +140,12 @@ return static function (Router $router): void {
     $router->add('POST', '/sites/{id}/production/{aid}/schedule/publish',   [ScheduleController::class, 'publish'],   auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/schedule/republish', [ScheduleController::class, 'republish'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/schedule/retract',   [ScheduleController::class, 'retract'],   auth: true);
+
+    // Central de Links — corrigir link ambíguo/link rot sem editar HTML
+    $router->add('GET',  '/sites/{id}/links',                 [LinksController::class, 'index'],   auth: true);
+    $router->add('POST', '/sites/{id}/links/{aid}/remove',    [LinksController::class, 'remove'],  auth: true);
+    $router->add('POST', '/sites/{id}/links/{aid}/replace',   [LinksController::class, 'replace'], auth: true);
+    $router->add('POST', '/sites/{id}/links/{aid}/confirm',   [LinksController::class, 'confirm'], auth: true);
+    $router->add('POST', '/sites/{id}/links/{aid}/backlink/apply',   [LinksController::class, 'applyBacklink'],   auth: true);
+    $router->add('POST', '/sites/{id}/links/{aid}/backlink/dismiss', [LinksController::class, 'dismissBacklink'], auth: true);
 };

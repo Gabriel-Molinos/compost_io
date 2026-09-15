@@ -13,6 +13,10 @@ período e ainda não tenha sido coberto pelo site.
 2. Considere os interesses e não-interesses do site e as diretrizes da categoria.
 3. Proponha **um** tema: título de trabalho, palavra-chave principal, categoria,
    ângulo (o que este artigo faz de diferente) e por que ele serve à meta.
+   A categoria tem que ser **exatamente um nome** da lista "CATEGORIAS
+   CADASTRADAS DO SITE" (vem no prompt) — nunca invente um nome novo, mesmo
+   que pareça óbvio. Se nenhum nome da lista encaixar bem no tema, deixe
+   `category` vazio em vez de forçar um nome que não existe no site.
 4. **Verifique duplicação / canibalização:** compare a palavra-chave e o ângulo
    com a seção "POSTS JÁ PUBLICADOS NO WORDPRESS DESTE SITE" (quando ela vier
    no prompt — é a lista real do site, não um palpite). Se houver sobreposição
@@ -26,7 +30,7 @@ período e ainda não tenha sido coberto pelo site.
 {
   "title": "string — título de trabalho",
   "focus_keyword": "string",
-  "category": "string — nome de uma categoria existente do site",
+  "category": "string — nome exato de uma categoria da lista 'CATEGORIAS CADASTRADAS DO SITE', ou vazio se nenhuma encaixar",
   "angle": "string — o recorte específico deste artigo",
   "rationale": "string — como atende à meta",
   "cannibalization_risk": "none | possible | high",

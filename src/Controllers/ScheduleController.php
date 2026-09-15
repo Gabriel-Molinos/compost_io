@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Services\ArticleNoteService;
 use App\Services\ArticleService;
 use App\Services\AuthService;
 use App\Services\NotificationService;
@@ -12,6 +13,7 @@ use App\Services\WordPressPublishService;
 use App\Support\Csrf;
 use App\Support\Http;
 use App\Support\Session;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -40,9 +42,35 @@ final class ScheduleController extends Controller
     public function store(string $siteId, string $articleId): void
     {
         $this->handle($siteId, $articleId, function (int $sid, int $aid): void {
+            $this->assertAmbiguousLinksConfirmed($aid);
             $this->schedules->scheduleAuto($aid, $sid, $this->authorId(), $this->imageId(), AuthService::id());
             Session::flash('success', 'Artigo agendado.');
         });
+    }
+
+    /**
+     * Achado real (2026-09-10): link "ambíguo" (403/429/500 — bloqueio comum
+     * de bot em domínio grande) não é confirmado nem removido pelo
+     * verificador automático (ver `ExternalLinkVerifier`) — fica no ar sem
+     * ninguém confirmar se é real. Decisão do responsável: travar o
+     * agendamento até o Redator-Chefe marcar que conferiu cada um manualmente.
+     */
+    private function assertAmbiguousLinksConfirmed(int $articleId): void
+    {
+        $notes = (new ArticleNoteService())->forArticle($articleId);
+        $ambiguous = (array) ($notes['pipeline']['ambiguous_links'] ?? []);
+        if ($ambiguous === []) {
+            return;
+        }
+
+        $confirmed = array_map('strval', (array) ($_POST['ambiguous_confirmed'] ?? []));
+        $missing = array_diff($ambiguous, $confirmed);
+        if ($missing !== []) {
+            throw new RuntimeException(
+                'Confirme que já conferiu manualmente cada link não confirmado automaticamente antes de agendar: '
+                . implode(', ', $missing)
+            );
+        }
     }
 
     public function update(string $siteId, string $articleId): void

@@ -17,9 +17,49 @@ final class ArticleService
     /** Limite de gerações (manuais + automáticas) por site a cada 24h — guarda de custo (requisitos §95). */
     public const DAILY_LIMIT = 15;
 
-    /** @return list<array<string, mixed>> */
-    public function allForSite(int $siteId): array
+    /** Itens por página na listagem da Produção (paginação — requisitos/testes-e-observabilidade §94.1). */
+    public const PER_PAGE = 20;
+
+    /**
+     * Grupos de status usados no filtro da aba Produção — mesmo agrupamento
+     * de `production/index.php` (antes calculado em PHP puro sobre a lista
+     * inteira; agora também vira `WHERE status IN (...)` no SQL, então
+     * precisa estar centralizado aqui pra não desalinhar dos dois lados).
+     *
+     * @var array<string, list<string>>
+     */
+    private const STATUS_GROUPS = [
+        'done'      => ['APPROVED', 'SCHEDULED', 'PUBLISHED'],
+        'attention' => ['BLOCKED', 'ERROR'],
+        'discarded' => ['DISCARDED'],
+        'progress'  => ['PLANNED', 'IN_PROGRESS', 'IN_REVIEW', 'REVISION_REQUESTED'],
+    ];
+
+    /**
+     * Página da listagem de artigos (Produção). Paginado desde 2026-09-15 —
+     * antes buscava tudo sem `LIMIT`, o que crescia sem parar com o
+     * histórico do site (achado real, registrado como pendência em
+     * `docs/technical/testes-e-observabilidade.md`). `$statusGroup` filtra
+     * pelo mesmo agrupamento das abas de filtro ('all' = sem filtro).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function allForSite(int $siteId, string $statusGroup = 'all', int $page = 1, int $perPage = self::PER_PAGE): array
     {
+        $where = 'a.site_id = :s AND a.deleted_at IS NULL';
+        $params = ['s' => $siteId];
+        if (isset(self::STATUS_GROUPS[$statusGroup])) {
+            $statuses = self::STATUS_GROUPS[$statusGroup];
+            $placeholders = [];
+            foreach ($statuses as $i => $status) {
+                $key = "st{$i}";
+                $placeholders[] = ":{$key}";
+                $params[$key] = $status;
+            }
+            $where .= ' AND a.status IN (' . implode(', ', $placeholders) . ')';
+        }
+
+        $offset = max(0, ($page - 1)) * $perPage;
         $stmt = Connection::get()->prepare(
             "SELECT a.id, a.title, a.status, a.focus_keyword, a.category_id, a.created_at,
                     a.attempt_number, a.lineage_id, a.source,
@@ -28,12 +68,72 @@ final class ArticleService
                     (SELECT MAX(word_count) FROM article_versions v WHERE v.article_id = a.id) AS word_count
              FROM articles a
              LEFT JOIN categories c ON c.id = a.category_id
-             WHERE a.site_id = :s AND a.deleted_at IS NULL
-             ORDER BY a.created_at DESC"
+             WHERE {$where}
+             ORDER BY a.created_at DESC
+             LIMIT :lim OFFSET :off"
         );
-        $stmt->execute(['s' => $siteId]);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue('lim', $perPage, \PDO::PARAM_INT);
+        $stmt->bindValue('off', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
 
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Contagem por grupo de status (+ 'all') pros badges das abas de filtro
+     * — independente de paginação, sempre reflete o total real do site,
+     * não só a página atual (`allForSite()` já não traz a lista inteira).
+     *
+     * @return array{all: int, done: int, attention: int, progress: int, discarded: int}
+     */
+    public function countsByStatusGroup(int $siteId): array
+    {
+        $cases = [];
+        foreach (self::STATUS_GROUPS as $group => $statuses) {
+            $quoted = implode(', ', array_map(static fn (string $s): string => "'{$s}'", $statuses));
+            $cases[] = "SUM(CASE WHEN a.status IN ({$quoted}) THEN 1 ELSE 0 END) AS {$group}";
+        }
+        $stmt = Connection::get()->prepare(
+            'SELECT COUNT(*) AS all_count, ' . implode(', ', $cases) . '
+             FROM articles a
+             WHERE a.site_id = :s AND a.deleted_at IS NULL'
+        );
+        $stmt->execute(['s' => $siteId]);
+        $row = $stmt->fetch();
+
+        return [
+            'all'       => (int) ($row['all_count'] ?? 0),
+            'done'      => (int) ($row['done'] ?? 0),
+            'attention' => (int) ($row['attention'] ?? 0),
+            'progress'  => (int) ($row['progress'] ?? 0),
+            'discarded' => (int) ($row['discarded'] ?? 0),
+        ];
+    }
+
+    /**
+     * Um artigo em revisão qualquer do site, pro tutorial guiado poder
+     * linkar direto pra ele (`data-tour-review-href` em production/index.php)
+     * — antes achava isso escaneando a lista inteira em PHP; com paginação,
+     * o artigo em revisão pode estar em qualquer página, então vira uma
+     * consulta própria, independente da página/filtro atual.
+     *
+     * @return array{id: int}|null
+     */
+    public function firstInReview(int $siteId): ?array
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT id FROM articles
+             WHERE site_id = :s AND deleted_at IS NULL AND status = 'IN_REVIEW'
+             ORDER BY created_at DESC
+             LIMIT 1"
+        );
+        $stmt->execute(['s' => $siteId]);
+        $row = $stmt->fetch();
+
+        return $row === false ? null : ['id' => (int) $row['id']];
     }
 
     /**
@@ -62,6 +162,65 @@ final class ArticleService
             static fn (array $r): array => ['title' => (string) $r['title'], 'wordpress_post_id' => (int) $r['wordpress_post_id']],
             $stmt->fetchAll()
         );
+    }
+
+    /**
+     * Mesmo pool de `recentPublishedForLinking()` (artigos publicados de
+     * verdade, mais recentes primeiro), mas com id + corpo completo + post do
+     * WordPress — usado tanto pela sugestão de link retroativo
+     * (`BacklinkSuggestionService`, a IA precisa do texto de verdade do artigo
+     * antigo pra achar uma frase real pra virar âncora) quanto pela sugestão
+     * de link interno por relevância no editor manual
+     * (`InternalLinkSuggestionService`, achado real 2026-09-10: a IA decide
+     * quais desses artigos antigos combinam com o conteúdo do artigo atual).
+     *
+     * @return list<array{id:int, title:string, meta_description:string, focus_keyword:string, content:string, wordpress_post_id:int}>
+     */
+    public function publishedCandidatesForBacklinks(int $siteId, int $excludeArticleId, int $limit = 15): array
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT a.id, a.title, a.meta_description, a.focus_keyword, s.wordpress_post_id,
+                    (SELECT v.content FROM article_versions v WHERE v.article_id = a.id ORDER BY v.id DESC LIMIT 1) AS content
+             FROM articles a
+             JOIN schedules s ON s.article_id = a.id AND s.status = 'PUBLISHED' AND s.wordpress_post_id IS NOT NULL
+             WHERE a.site_id = :s AND a.status = 'PUBLISHED' AND a.deleted_at IS NULL AND a.id != :ex
+             ORDER BY a.updated_at DESC
+             LIMIT :lim"
+        );
+        $stmt->bindValue('s', $siteId, \PDO::PARAM_INT);
+        $stmt->bindValue('ex', $excludeArticleId, \PDO::PARAM_INT);
+        $stmt->bindValue('lim', $limit, \PDO::PARAM_INT);
+        $stmt->execute();
+
+        return array_map(
+            static fn (array $r): array => [
+                'id' => (int) $r['id'],
+                'title' => (string) $r['title'],
+                'meta_description' => (string) ($r['meta_description'] ?? ''),
+                'focus_keyword' => (string) ($r['focus_keyword'] ?? ''),
+                'content' => (string) ($r['content'] ?? ''),
+                'wordpress_post_id' => (int) $r['wordpress_post_id'],
+            ],
+            $stmt->fetchAll()
+        );
+    }
+
+    /**
+     * IDs dos artigos publicados de um site — usado pela revarredura periódica
+     * de link rot (bin/worker.php): um link real na publicação pode morrer
+     * meses depois, e nada revisitava isso (só geração/edição/publicação
+     * checavam, achado real 2026-09-10).
+     *
+     * @return list<int>
+     */
+    public function publishedIds(int $siteId): array
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT id FROM articles WHERE site_id = :s AND status = 'PUBLISHED' AND deleted_at IS NULL ORDER BY id"
+        );
+        $stmt->execute(['s' => $siteId]);
+
+        return array_map('intval', array_column($stmt->fetchAll(), 'id'));
     }
 
     /** @return array<string, mixed>|null */

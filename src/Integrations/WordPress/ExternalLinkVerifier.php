@@ -40,21 +40,28 @@ final class ExternalLinkVerifier
 {
     private const CONNECT_TIMEOUT = 4;
     private const TOTAL_TIMEOUT = 7;
-    private const USER_AGENT = 'Mozilla/5.0 (compatible; COMPOST-LinkCheck/1.0)';
+    // UA de navegador real (não "compatible; bot") — evita bloqueio trivial
+    // por filtro de User-Agent em sites com proteção simples. Não resolve
+    // Akamai/Cloudflare (confirmado: bloqueiam até Chrome headless de
+    // verdade com o mesmo 403), mas recupera o meio-termo.
+    private const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+        . '(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+    private const RETRY_BACKOFF_SECONDS = 1.5;
 
     private const ALIVE = 'alive';
     private const DEAD = 'dead';
     private const AMBIGUOUS = 'ambiguous';
     private const RETRY_WITH_GET = 'retry';
+    private const RETRY_RATE_LIMITED = 'retry_rate_limited';
 
     /** @var array<string, string> URL => self::ALIVE|self::DEAD|self::AMBIGUOUS */
     private array $cache = [];
 
-    /** @return array{html:string, checked:int, unwrapped:int, ambiguous:list<string>} */
+    /** @return array{html:string, checked:int, unwrapped:int, ambiguous:list<string>, dead:list<string>} */
     public function verify(string $html): array
     {
         if (trim($html) === '' || stripos($html, '<a') === false) {
-            return ['html' => $html, 'checked' => 0, 'unwrapped' => 0, 'ambiguous' => []];
+            return ['html' => $html, 'checked' => 0, 'unwrapped' => 0, 'ambiguous' => [], 'dead' => []];
         }
 
         $prev = libxml_use_internal_errors(true);
@@ -68,12 +75,13 @@ final class ExternalLinkVerifier
 
         $root = $doc->getElementById('__root__');
         if ($root === null) {
-            return ['html' => $html, 'checked' => 0, 'unwrapped' => 0, 'ambiguous' => []];
+            return ['html' => $html, 'checked' => 0, 'unwrapped' => 0, 'ambiguous' => [], 'dead' => []];
         }
 
         $checked = 0;
         $unwrapped = 0;
         $ambiguous = [];
+        $dead = [];
 
         foreach (iterator_to_array($doc->getElementsByTagName('a')) as $a) {
             if (!$a instanceof DOMElement) {
@@ -95,6 +103,7 @@ final class ExternalLinkVerifier
                 }
                 $a->parentNode?->removeChild($a);
                 $unwrapped++;
+                $dead[] = $href;
             } elseif ($status === self::AMBIGUOUS) {
                 $ambiguous[] = $href;
             }
@@ -105,7 +114,7 @@ final class ExternalLinkVerifier
             $out .= $doc->saveHTML($child);
         }
 
-        return ['html' => trim($out), 'checked' => $checked, 'unwrapped' => $unwrapped, 'ambiguous' => $ambiguous];
+        return ['html' => trim($out), 'checked' => $checked, 'unwrapped' => $unwrapped, 'ambiguous' => $ambiguous, 'dead' => $dead];
     }
 
     /** @return self::ALIVE|self::DEAD|self::AMBIGUOUS */
@@ -122,6 +131,18 @@ final class ExternalLinkVerifier
             $result = $this->request($url, head: false);
             if ($result === self::RETRY_WITH_GET) {
                 $result = self::AMBIGUOUS; // nem GET deu um status conclusivo
+            }
+        }
+        if ($result === self::RETRY_RATE_LIMITED) {
+            // 429/503 costuma ser rate-limit passageiro, não bloqueio de
+            // verdade — vale uma segunda tentativa antes de desistir.
+            usleep((int) (self::RETRY_BACKOFF_SECONDS * 1_000_000));
+            $result = $this->request($url, head: true);
+            if ($result === self::RETRY_WITH_GET) {
+                $result = $this->request($url, head: false);
+            }
+            if ($result === self::RETRY_WITH_GET || $result === self::RETRY_RATE_LIMITED) {
+                $result = self::AMBIGUOUS;
             }
         }
 
@@ -163,10 +184,13 @@ final class ExternalLinkVerifier
         if ($status === 405 || $status === 501 || $status === 0) {
             return self::RETRY_WITH_GET;
         }
+        if ($status === 429 || $status === 503) {
+            return self::RETRY_RATE_LIMITED;
+        }
         if ($status >= 200 && $status < 400) {
             return self::ALIVE;
         }
 
-        return self::AMBIGUOUS; // 403/429/500/502/503... — bloqueio comum, não decide nada por si só
+        return self::AMBIGUOUS; // 403/500/502... — bloqueio comum, não decide nada por si só
     }
 }

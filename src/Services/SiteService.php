@@ -134,11 +134,40 @@ final class SiteService
         $stmt->execute($this->params($data) + ['id' => $id]);
     }
 
-    /** Grava (ou limpa, com null) o caminho do logo já enviado/salvo por Uploads::image(). */
-    public function setLogo(int $siteId, ?string $path): void
+    /**
+     * Grava (ou limpa, com null) o caminho do logo já enviado/salvo por
+     * Uploads::image()/fromLocalFile(). `$libraryFilename` é o nome do
+     * arquivo de origem na biblioteca (`SiteLogoLibraryService`), ou null
+     * quando a logo veio de upload manual — precisa ser gravado sempre
+     * junto (nunca só `logo_path`), senão o seletor não sabe marcar essa
+     * logo como ocupada pra outros sites (achado real 2026-09-15: sem
+     * isso, dava pra escolher a mesma logo pra dois sites diferentes).
+     */
+    public function setLogo(int $siteId, ?string $path, ?string $libraryFilename = null): void
     {
-        Connection::get()->prepare('UPDATE sites SET logo_path = :p WHERE id = :id')
-            ->execute(['p' => $path, 'id' => $siteId]);
+        Connection::get()->prepare('UPDATE sites SET logo_path = :p, logo_library_filename = :f WHERE id = :id')
+            ->execute(['p' => $path, 'f' => $libraryFilename, 'id' => $siteId]);
+    }
+
+    /**
+     * Arquivos da biblioteca já em uso por OUTROS sites — pro seletor
+     * excluir do que mostra (`$excludeSiteId` é o próprio site sendo
+     * editado, cuja logo atual não deve se auto-bloquear).
+     *
+     * @return list<string>
+     */
+    public function usedLogoLibraryFilenames(?int $excludeSiteId = null): array
+    {
+        $sql = 'SELECT logo_library_filename FROM sites WHERE logo_library_filename IS NOT NULL';
+        $params = [];
+        if ($excludeSiteId !== null) {
+            $sql .= ' AND id <> :id';
+            $params['id'] = $excludeSiteId;
+        }
+        $stmt = Connection::get()->prepare($sql);
+        $stmt->execute($params);
+
+        return array_map('strval', $stmt->fetchAll(\PDO::FETCH_COLUMN));
     }
 
     /**

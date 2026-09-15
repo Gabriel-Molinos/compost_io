@@ -41,14 +41,23 @@ final class SiteLogoLibraryService
     /**
      * Todos os logos da biblioteca, pro seletor visual — nome pra exibir
      * (o domínio, sem sufixo de duplicado) + URL pública pra `<img>`.
+     * `$excludeFilenames` tira as já ocupadas por outro site
+     * (`SiteService::usedLogoLibraryFilenames()`, achado real 2026-09-15:
+     * sem isso, dava pra escolher a mesma logo pra dois sites diferentes).
      *
+     * @param list<string> $excludeFilenames
      * @return list<array{domain: string, filename: string, url: string}>
      */
-    public function all(): array
+    public function all(array $excludeFilenames = []): array
     {
+        $excluded = array_flip($excludeFilenames);
+
         $out = [];
         foreach ($this->listFiles() as $file) {
             $filename = basename($file);
+            if (isset($excluded[$filename])) {
+                continue;
+            }
             $out[] = [
                 'domain'   => self::filenameToDomain($file),
                 'filename' => $filename,

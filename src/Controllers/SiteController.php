@@ -93,7 +93,7 @@ final class SiteController extends Controller
             'site'        => ['language' => 'pt-BR', 'is_active' => 1],
             'action'      => '/sites',
             'errors'      => [],
-            'logoLibrary' => (new SiteLogoLibraryService())->all(),
+            'logoLibrary' => $this->availableLogoLibrary(null),
         ]);
     }
 
@@ -106,7 +106,7 @@ final class SiteController extends Controller
             http_response_code(422);
             View::render('sites/form', [
                 'title' => 'Novo site', 'site' => $_POST, 'action' => '/sites', 'errors' => $errors,
-                'logoLibrary' => (new SiteLogoLibraryService())->all(),
+                'logoLibrary' => $this->availableLogoLibrary(null),
             ]);
             return;
         }
@@ -114,9 +114,9 @@ final class SiteController extends Controller
         $newId = $this->sites->create($_POST);
 
         try {
-            $logo = $this->resolveLogo($newId, $_FILES['logo'] ?? null, (string) ($_POST['library_logo'] ?? ''), (string) ($_POST['wordpress_url'] ?? ''), allowAutoMatch: true);
+            $logo = $this->resolveLogo($newId, null, $_FILES['logo'] ?? null, (string) ($_POST['library_logo'] ?? ''), (string) ($_POST['wordpress_url'] ?? ''), allowAutoMatch: true);
             if ($logo !== null) {
-                $this->sites->setLogo($newId, $logo);
+                $this->sites->setLogo($newId, $logo['path'], $logo['library_filename']);
             }
         } catch (\RuntimeException $e) {
             Session::flash('error', 'Site criado, mas o logo não foi salvo: ' . $e->getMessage());
@@ -137,7 +137,7 @@ final class SiteController extends Controller
             'site'        => $site,
             'action'      => '/sites/' . $site['id'],
             'errors'      => [],
-            'logoLibrary' => (new SiteLogoLibraryService())->all(),
+            'logoLibrary' => $this->availableLogoLibrary((int) $site['id']),
         ]);
     }
 
@@ -154,7 +154,7 @@ final class SiteController extends Controller
                 'site'   => $_POST + ['id' => $site['id']],
                 'action' => '/sites/' . $site['id'],
                 'errors' => $errors,
-                'logoLibrary' => (new SiteLogoLibraryService())->all(),
+                'logoLibrary' => $this->availableLogoLibrary((int) $site['id']),
             ]);
             return;
         }
@@ -163,10 +163,11 @@ final class SiteController extends Controller
 
         if (!empty($_POST['remove_logo'])) {
             Uploads::delete($site['logo_path'] ?? null);
-            $this->sites->setLogo((int) $site['id'], null);
+            $this->sites->setLogo((int) $site['id'], null, null);
         } else {
             try {
                 $logo = $this->resolveLogo(
+                    (int) $site['id'],
                     (int) $site['id'],
                     $_FILES['logo'] ?? null,
                     (string) ($_POST['library_logo'] ?? ''),
@@ -178,7 +179,7 @@ final class SiteController extends Controller
                     allowAutoMatch: empty($site['logo_path']),
                 );
                 if ($logo !== null) {
-                    $this->sites->setLogo((int) $site['id'], $logo);
+                    $this->sites->setLogo((int) $site['id'], $logo['path'], $logo['library_filename']);
                 }
             } catch (\RuntimeException $e) {
                 Session::flash('error', 'Site salvo, mas o logo não foi atualizado: ' . $e->getMessage());
@@ -219,6 +220,19 @@ final class SiteController extends Controller
     }
 
     /**
+     * Logos da biblioteca disponíveis pro seletor — nunca as já ocupadas
+     * por OUTRO site.
+     *
+     * @return list<array{domain: string, filename: string, url: string}>
+     */
+    private function availableLogoLibrary(?int $excludeSiteId): array
+    {
+        $used = $this->sites->usedLogoLibraryFilenames($excludeSiteId);
+
+        return (new SiteLogoLibraryService())->all($used);
+    }
+
+    /**
      * Decide de onde vem a logo do site, nesta ordem — a primeira que
      * existir vence: (1) upload manual, (2) escolha explícita no seletor
      * visual da biblioteca (`sites/form.php`, achado real 2026-09-15: sem
@@ -227,29 +241,39 @@ final class SiteController extends Controller
      * substitui uma logo já definida sem o admin pedir explicitamente).
      * Sem nenhuma das três, devolve null silenciosamente.
      *
+     * Nos casos (2) e (3), confere de novo no servidor que o arquivo não
+     * está ocupado por outro site — o seletor já esconde as ocupadas, mas
+     * nunca confia só nisso (POST forjado/página desatualizada poderia
+     * mandar um filename que já não está mais livre).
+     *
      * @param array{name?:string,type?:string,tmp_name?:string,error?:int,size?:int}|null $uploadedFile
+     * @return array{path: string, library_filename: ?string}|null
      */
-    private function resolveLogo(int $siteId, ?array $uploadedFile, string $libraryFilename, string $wordpressUrl, bool $allowAutoMatch): ?string
+    private function resolveLogo(int $siteId, ?int $excludeSiteId, ?array $uploadedFile, string $libraryFilename, string $wordpressUrl, bool $allowAutoMatch): ?array
     {
         $logo = Uploads::image($uploadedFile, 'logos', $siteId);
         if ($logo !== null) {
-            return $logo;
+            return ['path' => $logo, 'library_filename' => null];
         }
 
         $library = new SiteLogoLibraryService();
+        $used = $this->sites->usedLogoLibraryFilenames($excludeSiteId);
 
-        $chosen = $library->findByFilename($libraryFilename);
-        if ($chosen !== null) {
-            return Uploads::fromLocalFile($chosen, 'logos', $siteId);
+        $chosenFile = $library->findByFilename($libraryFilename);
+        if ($chosenFile !== null && !in_array(basename($chosenFile), $used, true)) {
+            return ['path' => Uploads::fromLocalFile($chosenFile, 'logos', $siteId), 'library_filename' => basename($chosenFile)];
         }
 
         if (!$allowAutoMatch) {
             return null;
         }
 
-        $matched = $library->findForDomain($wordpressUrl);
+        $matchedFile = $library->findForDomain($wordpressUrl);
+        if ($matchedFile === null || in_array(basename($matchedFile), $used, true)) {
+            return null;
+        }
 
-        return $matched !== null ? Uploads::fromLocalFile($matched, 'logos', $siteId) : null;
+        return ['path' => Uploads::fromLocalFile($matchedFile, 'logos', $siteId), 'library_filename' => basename($matchedFile)];
     }
 
     /** @param array<string, mixed> $data @return array<string, string> */

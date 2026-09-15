@@ -94,6 +94,18 @@ final class SiteLogoLibraryServiceTest extends TestCase
         $this->assertStringNotContainsString(' ', $withSuffix[0]['url']);
     }
 
+    public function testAllExcludesFilenamesAlreadyInUse(): void
+    {
+        // Achado real 2026-09-15: sem exclusão, a mesma logo (gavsy.com.png)
+        // podia ser escolhida pra dois sites diferentes.
+        $all = $this->library->all(['gavsy.com.png', 'penazo.com.png']);
+
+        $domains = array_column($all, 'domain');
+        $this->assertNotContains('gavsy.com', $domains);
+        $this->assertNotContains('penazo.com', $domains);
+        $this->assertCount(87, $all);
+    }
+
     public function testFindByFilenameResolvesRealFile(): void
     {
         $match = $this->library->findByFilename('gavsy.com.png');

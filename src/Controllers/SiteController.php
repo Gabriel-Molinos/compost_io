@@ -89,10 +89,11 @@ final class SiteController extends Controller
     public function create(): void
     {
         View::render('sites/form', [
-            'title'  => 'Novo site',
-            'site'   => ['language' => 'pt-BR', 'is_active' => 1],
-            'action' => '/sites',
-            'errors' => [],
+            'title'       => 'Novo site',
+            'site'        => ['language' => 'pt-BR', 'is_active' => 1],
+            'action'      => '/sites',
+            'errors'      => [],
+            'logoLibrary' => (new SiteLogoLibraryService())->all(),
         ]);
     }
 
@@ -103,17 +104,17 @@ final class SiteController extends Controller
         $errors = $this->validate($_POST);
         if ($errors !== []) {
             http_response_code(422);
-            View::render('sites/form', ['title' => 'Novo site', 'site' => $_POST, 'action' => '/sites', 'errors' => $errors]);
+            View::render('sites/form', [
+                'title' => 'Novo site', 'site' => $_POST, 'action' => '/sites', 'errors' => $errors,
+                'logoLibrary' => (new SiteLogoLibraryService())->all(),
+            ]);
             return;
         }
 
         $newId = $this->sites->create($_POST);
 
         try {
-            $logo = Uploads::image($_FILES['logo'] ?? null, 'logos', $newId);
-            if ($logo === null) {
-                $logo = $this->autoLogoFromLibrary($newId, (string) ($_POST['wordpress_url'] ?? ''));
-            }
+            $logo = $this->resolveLogo($newId, $_FILES['logo'] ?? null, (string) ($_POST['library_logo'] ?? ''), (string) ($_POST['wordpress_url'] ?? ''), allowAutoMatch: true);
             if ($logo !== null) {
                 $this->sites->setLogo($newId, $logo);
             }
@@ -132,10 +133,11 @@ final class SiteController extends Controller
         $site = $this->sites->find((int) $id) ?? $this->notFound();
 
         View::render('sites/form', [
-            'title'  => 'Editar site',
-            'site'   => $site,
-            'action' => '/sites/' . $site['id'],
-            'errors' => [],
+            'title'       => 'Editar site',
+            'site'        => $site,
+            'action'      => '/sites/' . $site['id'],
+            'errors'      => [],
+            'logoLibrary' => (new SiteLogoLibraryService())->all(),
         ]);
     }
 
@@ -152,6 +154,7 @@ final class SiteController extends Controller
                 'site'   => $_POST + ['id' => $site['id']],
                 'action' => '/sites/' . $site['id'],
                 'errors' => $errors,
+                'logoLibrary' => (new SiteLogoLibraryService())->all(),
             ]);
             return;
         }
@@ -163,13 +166,17 @@ final class SiteController extends Controller
             $this->sites->setLogo((int) $site['id'], null);
         } else {
             try {
-                $logo = Uploads::image($_FILES['logo'] ?? null, 'logos', (int) $site['id']);
-                if ($logo === null && empty($site['logo_path'])) {
-                    // Só tenta casar pela biblioteca se o site ainda não tem
-                    // logo nenhuma — nunca troca uma logo já definida
-                    // manualmente por trás do admin.
-                    $logo = $this->autoLogoFromLibrary((int) $site['id'], (string) ($_POST['wordpress_url'] ?? ''));
-                }
+                $logo = $this->resolveLogo(
+                    (int) $site['id'],
+                    $_FILES['logo'] ?? null,
+                    (string) ($_POST['library_logo'] ?? ''),
+                    (string) ($_POST['wordpress_url'] ?? ''),
+                    // Upload manual ou escolha explícita na biblioteca sempre
+                    // vale; o casamento AUTOMÁTICO por domínio só entra se o
+                    // site ainda não tem logo nenhuma — nunca troca uma logo
+                    // já definida por trás do admin sem ele pedir.
+                    allowAutoMatch: empty($site['logo_path']),
+                );
                 if ($logo !== null) {
                     $this->sites->setLogo((int) $site['id'], $logo);
                 }
@@ -185,17 +192,64 @@ final class SiteController extends Controller
     }
 
     /**
-     * Casa o domínio (`wordpress_url`) com a biblioteca de logos prontas
-     * (`storage/site-logos-library/`, achado real 2026-09-15) e processa
-     * pelo mesmo pipeline de um upload manual — mesma pasta de destino,
-     * mesmo redimensionamento/conversão pra WebP. Sem match, devolve null
-     * silenciosamente (não é erro, é só "essa logo não existe pronta").
+     * Exclusão de verdade — apaga o site e TUDO ligado a ele (artigos,
+     * categorias, metas, custo de IA, conexão WordPress...) via
+     * `ON DELETE CASCADE` (ver `SiteService::delete()`). Irreversível, por
+     * isso exige o admin digitar o nome exato do site no formulário (dupla
+     * checagem: o botão só habilita com o nome certo no JS, e aqui de novo
+     * no servidor — nunca confia só no que o JS deixou passar).
      */
-    private function autoLogoFromLibrary(int $siteId, string $wordpressUrl): ?string
+    public function destroy(string $id): void
     {
-        $match = (new SiteLogoLibraryService())->findForDomain($wordpressUrl);
+        Csrf::verify();
+        $site = $this->sites->find((int) $id) ?? $this->notFound();
 
-        return $match !== null ? Uploads::fromLocalFile($match, 'logos', $siteId) : null;
+        $typed = trim((string) ($_POST['confirm_name'] ?? ''));
+        if ($typed !== $site['name']) {
+            Session::flash('error', 'Nome digitado não bateu com o nome do site — nada foi excluído.');
+            Http::redirect('/sites/' . $site['id'] . '/edit');
+            return;
+        }
+
+        Uploads::delete($site['logo_path'] ?? null);
+        $this->sites->delete((int) $site['id']);
+
+        Session::flash('success', 'Site "' . $site['name'] . '" excluído, com todo o conteúdo ligado a ele.');
+        Http::redirect('/sites');
+    }
+
+    /**
+     * Decide de onde vem a logo do site, nesta ordem — a primeira que
+     * existir vence: (1) upload manual, (2) escolha explícita no seletor
+     * visual da biblioteca (`sites/form.php`, achado real 2026-09-15: sem
+     * seletor visível, o redator não sabia que a biblioteca existia), (3)
+     * casamento automático pelo domínio, só quando `$allowAutoMatch` (nunca
+     * substitui uma logo já definida sem o admin pedir explicitamente).
+     * Sem nenhuma das três, devolve null silenciosamente.
+     *
+     * @param array{name?:string,type?:string,tmp_name?:string,error?:int,size?:int}|null $uploadedFile
+     */
+    private function resolveLogo(int $siteId, ?array $uploadedFile, string $libraryFilename, string $wordpressUrl, bool $allowAutoMatch): ?string
+    {
+        $logo = Uploads::image($uploadedFile, 'logos', $siteId);
+        if ($logo !== null) {
+            return $logo;
+        }
+
+        $library = new SiteLogoLibraryService();
+
+        $chosen = $library->findByFilename($libraryFilename);
+        if ($chosen !== null) {
+            return Uploads::fromLocalFile($chosen, 'logos', $siteId);
+        }
+
+        if (!$allowAutoMatch) {
+            return null;
+        }
+
+        $matched = $library->findForDomain($wordpressUrl);
+
+        return $matched !== null ? Uploads::fromLocalFile($matched, 'logos', $siteId) : null;
     }
 
     /** @param array<string, mixed> $data @return array<string, string> */

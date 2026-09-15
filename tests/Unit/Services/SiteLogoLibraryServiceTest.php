@@ -8,9 +8,9 @@ use App\Services\SiteLogoLibraryService;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Bate no diretório real `storage/site-logos-library/` (assets versionados,
- * não gerados em runtime) — determinístico, sem banco/HTTP, por isso mora em
- * Unit mesmo lendo do disco.
+ * Bate no diretório real `public/assets/site-logos-library/` (assets
+ * versionados, não gerados em runtime) — determinístico, sem banco/HTTP, por
+ * isso mora em Unit mesmo lendo do disco.
  */
 final class SiteLogoLibraryServiceTest extends TestCase
 {
@@ -72,5 +72,48 @@ final class SiteLogoLibraryServiceTest extends TestCase
         $this->assertNull($this->library->findForDomain(null));
         $this->assertNull($this->library->findForDomain(''));
         $this->assertNull($this->library->findForDomain('   '));
+    }
+
+    public function testAllReturnsEveryFileWithDomainAndUrl(): void
+    {
+        $all = $this->library->all();
+
+        $this->assertCount(89, $all);
+        $gavsy = array_values(array_filter($all, static fn (array $l): bool => $l['domain'] === 'gavsy.com'));
+        $this->assertCount(1, $gavsy);
+        $this->assertSame('gavsy.com.png', $gavsy[0]['filename']);
+        $this->assertSame('/assets/site-logos-library/gavsy.com.png', $gavsy[0]['url']);
+    }
+
+    public function testAllUrlEncodesFilenamesWithSpaces(): void
+    {
+        $all = $this->library->all();
+        $withSuffix = array_values(array_filter($all, static fn (array $l): bool => $l['domain'] === 'actiow.com'));
+
+        $this->assertCount(1, $withSuffix);
+        $this->assertStringNotContainsString(' ', $withSuffix[0]['url']);
+    }
+
+    public function testFindByFilenameResolvesRealFile(): void
+    {
+        $match = $this->library->findByFilename('gavsy.com.png');
+
+        $this->assertNotNull($match);
+        $this->assertStringEndsWith('gavsy.com.png', $match);
+    }
+
+    public function testFindByFilenameRejectsPathTraversal(): void
+    {
+        // basename() já neutraliza isso, mas confirma que nunca escapa da
+        // biblioteca pra um arquivo arbitrário do servidor.
+        $this->assertNull($this->library->findByFilename('../../../../etc/passwd'));
+        $this->assertNull($this->library->findByFilename('arquivo-que-nao-existe.png'));
+    }
+
+    public function testFindByFilenameReturnsNullForEmptyOrNull(): void
+    {
+        $this->assertNull($this->library->findByFilename(null));
+        $this->assertNull($this->library->findByFilename(''));
+        $this->assertNull($this->library->findByFilename('   '));
     }
 }

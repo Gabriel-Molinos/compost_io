@@ -142,6 +142,20 @@ final class SiteService
     }
 
     /**
+     * Exclusão de verdade (não é soft-delete — `sites` não tem `deleted_at`,
+     * diferente de `articles`). TODAS as tabelas com `site_id` têm
+     * `ON DELETE CASCADE` (migration 0001 + seguintes) — apaga junto
+     * categorias, metas, artigos, execuções de IA, conexão WordPress etc.
+     * Irreversível; `SiteController::destroy()` exige o admin digitar o
+     * nome exato do site antes de chamar isto (achado real 2026-09-15,
+     * pedido explícito: precisa dar pra excluir site).
+     */
+    public function delete(int $id): void
+    {
+        Connection::get()->prepare('DELETE FROM sites WHERE id = :id')->execute(['id' => $id]);
+    }
+
+    /**
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */

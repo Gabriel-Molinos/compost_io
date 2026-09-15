@@ -12,6 +12,7 @@ use App\View;
 /** @var array<string, mixed> $site */
 /** @var string $action */
 /** @var array<string, string> $errors */
+/** @var list<array{domain: string, filename: string, url: string}> $logoLibrary */
 
 $isEdit = !empty($site['id']);
 $backHref = $isEdit ? '/sites/' . $site['id'] : '/sites';
@@ -62,6 +63,30 @@ if ($isEdit) {
             </div>
         </div>
 
+        <?php if ($logoLibrary !== []): ?>
+            <details class="mt-4">
+                <summary class="cursor-pointer text-sm font-medium text-cyan hover:text-cyan-bright">
+                    Ou escolher uma logo pronta da biblioteca (<?= count($logoLibrary) ?>)
+                </summary>
+                <p class="mt-2 text-xs text-text-muted">
+                    Cada domínio tem no máximo uma logo aqui. Escolher uma abaixo substitui o upload acima
+                    (se os dois forem enviados juntos, o upload manual tem prioridade).
+                </p>
+                <div class="mt-3 grid max-h-80 grid-cols-4 gap-2 overflow-y-auto rounded-md border border-border bg-surface-2/40 p-3 sm:grid-cols-6">
+                    <?php foreach ($logoLibrary as $l): ?>
+                        <label class="group flex cursor-pointer flex-col items-center gap-1 rounded-md border border-transparent p-1.5 has-[:checked]:border-cyan has-[:checked]:bg-cyan/10">
+                            <input type="radio" name="library_logo" value="<?= View::e($l['filename']) ?>" class="sr-only">
+                            <img src="<?= View::e($l['url']) ?>" alt="" loading="lazy"
+                                 class="h-12 w-12 rounded bg-white object-contain p-1">
+                            <span class="w-full truncate text-center text-[10px] text-text-muted group-has-[:checked]:text-cyan" title="<?= View::e($l['domain']) ?>">
+                                <?= View::e($l['domain']) ?>
+                            </span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </details>
+        <?php endif; ?>
+
         <div class="mt-5 space-y-5">
             <?= Form::text('name', 'Nome', $site, $errors, required: true) ?>
             <?= Form::text('niche', 'Nicho', $site, $errors) ?>
@@ -108,3 +133,40 @@ if ($isEdit) {
         </a>
     </div>
 </form>
+
+<?php if ($isEdit): ?>
+    <section class="mt-8 max-w-xl rounded-lg border border-danger/40 bg-danger/5 p-5">
+        <h2 class="font-display text-base font-semibold text-danger">Zona de perigo</h2>
+        <p class="mt-1 text-sm text-text-secondary">
+            Exclui o site e <strong>tudo</strong> que está ligado a ele — artigos, categorias, metas,
+            histórico de custo de IA, conexão com o WordPress. Não tem como desfazer.
+        </p>
+        <form method="post" action="/sites/<?= View::e($site['id']) ?>/delete" class="mt-4"
+              data-confirm="Excluir &quot;<?= View::e($site['name']) ?>&quot; de vez? Não tem como desfazer.">
+            <?= Csrf::field() ?>
+            <label class="block text-sm">
+                <span class="text-text-secondary">Digite <strong class="text-text-primary"><?= View::e($site['name']) ?></strong> pra confirmar</span>
+                <input type="text" name="confirm_name" required autocomplete="off"
+                       data-delete-confirm-input="<?= View::e($site['name']) ?>"
+                       class="mt-1.5 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-danger focus:outline-none">
+            </label>
+            <button type="submit" disabled data-delete-confirm-button
+                    class="mt-3 rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger transition-colors hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-40">
+                Excluir site permanentemente
+            </button>
+        </form>
+    </section>
+
+    <script>
+        // Progressive enhancement: botão só habilita com o nome exato digitado
+        // — o servidor confere de novo (SiteController::destroy() nunca confia só no JS).
+        (function () {
+            var input = document.querySelector('[data-delete-confirm-input]');
+            var button = document.querySelector('[data-delete-confirm-button]');
+            if (!input || !button) return;
+            input.addEventListener('input', function () {
+                button.disabled = input.value !== input.getAttribute('data-delete-confirm-input');
+            });
+        })();
+    </script>
+<?php endif; ?>

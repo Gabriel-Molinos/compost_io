@@ -66,7 +66,8 @@ return static function (Router $router): void {
     $router->add('GET',  '/sites/new',       [SiteController::class, 'create'], admin: true);
     $router->add('POST', '/sites',           [SiteController::class, 'store'],  admin: true);
     $router->add('GET',  '/sites/{id}/edit', [SiteController::class, 'edit'],   admin: true);
-    $router->add('POST', '/sites/{id}',      [SiteController::class, 'update'], admin: true);
+    $router->add('POST', '/sites/{id}',        [SiteController::class, 'update'],  admin: true);
+    $router->add('POST', '/sites/{id}/delete', [SiteController::class, 'destroy'], admin: true);
     $router->add('GET',  '/sites/{id}',      [SiteController::class, 'show'],   auth: true);
 
     // Categorias do site

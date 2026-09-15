@@ -261,17 +261,22 @@ Cada documento deve conter: objetivo, como funciona, configuração, variáveis 
 
 Responsável por: autenticação alternativa de usuários já cadastrados (sem auto-cadastro) via conta Google, na tela `/login`.
 
-> **Implementado nesta sessão.** Front-end: Google Identity Services (`accounts.google.com/gsi/client`, carregado em `src/Views/layout/auth.php`), botão em modo redirect-POST (`data-login_uri="/callback.php"`, `src/Views/auth/login.php`). Back-end: `public/callback.php` (standalone, fora do `Router` — exceção deliberada) + `google/apiclient` (`Google\Client::verifyIdToken`) + `AuthService::attemptGoogle()`. CSRF via double-submit `g_csrf_token` (`App\Support\GoogleCsrf`). Vínculo em `users.google_id` (migration `0022_users_google_id.sql`). Ver [docs/technical/requisitos.md §64.2](requisitos.md#642-autenticação).
+> **Implementado nesta sessão.** Front-end: Google Identity Services (`accounts.google.com/gsi/client`, carregado em `src/Views/layout/auth.php`), botão em modo redirect-POST (`data-login_uri` absoluta, montada de `APP_URL` + `/oauth/callback`, `src/Views/auth/login.php`). Back-end: rota `POST /oauth/callback` → `AuthController::googleCallback()` (dentro do `Router`, como as demais rotas) + `google/apiclient` (`Google\Client::verifyIdToken`) + `AuthService::attemptGoogle()`. CSRF via double-submit `g_csrf_token` (`App\Support\GoogleCsrf`). Vínculo em `users.google_id` (migration `0022_users_google_id.sql`). Ver [docs/technical/requisitos.md §64.2](requisitos.md#642-autenticação).
 
-**Configuração no Google Cloud Console** (achado real 2026-09-15: faltou isso
-na primeira configuração e deu `Erro 400: redirect_uri_mismatch`) — como
-`data-ux_mode="redirect"` faz o GIS usar o mecanismo de redirect do OAuth de
-verdade por baixo dos panos, o `data-login_uri` precisa estar cadastrado em
-**"URIs de redirecionamento autorizados"** do Client ID (Credenciais → OAuth
-2.0 Client ID), não só em "Origens JavaScript autorizadas":
+**Configuração no Google Cloud Console** (achados reais 2026-09-15):
+1. `data-login_uri` precisa ser uma **URL absoluta** (com esquema/host) — um
+   caminho relativo (`/oauth/callback`) dá `Erro 400: redirect_uri_mismatch`
+   mesmo com a URL certa cadastrada, porque o GIS não consegue casar um
+   caminho relativo contra o valor registrado no Console.
+2. Como `data-ux_mode="redirect"` faz o GIS usar o mecanismo de redirect do
+   OAuth de verdade por baixo dos panos, essa URL precisa estar cadastrada em
+   **"URIs de redirecionamento autorizados"** do Client ID (Credenciais →
+   OAuth 2.0 Client ID), não só em "Origens JavaScript autorizadas" — e
+   precisa bater **byte a byte** (porta, caminho, com/sem barra final) com o
+   que está cadastrado lá, não só o domínio:
 ```
-http://localhost:8000/callback.php   (dev)
-https://SEU-DOMINIO/callback.php     (produção, quando existir)
+http://localhost:8080/oauth/callback   (dev — porta 8080 é a padrão do projeto)
+https://SEU-DOMINIO/oauth/callback     (produção, quando existir)
 ```
 
 Documentação:

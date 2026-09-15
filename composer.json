@@ -27,7 +27,7 @@
         "sort-packages": true
     },
     "scripts": {
-        "serve": "php -S localhost:8000 -t public",
+        "serve": "php -S localhost:8080 -t public",
         "css": "tools/tailwindcss -i src/styles/input.css -o public/assets/css/app.css --minify",
         "css:watch": "tools/tailwindcss -i src/styles/input.css -o public/assets/css/app.css --watch",
         "test": "phpunit",

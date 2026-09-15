@@ -90,7 +90,7 @@ $describedBy = $error !== null ? 'login-error' : null;
     // "Erro 400: redirect_uri_mismatch" mesmo com a URL certa cadastrada em
     // "URIs de redirecionamento autorizados" no Cloud Console, porque o GIS
     // não consegue casar um caminho relativo contra o que está lá.
-    $loginUri = rtrim((string) Env::get('APP_URL', ''), '/') . '/callback.php';
+    $loginUri = rtrim((string) Env::get('APP_URL', ''), '/') . '/oauth/callback';
     ?>
     <div id="g_id_onload"
          data-client_id="<?= View::e(Env::get('GOOGLE_CLIENT_ID', '')) ?>"

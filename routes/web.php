@@ -35,6 +35,9 @@ return static function (Router $router): void {
     $router->add('GET', '/login', [AuthController::class, 'showLogin']);
     $router->add('POST', '/login', [AuthController::class, 'login']);
     $router->add('POST', '/logout', [AuthController::class, 'logout']);
+    // Redirect URI do Login com Google (GIS, modo redirect) — caminho exigido
+    // pela URI já cadastrada no Google Cloud Console (achado real 2026-09-15).
+    $router->add('POST', '/oauth/callback', [AuthController::class, 'googleCallback']);
 
     // Aplicação
     $router->add('GET', '/', [HomeController::class, 'index'], auth: true);

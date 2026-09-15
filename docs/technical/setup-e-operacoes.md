@@ -110,21 +110,21 @@ composer css            # build único (--minify)
 php database/migrate.php
 
 # 7. Subir a aplicação (servidor embutido do PHP)
-composer serve          # = php -S localhost:8000 -t public
+composer serve          # = php -S localhost:8080 -t public
 ```
 
-Abrir <http://localhost:8000> — a home mostra o status da conexão com o banco.
+Abrir <http://localhost:8080> — a home mostra o status da conexão com o banco.
 
 ### 85. Comandos úteis
 
 | Comando | O que faz |
 |---|---|
-| `composer serve` | Sobe a aplicação em `localhost:8000` (servidor embutido do PHP) |
+| `composer serve` | Sobe a aplicação em `localhost:8080` (servidor embutido do PHP) |
 | `composer install` | Instala dependências PHP e gera o autoload |
 | `composer css` / `composer css:watch` | Compila o CSS (Tailwind CLI standalone) |
 | `php database/migrate.php` | Aplica migrations `.sql` pendentes; registra em `schema_migrations` |
 | `php database/migrate.php --status` | Lista migrations pendentes sem aplicar |
-| `curl localhost:8000/api/health/db` | Checagem de saúde da conexão com o banco (JSON) |
+| `curl localhost:8080/api/health/db` | Checagem de saúde da conexão com o banco (JSON) |
 | `vendor/bin/phpunit` | Roda os testes (quando existirem) |
 | `vendor/bin/php-cs-fixer fix` | Linter/formatter PSR-12 (quando configurado) |
 

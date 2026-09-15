@@ -67,7 +67,7 @@ cd editorial-dashboard
 cp .env.example .env      # preencher com os valores reais (peça o arquivo local de credenciais)
 composer install
 ./tailwindcss -i src/styles/input.css -o public/assets/css/app.css --watch
-php -S localhost:8000 -t public
+php -S localhost:8080 -t public
 ```
 
 Node.js **não** é necessário (ver [ADR-008](docs/decisions/adr-008-frontend-php-puro.md)). Guia completo, pré-requisitos e comandos úteis: [docs/technical/setup-e-operacoes.md](docs/technical/setup-e-operacoes.md).

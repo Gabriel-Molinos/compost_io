@@ -201,138 +201,45 @@
 }
 
 @layer components {
-  /* Fundo do app: vinheta radial + scanline sutil + brilho de horizonte —
-     textura única permitida pela identidade visual, nunca acima disso.
-     A grade em si virou 3D (ver .app-bg::before abaixo) — não repete mais
-     aqui plana, senão competia com a de baixo. Fica atrás de todo
-     conteúdo (ver `relative z-10` no wrapper em layout/base.php e
-     layout/auth.php). */
+  /* Fundo do app: vinheta radial + scanline sutil + grade — textura única
+     permitida pela identidade visual, nunca acima disso. A grade (linhas
+     repetidas a cada 48px) reforça a leitura "painel digital/HUD" da
+     identidade Y2K; fica atrás de todo conteúdo (ver .app-bg::after e
+     `relative z-10` no wrapper em layout/base.php e layout/auth.php).
+     Voltou pra essa versão (grade plana cobrindo todo o fundo, achado real
+     2026-09-14: a grade 3D em perspectiva/piso de HUD incomodava mais do
+     que ajudava) — ver histórico do commit d974f64 pra versão descartada. */
   .app-bg {
     position: relative;
-    background-color: #050B0F;
-    /* Degradê vertical (referência: céu escurecendo pra cima, mais claro/
-       azulado perto do "horizonte" onde a grade 3D começa) no lugar da
-       vinheta só no topo de antes — dá a profundidade de céu que a
-       imagem de referência tem, em vez de fundo liso atrás da grade. */
+    background-color: #081720;
     background-image:
-      radial-gradient(ellipse 70% 45% at 50% 62%, rgba(56, 220, 255, .35), transparent 70%),
-      linear-gradient(to bottom, #010203 0%, #020509 34%, #05131f 58%, #0c3550 78%, #135a7a 88%, #010203 100%),
-      repeating-linear-gradient(0deg, rgba(240, 248, 255, .025) 0px, rgba(240, 248, 255, .025) 1px, transparent 1px, transparent 3px);
+      radial-gradient(ellipse 60% 40% at 50% -10%, rgba(0, 208, 240, .08), transparent 60%),
+      repeating-linear-gradient(0deg, rgba(240, 248, 255, .025) 0px, rgba(240, 248, 255, .025) 1px, transparent 1px, transparent 3px),
+      repeating-linear-gradient(90deg, rgba(0, 208, 240, .06) 0px, rgba(0, 208, 240, .06) 1px, transparent 1px, transparent 48px),
+      repeating-linear-gradient(0deg, rgba(0, 208, 240, .06) 0px, rgba(0, 208, 240, .06) 1px, transparent 1px, transparent 48px);
     background-attachment: fixed;
+    /* Cor de base "respirando" (achado real 2026-09-14, pedido explícito:
+       além do brilho se movendo por cima, o fundo atrás da grade também
+       troca de tom devagar). `background-color` anima nativamente (o
+       navegador interpola a cor sozinho) e fica na camada mais baixa de
+       tudo — a grade e os gradientes de `background-image` continuam por
+       cima, sem mexer em nada, só o "chão" escuro debaixo deles muda de
+       tom. Primeira versão (tons quase idênticos) era sutil DEMAIS — não
+       dava pra perceber no dia a dia sem comparar prints lado a lado; a
+       versão seguinte foi longe demais no sentido contrário (achado real
+       2026-09-15: "fica muito claro num momento e muito escuro no outro") —
+       faixa estreitada de novo, agora entre dois tons próximos e nenhum
+       dos dois perto de preto puro nem perto do brilho dos painéis da UI
+       (`surface`/`surface-2`), só dois pontos (não três) pra respirar
+       igual nos dois sentidos, sem trecho mais rápido que o outro. */
+    animation: bg-breathe 20s ease-in-out infinite;
   }
-
-  /* Grade 3D no rodapé — o "piso" que aparecia plano (repeating-linear-gradient
-     comum) virou de verdade uma grade em perspectiva, como um piso de HUD
-     recuando até o horizonte (referência: estética synthwave/Tron, mas bem
-     mais discreta — combinando com o resto do site, que é sóbrio). Técnica:
-     um retângulo bem mais alto que a área visível (140vh), com a grade
-     comum (repeating-linear-gradient nos dois eixos) desenhada nele, e só
-     então `perspective()+rotateX()` inclinando esse retângulo pra trás a
-     partir da borda de baixo — o navegador projeta a grade em 3D de
-     verdade (as linhas ficam naturalmente mais apertadas perto do topo,
-     sem precisar simular isso "à mão" no gradiente). `mask-image` apaga a
-     metade de cima do retângulo (o "horizonte") pra fundir com a vinheta
-     acima em vez de cortar num degrau. Estático (sem animação) — depois do
-     ajuste no brilho difuso (ver .app-bg::after), qualquer movimento a
-     mais no fundo competia por atenção; aqui o efeito é só de profundidade. */
-  .app-bg::before {
-    content: '';
-    position: fixed;
-    left: -50%;
-    right: -50%;
-    bottom: 0;
-    height: 85vh;
-    z-index: 0;
-    pointer-events: none;
-    /* SVG (não repeating-linear-gradient) — cada quadrado da grade é um
-       <rect> com contorno; lado a lado, os contornos vizinhos se somam e
-       formam a malha completa. Motivo da troca (2026-09-09, "não vejo as
-       verticais"/"fraco"): repeating-linear-gradient em duas camadas
-       (90deg + 0deg) sobrepostas, com transform 3D + mask-image por
-       cima, é sensível demais a arredondamento de sub-pixel do
-       navegador — a linha de 2px podia render nítida numa direção e
-       quase desaparecer na outra dependendo do ângulo final. Um <rect>
-       com stroke é uma linha vetorial de verdade nas DUAS direções ao
-       mesmo tempo, sem essa ambiguidade. */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect x='1' y='1' width='118' height='118' fill='none' stroke='%2300E5FF' stroke-width='2.5' stroke-opacity='0.9'/%3E%3C/svg%3E");
-    background-size: 120px 120px;
-    filter: drop-shadow(0 0 2px rgba(0, 208, 240, .6));
-    /* Ângulo/distância ajustados: raso demais (rotateX alto/perspective
-       curta) faz a malha convergir tão rápido que quase tudo colapsa
-       numa faixa embolada perto do "horizonte" — mais moderado deixa a
-       malha legível numa faixa bem maior da tela. */
-    transform: perspective(900px) rotateX(62deg);
-    transform-origin: bottom center;
-    -webkit-mask-image: linear-gradient(to top, black 0%, black 35%, transparent 68%);
-    mask-image: linear-gradient(to top, black 0%, black 35%, transparent 68%);
-  }
-  @media (prefers-reduced-motion: reduce), (max-width: 640px) {
-    /* Em telas pequenas o ângulo raso amassa a grade num emaranhado sem
-       sentido (não é "menos motion", é ilegível) — some ali; em
-       reduced-motion, todo o resto do fundo já é estático, então tirar
-       esse elemento também não perde nenhuma informação nova. */
-    .app-bg::before { display: none; }
-  }
-
-  /* Brilho ambiente — refeito do zero (2026-09-08).
-     As duas versões anteriores eram uma FAIXA varrendo o fundo (primeiro
-     diagonal, depois horizontal): por mais que a faixa em si fosse suave,
-     o formato — uma linha reta atravessando a tela em looping perfeito —
-     sempre lia como elemento de UI (scanner/loading bar/radar), nunca como
-     luz de verdade. Luz de verdade não anda em linha reta num trilho fixo:
-     ela é uma MANCHA difusa (sem borda nenhuma, só gradiente radial) que
-     deriva devagar num caminho meio elíptico e pulsa de tamanho — é isso
-     que o olho lê como "orgânico" em vez de "programado".
-     Elemento bem maior que a viewport (1400px, centralizado e sempre
-     recentralizado via translate(-50%,-50%) antes do deslocamento do
-     keyframe, pra funcionar em qualquer tamanho de tela) com dois raios
-     radiais sobrepostos fora de centro um do outro — evita ficar um
-     círculo perfeito e concêntrico, que ainda pareceria "gerado". Período
-     longo (24s) com 3 pontos de destino diferentes (não so ida-e-volta
-     entre 2 pontos) pra não ficar óbvio que é um loop curto.
-     Ancorado no fim da grade 3D (não no centro da tela, 2026-09-09):
-     bem na altura onde a grade (.app-bg::before) esmaece, esse brilho
-     reforça o "horizonte" e disfarça a costura entre a malha e o céu —
-     dois efeitos, uma peça só, em vez de competirem por atenção. */
-  .app-bg::after {
-    content: '';
-    position: fixed;
-    top: 82%;
-    left: 50%;
-    width: 1300px;
-    height: 1300px;
-    z-index: 0;
-    pointer-events: none;
-    /* Raio em px fixo (não em %) — sem isso, "100%" significa "no canto
-       MAIS distante da caixa" (tamanho padrão farthest-corner do
-       radial-gradient); como o centro do círculo não é o centro da caixa,
-       os cantos mais PRÓXIMOS ficavam cortados no meio do degradê, ainda
-       com cor, formando uma borda reta visível bem onde a caixa de
-       1300×1300px termina (o bug reportado). Com raio fixo, o degradê
-       sempre termina em transparent bem antes de qualquer borda da caixa,
-       não importa a posição do centro. Vários estágios (não só
-       cor→transparent num stop só) — mesmo motivo do ajuste anterior no
-       brilho do mouse: um degradê de 2 pontos vai linear até zero e o
-       trecho final, fraco mas > 0, contra o fundo escuro também formava
-       um anel visível. */
-    background:
-      radial-gradient(circle 420px at 36% 38%,
-        rgba(0, 208, 240, .22) 0%, rgba(0, 208, 240, .10) 40%,
-        rgba(0, 208, 240, .03) 70%, transparent 100%),
-      radial-gradient(circle 420px at 64% 58%,
-        rgba(127, 232, 255, .16) 0%, rgba(127, 232, 255, .07) 40%,
-        rgba(127, 232, 255, .02) 70%, transparent 100%);
-    transform: translate(-50%, -50%);
-    animation: aurora-drift 24s ease-in-out infinite;
-  }
-  @keyframes aurora-drift {
-    0%   { transform: translate(-50%, -50%) translate(-6%, -8%) scale(1); }
-    33%  { transform: translate(-50%, -50%) translate(8%, 5%) scale(1.1); }
-    66%  { transform: translate(-50%, -50%) translate(-4%, 10%) scale(0.94); }
-    100% { transform: translate(-50%, -50%) translate(-6%, -8%) scale(1); }
+  @keyframes bg-breathe {
+    0%, 100% { background-color: #081720; }
+    50%      { background-color: #0A1E2C; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .app-bg::after { display: none; }
+    .app-bg { animation: none; }
   }
 
   /* Glow contido no acento ciano — qualquer botão/elemento com bg-cyan ganha
@@ -350,14 +257,38 @@
   }
 
   /* Cards clicáveis (aplicado explicitamente via .hover-card): leve elevação
-     + glow contido. Não é global — a maioria dos elementos com `border` no
-     app não é um card clicável. */
+     + glow contido + um "spotlight" que aparece no hover (achado real
+     2026-09-14, pedido explícito com referência visual — mesma ideia do
+     `.circleLight` da referência: um gradiente radial que só aparece no
+     hover, dando profundidade sem precisar seguir o mouse). Não é global —
+     a maioria dos elementos com `border` no app não é um card clicável.
+     `::after` com `z-index: -1` (igual a referência) — fica ACIMA do fundo
+     do próprio card mas ABAIXO do conteúdo normal (texto/ícone), então
+     nunca tampa nada, sem precisar mexer no HTML de cada card que usa isto. */
   .hover-card {
+    position: relative;
     transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+  }
+  .hover-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    opacity: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background: radial-gradient(circle 220px at 85% 0%, rgba(0, 208, 240, .35), transparent 70%);
+    transition: opacity 300ms ease;
   }
   .hover-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 28px -12px rgba(0, 208, 240, .35);
+    box-shadow: 0 10px 32px -10px rgba(0, 208, 240, .45), 0 0 34px -8px rgba(0, 208, 240, .28);
+  }
+  .hover-card:hover::after {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hover-card, .hover-card::after { transition: none; }
   }
 
   /* Ícone da marca no header: leve brilho ao passar o mouse. */
@@ -798,6 +729,92 @@
   .confirm-dialog-confirm:hover {
     background-color: #ff7a93;
     box-shadow: 0 0 16px rgba(255, 92, 122, .4);
+  }
+
+  /* Lightbox de imagem (assets/js/image-lightbox.js) — mesma técnica do
+     diálogo de confirmação acima (<dialog> nativo, só estilo por cima),
+     usado na escolha de imagem destacada (production/show.php) pra
+     conferir a imagem em tamanho grande antes de decidir. */
+  .image-lightbox {
+    padding: 0;
+    border: none;
+    border-radius: .75rem;
+    background: transparent;
+    max-width: min(90vw, 60rem);
+    max-height: 90vh;
+  }
+  .image-lightbox::backdrop {
+    background: rgba(5, 11, 15, .82);
+    backdrop-filter: blur(2px);
+  }
+  .image-lightbox img {
+    display: block;
+    max-width: min(90vw, 60rem);
+    max-height: 90vh;
+    border-radius: .75rem;
+    box-shadow: 0 24px 60px -12px rgba(0, 0, 0, .7);
+  }
+
+  /* Carrossel de imagem destacada (production/show.php, assets/js/image-carousel.js)
+     — trilha desliza por transform (não troca display), fica suave e some o
+     "pulo" seco que dava ao trocar de imagem. */
+  [data-carousel-track] {
+    transition: transform 320ms cubic-bezier(.22, .8, .32, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-carousel-track] { transition: none; }
+  }
+
+  /* Botão grande de "usar esta imagem" (production/show.php, escolha de
+     destacada) — antes era um rádio pequeno com texto genérico ao lado,
+     difícil de ver se marcou ou não sem zoom (achado real 2026-09-10).
+     Estado visual trocado via JS (assets/js/image-carousel.js, não CSS
+     peer-checked: o rádio fica numa legenda fora do trilho que desliza,
+     sincronizada por índice — peer/sibling puro não alcançava o rádio
+     certo de forma confiável nessa estrutura). */
+  .image-select-pill {
+    border-color: #00D0F0;
+    background-color: rgba(0, 208, 240, .12);
+    color: #F0F8FF;
+  }
+  .image-select-pill:hover {
+    background-color: rgba(0, 208, 240, .22);
+    box-shadow: 0 0 16px rgba(0, 208, 240, .3);
+  }
+  .image-select-pill-selected,
+  .image-select-pill-selected:hover {
+    border-color: #3DF07A;
+    background-color: #3DF07A;
+    color: #04210F;
+    box-shadow: 0 0 16px rgba(61, 240, 122, .35);
+  }
+
+  /* Card de imagem selecionável (production/show.php, escolha de destacada)
+     — anel + glow contido na cor de sucesso quando marcado, mesma
+     linguagem do glow em .bg-success/90 acima, só que fixo (não só hover),
+     porque aqui o estado "selecionado" precisa ficar visível sem interação. */
+  .image-pick-card {
+    transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+  }
+  .image-pick-card:hover {
+    transform: translateY(-2px);
+  }
+  .image-pick-card-selected {
+    box-shadow: 0 0 0 2px rgba(61, 240, 122, .55), 0 0 20px rgba(61, 240, 122, .25);
+  }
+  .image-pick-badge {
+    position: absolute;
+    top: .5rem;
+    right: .5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 999px;
+    background-color: #3DF07A;
+    color: #04210F;
+    box-shadow: 0 0 12px rgba(61, 240, 122, .5);
   }
 
   /* Borda animada do card de login — um "raio" ciano gira em volta da

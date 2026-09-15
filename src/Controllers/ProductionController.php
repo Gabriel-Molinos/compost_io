@@ -170,6 +170,13 @@ final class ProductionController extends Controller
         // post publicado de verdade, direto do WordPress.
         $notes = $this->freshNotes((int) $article['id'], $this->articles->recentPublishedForLinking((int) $site['id']));
 
+        // Checklist de pré-aprovação (RF-008) — só faz sentido mostrar
+        // enquanto o Redator-Chefe ainda pode agir (IN_REVIEW); pra qualquer
+        // outro status já foi decidido, exibir aqui só confundiria.
+        $checklist = $article['status'] === 'IN_REVIEW'
+            ? (new ArticleReviewService())->checklist($article)
+            : null;
+
         View::render('sites/production/show', [
             'title'       => ($article['title'] ?: 'Rascunho #' . $article['id']) . ' · ' . $site['name'],
             'metaRefresh' => $generating ? 5 : null,
@@ -194,6 +201,7 @@ final class ProductionController extends Controller
                 (int) $article['id'],
                 $article['lineage_id'] !== null ? (int) $article['lineage_id'] : null,
             ),
+            'checklist'  => $checklist,
         ]);
     }
 

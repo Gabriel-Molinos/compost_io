@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Database\Connection;
+use App\Support\HtmlLinks;
 use RuntimeException;
 
 /**
@@ -32,19 +33,93 @@ final class ArticleReviewService
         'outro'                 => 'Outro',
     ];
 
+    /** Faixa de link exigida pro checklist de pré-aprovação (RF-008, docs/ai/seo.md "Links internos"/docs/ai/compliance.md). */
+    private const MIN_INTERNAL_LINKS = 3;
+    private const MAX_INTERNAL_LINKS = 5;
+    private const MAX_EXTERNAL_LINKS = 2;
+
     private ArticleService $articles;
     private FeedbackService $feedback;
+    private SiteService $sites;
 
-    public function __construct(?ArticleService $articles = null, ?FeedbackService $feedback = null)
+    public function __construct(?ArticleService $articles = null, ?FeedbackService $feedback = null, ?SiteService $sites = null)
     {
         $this->articles = $articles ?? new ArticleService();
         $this->feedback = $feedback ?? new FeedbackService();
+        $this->sites = $sites ?? new SiteService();
     }
 
-    /** @throws RuntimeException se o artigo não estiver em IN_REVIEW */
+    /**
+     * Checklist obrigatório de pré-aprovação (achado real 2026-09-15,
+     * recomendação do relatório de Inteligência: artigos chegavam a
+     * `BLOCKED` em compliance/SEO por fugir de categoria válida ou da faixa
+     * de link — mas nada impedia a aprovação manual de um artigo fora dessa
+     * faixa antes disso). Cada item tem `ok` + `detail` (pro painel mostrar
+     * o porquê); `approve()` usa isto pra travar de verdade, não só avisar.
+     *
+     * @param array<string, mixed> $article linha de `articles` (findById())
+     * @return array<string, array{ok: bool, label: string, detail: string}>
+     */
+    public function checklist(array $article): array
+    {
+        $version = $this->articles->latestVersion((int) $article['id']);
+        $html = (string) ($version['content_html'] ?? '');
+
+        $site = $this->sites->find((int) $article['site_id']);
+        $siteHost = $site !== null && !empty($site['wordpress_url'])
+            ? parse_url((string) $site['wordpress_url'], PHP_URL_HOST)
+            : null;
+        $links = HtmlLinks::countByType($html, is_string($siteHost) ? $siteHost : null);
+
+        $internalOk = $links['internal'] >= self::MIN_INTERNAL_LINKS && $links['internal'] <= self::MAX_INTERNAL_LINKS;
+        $externalOk = $links['external'] <= self::MAX_EXTERNAL_LINKS;
+
+        return [
+            'category' => [
+                'ok'     => !empty($article['category_id']),
+                'label'  => 'Categoria válida',
+                'detail' => !empty($article['category_id']) ? 'Definida.' : 'Nenhuma categoria definida.',
+            ],
+            'internal_links' => [
+                'ok'     => $internalOk,
+                'label'  => 'Links internos (3 a 5)',
+                'detail' => $links['internal'] . ' encontrado(s).',
+            ],
+            'external_links' => [
+                'ok'     => $externalOk,
+                'label'  => 'Links externos (máx. 2)',
+                'detail' => $links['external'] . ' encontrado(s).',
+            ],
+        ];
+    }
+
+    public static function checklistPassed(array $checklist): bool
+    {
+        foreach ($checklist as $item) {
+            if (!$item['ok']) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /** @throws RuntimeException se o artigo não estiver em IN_REVIEW ou não passar no checklist de pré-aprovação */
     public function approve(int $articleId): void
     {
-        $this->assertInReview($articleId);
+        $article = $this->assertInReview($articleId);
+
+        $checklist = $this->checklist($article);
+        if (!self::checklistPassed($checklist)) {
+            $failed = array_values(array_map(
+                static fn (array $item): string => $item['label'],
+                array_filter($checklist, static fn (array $item): bool => !$item['ok']),
+            ));
+            throw new RuntimeException(
+                'Checklist de pré-aprovação não passou: ' . implode(', ', $failed) . '. Ajuste o artigo antes de aprovar.'
+            );
+        }
+
         $this->articles->setStatus($articleId, 'APPROVED');
     }
 
@@ -74,7 +149,8 @@ final class ArticleReviewService
         }
     }
 
-    private function assertInReview(int $articleId): void
+    /** @return array<string, mixed> */
+    private function assertInReview(int $articleId): array
     {
         $article = $this->articles->findById($articleId);
         if ($article === null) {
@@ -83,5 +159,7 @@ final class ArticleReviewService
         if ($article['status'] !== 'IN_REVIEW') {
             throw new RuntimeException('Só é possível revisar um artigo em "Em revisão" (status atual: ' . $article['status'] . ').');
         }
+
+        return $article;
     }
 }

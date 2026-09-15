@@ -21,6 +21,7 @@ use App\View;
 /** @var array<string,mixed>|null $lastSchedule */
 /** @var list<array<string,mixed>> $authors */
 /** @var string|null $nextSlot data/hora (Y-m-d H:i:s) que o agendamento automático vai usar, quando o artigo está APPROVED */
+/** @var array<string, array{ok: bool, label: string, detail: string}>|null $checklist checklist de pré-aprovação (RF-008), só quando IN_REVIEW */
 
 $activeTab = 'production';
 require __DIR__ . '/../_tabs.php';
@@ -141,7 +142,26 @@ $alertIcon = static function (string $kind): string {
 <?php endif; ?>
 
 <?php if ($article['status'] === 'IN_REVIEW'): ?>
-    <section data-tour="review-actions" class="mt-8">
+    <?php $checklistPassed = $checklist !== null && \App\Services\ArticleReviewService::checklistPassed($checklist); ?>
+    <section class="mt-8">
+        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Checklist de pré-aprovação</h3>
+        <p class="mt-1 text-xs text-text-muted">Obrigatório — aprovar só é permitido se os 3 itens estiverem ok.</p>
+        <ul class="mt-3 grid gap-2 sm:grid-cols-3">
+            <?php foreach ($checklist as $item): ?>
+                <li class="flex items-start gap-2 rounded-lg border p-3 text-sm <?= $item['ok'] ? 'border-success/40 bg-success/5' : 'border-danger/40 bg-danger/5' ?>">
+                    <span class="mt-0.5 shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase <?= $item['ok'] ? 'border-success/40 bg-success/15 text-success' : 'border-danger/40 bg-danger/15 text-danger' ?>">
+                        <?= $item['ok'] ? 'ok' : 'falhou' ?>
+                    </span>
+                    <span>
+                        <span class="block font-medium text-text-primary"><?= View::e($item['label']) ?></span>
+                        <span class="text-text-secondary"><?= View::e($item['detail']) ?></span>
+                    </span>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </section>
+
+    <section data-tour="review-actions" class="mt-4">
         <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Revisão</h3>
         <div class="mt-3 grid gap-4 sm:grid-cols-2">
             <div class="rounded-lg border border-success/40 bg-success/5 p-4">
@@ -152,10 +172,14 @@ $alertIcon = static function (string $kind): string {
                     <p class="font-display text-sm font-semibold text-text-primary">Aprovar</p>
                 </div>
                 <p class="mt-2 text-sm text-text-secondary">Libera o agendamento de publicação.</p>
+                <?php if (!$checklistPassed): ?>
+                    <p class="mt-2 text-xs text-warning">Checklist acima não passou — ajuste o artigo antes de aprovar.</p>
+                <?php endif; ?>
                 <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/approve" class="mt-3"
                       data-confirm="Aprovar este artigo? Ele libera pra agendamento de publicação.">
                     <?= Csrf::field() ?>
-                    <button type="submit" class="rounded-md bg-success/90 px-4 py-2 text-sm font-semibold text-[#04210F] hover:bg-success">
+                    <button type="submit" <?= $checklistPassed ? '' : 'disabled title="Checklist de pré-aprovação não passou"' ?>
+                            class="rounded-md bg-success/90 px-4 py-2 text-sm font-semibold text-[#04210F] hover:bg-success disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-success/90">
                         Aprovar artigo
                     </button>
                 </form>

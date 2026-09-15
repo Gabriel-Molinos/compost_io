@@ -279,6 +279,8 @@ O artigo só conta para a meta quando estiver `APPROVED`.
 
 > **Implementado (Fase 9):** em `IN_REVIEW`, o Redator-Chefe também pode editar o corpo (HTML) direto na página do artigo antes de aprovar/rejeitar — evita um ciclo inteiro de rejeição+regeneração (com custo de IA) só para corrigir um trecho. Grava como nova versão em `article_versions`, histórico preservado. Ver bloco `[Fase 9]` do `CHANGELOG.md`.
 
+> **Implementado (2026-09-15):** checklist de pré-aprovação obrigatório (recomendação do relatório de Inteligência: artigos vinham chegando a `BLOCKED` em compliance/SEO por fugir de categoria válida ou da faixa de link, sem nada barrando uma aprovação manual fora dessa faixa). `ArticleReviewService::approve()` verifica **categoria definida**, **3 a 5 links internos** e **no máximo 2 links externos** no corpo — se algum item falhar, a aprovação é recusada (`RuntimeException`) e o botão "Aprovar artigo" já aparece desabilitado na página do artigo, com o motivo de cada item que falhou.
+
 Estados principais:
 
 ```

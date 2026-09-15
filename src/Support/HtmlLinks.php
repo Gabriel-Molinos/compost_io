@@ -123,6 +123,56 @@ final class HtmlLinks
         return ['html' => trim($out), 'changed' => true];
     }
 
+    /**
+     * Conta links internos vs externos no corpo — usado pelo checklist de
+     * pré-aprovação (`ArticleReviewService::checklist()`, achado real
+     * 2026-09-15: artigos bloqueados em compliance/SEO por fugir de 3-5
+     * links internos / máx. 2 externos, mas nada barrava a aprovação de
+     * verdade antes disso). Mesmo critério de host do
+     * `InternalLinkResolver`: sem host (link relativo) ou host igual ao do
+     * site é interno; qualquer outro host é externo.
+     *
+     * @return array{internal: int, external: int}
+     */
+    public static function countByType(string $html, ?string $siteHost): array
+    {
+        $counts = ['internal' => 0, 'external' => 0];
+        if (trim($html) === '' || stripos($html, '<a') === false) {
+            return $counts;
+        }
+
+        $prev = libxml_use_internal_errors(true);
+        $doc = new DOMDocument();
+        $doc->loadHTML(
+            '<?xml encoding="UTF-8"><div id="__root__">' . $html . '</div>',
+            LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD,
+        );
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+
+        $siteHost = $siteHost !== null ? strtolower($siteHost) : null;
+
+        foreach ($doc->getElementsByTagName('a') as $a) {
+            if (!$a instanceof DOMElement) {
+                continue;
+            }
+            $href = trim($a->getAttribute('href'));
+            if ($href === '') {
+                continue;
+            }
+            $host = parse_url($href, PHP_URL_HOST);
+            $host = is_string($host) ? strtolower($host) : null;
+
+            if ($host === null || $host === $siteHost) {
+                $counts['internal']++;
+            } else {
+                $counts['external']++;
+            }
+        }
+
+        return $counts;
+    }
+
     /** @return array{html:string, changed:bool} */
     private static function edit(string $html, string $targetHref, callable $mutate): array
     {

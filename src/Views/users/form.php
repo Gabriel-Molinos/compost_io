@@ -51,8 +51,10 @@ $role = $user['role'] ?? 'REDATOR_CHEFE';
     <section class="rounded-lg border border-border bg-surface p-5">
         <h2 class="font-display text-base font-semibold text-text-primary">Identificação</h2>
 
-        <div class="mt-4 flex items-center gap-4">
-            <?= Avatar::html($user['avatar_path'] ?? null, $user['name'] ?? '?', size: 'h-16 w-16', radius: 'rounded-full', textSize: 'text-xl') ?>
+        <div class="mt-4 flex items-center gap-4" data-avatar-scope>
+            <span data-avatar-preview data-avatar-img-class="<?= View::e(Avatar::imgClass('h-16 w-16', 'rounded-full')) ?>">
+                <?= Avatar::html($user['avatar_path'] ?? null, $user['name'] ?? '?', size: 'h-16 w-16', radius: 'rounded-full', textSize: 'text-xl') ?>
+            </span>
             <div class="flex-1">
                 <?= Form::file('avatar', 'Foto de perfil', $errors['avatar'] ?? null) ?>
                 <?php if ($isEdit && !empty($user['avatar_path'])): ?>

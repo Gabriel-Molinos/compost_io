@@ -98,6 +98,7 @@ if ($authUser !== null && !$hasSiteNav) {
     <script src="<?= View::e(View::asset('assets/js/confirm-dialog.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/image-lightbox.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/image-carousel.js')) ?>" defer></script>
+    <script src="<?= View::e(View::asset('assets/js/avatar-preview.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/footer-clock.js')) ?>" defer></script>
     <?php if ($tourSiteId !== null): ?>
         <script>window.COMPOST_TOUR_SITE_ID = <?= (int) $tourSiteId ?>;</script>

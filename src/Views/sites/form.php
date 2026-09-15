@@ -46,11 +46,13 @@ if ($isEdit) {
 <form method="post" action="<?= View::e($action) ?>" enctype="multipart/form-data" class="mt-6 max-w-xl" novalidate>
     <?= Csrf::field() ?>
 
-    <section class="rounded-lg border border-border bg-surface p-5">
+    <section class="rounded-lg border border-border bg-surface p-5" data-avatar-scope>
         <h2 class="font-display text-base font-semibold text-text-primary">Identidade</h2>
 
         <div class="mt-4 flex items-center gap-4">
-            <?= Avatar::html($site['logo_path'] ?? null, $site['name'] ?? '?', size: 'h-16 w-16', textSize: 'text-xl', bg: 'bg-white') ?>
+            <span data-avatar-preview data-avatar-img-class="<?= View::e(Avatar::imgClass('h-16 w-16', 'rounded-lg', 'cover', 'bg-white')) ?>">
+                <?= Avatar::html($site['logo_path'] ?? null, $site['name'] ?? '?', size: 'h-16 w-16', textSize: 'text-xl', bg: 'bg-white') ?>
+            </span>
             <div class="flex-1">
                 <?= Form::file('logo', 'Logo do site', $errors['logo'] ?? null) ?>
                 <?php if ($isEdit && !empty($site['logo_path'])): ?>

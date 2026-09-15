@@ -46,8 +46,10 @@ use App\View;
         gerencia a plataforma com você.
     </p>
 
-    <div class="mt-4 flex items-center gap-4">
-        <?= Avatar::html($user['avatar_path'] ?? null, $user['name'] ?? '?', size: 'h-16 w-16', radius: 'rounded-full', textSize: 'text-xl') ?>
+    <div class="mt-4 flex items-center gap-4" data-avatar-scope>
+        <span data-avatar-preview data-avatar-img-class="<?= View::e(Avatar::imgClass('h-16 w-16', 'rounded-full')) ?>">
+            <?= Avatar::html($user['avatar_path'] ?? null, $user['name'] ?? '?', size: 'h-16 w-16', radius: 'rounded-full', textSize: 'text-xl') ?>
+        </span>
 
         <form method="post" action="/profile/avatar" enctype="multipart/form-data" class="flex-1">
             <?= Csrf::field() ?>

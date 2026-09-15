@@ -96,6 +96,8 @@ if ($authUser !== null && !$hasSiteNav) {
     <link rel="stylesheet" href="<?= View::e(View::asset('assets/css/app.css')) ?>">
     <script src="<?= View::e(View::asset('assets/js/select-enhance.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/confirm-dialog.js')) ?>" defer></script>
+    <script src="<?= View::e(View::asset('assets/js/image-lightbox.js')) ?>" defer></script>
+    <script src="<?= View::e(View::asset('assets/js/image-carousel.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/footer-clock.js')) ?>" defer></script>
     <?php if ($tourSiteId !== null): ?>
         <script>window.COMPOST_TOUR_SITE_ID = <?= (int) $tourSiteId ?>;</script>
@@ -120,11 +122,13 @@ if ($authUser !== null && !$hasSiteNav) {
         .skip-link:focus { transform: translateY(0); }
     </style>
 </head>
-<body class="app-bg min-h-screen text-text-primary font-sans antialiased">
+<body class="app-bg h-screen overflow-hidden text-text-primary font-sans antialiased">
     <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
 
-    <div class="relative z-10 flex min-h-screen">
-        <!-- Sidebar fixa (telas ≥ lg) -->
+    <div class="relative z-10 flex h-screen">
+        <!-- Sidebar fixa (telas ≥ lg) — não rola junto com a página, só a
+             navegação dentro dela (se a lista de seções não couber) e o
+             conteúdo principal ao lado (ver <main> abaixo) têm scroll próprio. -->
         <aside class="hidden w-64 shrink-0 flex-col border-r border-border bg-surface/90 py-5 lg:flex">
             <a href="/" class="flex items-center gap-2.5 px-5">
                 <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-7 w-7 shrink-0">
@@ -166,9 +170,9 @@ if ($authUser !== null && !$hasSiteNav) {
             </div>
         </aside>
 
-        <div class="flex min-w-0 flex-1 flex-col">
+        <div class="flex min-h-0 min-w-0 flex-1 flex-col">
             <!-- Topo compacto (telas < lg) — a navegação mora num <details>, sem depender de JS. -->
-            <header class="flex items-center justify-between gap-4 border-b border-border px-4 py-3 lg:hidden">
+            <header class="flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-3 lg:hidden">
                 <a href="/" class="flex items-center gap-2.5">
                     <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-6 w-6 shrink-0">
                     <img src="/assets/brand/wordmark.png" alt="COMPOST" class="h-4 w-auto">
@@ -211,7 +215,7 @@ if ($authUser !== null && !$hasSiteNav) {
                 <?php endif; ?>
             </header>
 
-            <main id="conteudo" class="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+            <main id="conteudo" class="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
                 <?php if ($flashSuccess !== null): ?>
                     <p role="status" class="mb-6 rounded-md border border-success/40 bg-success/10 px-3 py-2 text-sm text-success">
                         <?= View::e($flashSuccess) ?>

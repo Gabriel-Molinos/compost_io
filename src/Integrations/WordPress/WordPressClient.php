@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Integrations\WordPress;
 
+use App\Cache\CacheService;
 use App\Support\CaBundle;
 
 /**
@@ -136,6 +137,23 @@ final class WordPressClient
      *         "desembrulhada" de `title.rendered`) e `link`
      */
     public function listRecentPosts(int $perPage = 100): array
+    {
+        // Cacheado (achado real 2026-09-14): esta é a chamada mais repetida
+        // do app — `ProductionController::show()` faz ela em toda visita à
+        // página de um artigo. Os dois call sites atuais sempre usam o
+        // `$perPage` padrão, então uma chave só (por site, via baseUrl) já
+        // resolve; um futuro caller com `$perPage` diferente receberia o
+        // resultado cacheado de 100 mesmo assim — aceitável hoje, não existe
+        // esse caller ainda.
+        return (new CacheService())->remember(
+            'wp:posts:' . md5($this->config->baseUrl),
+            300,
+            fn () => $this->fetchRecentPosts($perPage),
+        );
+    }
+
+    /** @return list<array<string, mixed>> */
+    private function fetchRecentPosts(int $perPage): array
     {
         $rows = $this->requestList('GET', 'wp/v2/posts', [
             'per_page' => max(1, min(100, $perPage)),

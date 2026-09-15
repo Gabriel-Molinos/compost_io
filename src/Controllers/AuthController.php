@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Config\Env;
 use App\Services\AuthService;
+use App\Support\CaBundle;
 use App\Support\Csrf;
 use App\Support\GoogleCsrf;
 use App\Support\Http;
@@ -90,10 +91,24 @@ final class AuthController
 
         $client = new \Google\Client();
         $client->setClientId($clientId);
+        // verifyIdToken() busca as chaves públicas do Google via HTTP
+        // (Guzzle) pra conferir a assinatura do token — sem isso, o Windows
+        // não acha as raízes CA sozinho e dá "cURL error 60: SSL
+        // certificate problem" (achado real 2026-09-15, mesma causa já
+        // resolvida nas outras integrações HTTP do projeto via CaBundle).
+        $client->setHttpClient(new \GuzzleHttp\Client(['verify' => CaBundle::path()]));
 
-        // verifyIdToken() nunca lança exceção pra token inválido — devolve
-        // false. Checagem explícita, não é opcional.
-        $payload = $client->verifyIdToken((string) $_POST['credential']);
+        // verifyIdToken() devolve false pra assinatura inválida/expirada,
+        // MAS lança UnexpectedValueException pra um token mal formado (não
+        // é um JWT de verdade) — achado real 2026-09-15, testado direto: um
+        // valor qualquer em $_POST['credential'] (nunca confiável, vem de
+        // fora) derrubava a rota inteira sem cair no tratamento de erro
+        // abaixo. Os dois casos viram a mesma mensagem pro usuário.
+        try {
+            $payload = $client->verifyIdToken((string) $_POST['credential']);
+        } catch (\UnexpectedValueException) {
+            $payload = false;
+        }
 
         if ($payload === false) {
             Session::flash('status', 'Não foi possível verificar seu login com Google. Tente novamente.');

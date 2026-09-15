@@ -1,13 +1,20 @@
-# Parte 16 — Testes `[PROPOSTA]`
+# Parte 16 — Testes
 
-### 92. Estratégia de testes `[PROPOSTA]`
+### 92. Estratégia de testes
 
-| Tipo | Onde roda | Quando usar | Ferramenta sugerida |
+| Tipo | Onde roda | Quando usar | Ferramenta |
 |---|---|---|---|
-| Unitário | PHP | Services e regras de negócio isoladas | PHPUnit |
-| Integração | PHP | Fluxos entre Controller → Service → PDO (ex.: criar artigo → gerar meta) | PHPUnit + banco de teste |
-| E2E | Navegador | Fluxos críticos completos (login, aprovação, publicação) | Playwright ou Cypress — continuam válidos por automatizarem o navegador, independente da tecnologia por trás da página |
+| Unitário | PHP | Services e regras de negócio isoladas, sem banco/HTTP/Redis | PHPUnit — `tests/Unit/` |
+| Integração | PHP | Fluxos que batem no banco de dev de verdade (`Connection::get()`) | PHPUnit — `tests/Integration/` |
+| E2E | Navegador | Fluxos críticos completos (login, aprovação, publicação) | Playwright ou Cypress — continuam válidos por automatizarem o navegador, independente da tecnologia por trás da página. Ainda não implementado. |
 | Acessibilidade | Navegador | Views novas ou alteradas | Checagem manual de teclado + contraste ([Parte 20, seção 106](ui-ux-frontend.md#106-checklist-de-ui-antes-de-um-pr)); ferramenta automatizável (ex.: axe) opcional no futuro |
+
+**Implementado (2026-09-15):** `phpunit.xml` na raiz + `composer test`/`test:unit`/`test:integration`. Duas suítes:
+
+- **Unit** — 44 testes cobrindo `Validator`, `HtmlLinks` (classificação interno/externo, unwrap, replaceHref, wrapFirstOccurrence), `Labels`, `ArticleReviewService::checklistPassed()` e `App\Cache` (`CacheConfig`/`CacheService`, incluindo o caminho "Redis desabilitado ou fora do ar nunca quebra nada" — mesmo princípio que o próprio `CacheService` documenta). Roda em milissegundos, sem depender de banco/Redis — segura pra rodar sempre, inclusive quando o banco gerenciado está instável.
+- **Integration** — exemplo em `SiteSourceServiceTest` (create/find/delete/digestForPrompt contra o site "Gavsy", id 2, sempre limpando o que criou). `setUp()` chama `markTestSkipped()` se `Connection::get()` falhar, em vez de reportar falha — o banco gerenciado da DigitalOcean tem se mostrado intermitente (achado real 2026-09-15, várias conexões novas recusadas na mesma sessão), e uma instabilidade de rede não deve ser lida como regressão de código.
+
+**Ainda não implementado:** cobertura de Controllers, do pipeline de IA (`ArticlePipeline`) e E2E de navegador — projeto tinha zero teste automatizado até esta data, isto é só o ponto de partida.
 
 ### 93. Cobertura mínima esperada `[PROPOSTA — definir número junto ao time]`
 

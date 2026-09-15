@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Config inicial (2026-09-15) — projeto não tinha nenhum teste automatizado
+    até aqui, apesar de docs/technical/testes-e-observabilidade.md descrever
+    a estratégia (unitário/integração/E2E) desde a Fase 9. Dois grupos:
+
+      Unit        — lógica pura, sem banco/HTTP/Redis. Roda sempre, rápido.
+      Integration — bate no banco de dev de verdade (Connection::get()).
+                    Marcado como grupo separado porque o banco gerenciado da
+                    DigitalOcean tem se mostrado intermitente (achado real
+                    2026-09-15) — poder rodar só a suite Unit evita que uma
+                    falha de rede pareça uma regressão de código.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+</phpunit>

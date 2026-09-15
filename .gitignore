@@ -2,6 +2,9 @@
 /vendor/
 /node_modules/
 
+# Cache do PHPUnit (resultados de execução anterior — não é código, não versiona)
+/.phpunit.cache/
+
 # Ambiente local
 .env
 

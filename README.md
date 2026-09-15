@@ -44,7 +44,7 @@ Este README ficou curto de propósito — a documentação completa foi organiza
 - [Schema de banco de dados](docs/technical/schema.md) — migration 0001 aplicada
 - [Convenções de código](docs/technical/padroes-de-codigo.md) `[PROPOSTA]`
 - [UI/UX & Frontend Standards](docs/technical/ui-ux-frontend.md) `[PROPOSTA]` — padrão de interface, UX e acessibilidade (Apple HIG + WCAG 2.2 AA + Material 3)
-- [Testes e observabilidade](docs/technical/testes-e-observabilidade.md) `[PROPOSTA]`
+- [Testes e observabilidade](docs/technical/testes-e-observabilidade.md) — PHPUnit (`composer test`), cache, performance
 - [Setup e operações](docs/technical/setup-e-operacoes.md) — backup, ambiente de dev, getting started completo
 - [Diagrama de sequência](docs/technical/diagrama-sequencia.md) `[PROPOSTA]`
 
@@ -70,4 +70,11 @@ composer install
 php -S localhost:8000 -t public
 ```
 
-Node.js **não** é necessário (ver [ADR-008](docs/decisions/adr-008-frontend-php-puro.md)). Guia completo, pré-requisitos e comandos úteis: [docs/technical/setup-e-operacoes.md](docs/technical/setup-e-operacoes.md). 
+Node.js **não** é necessário (ver [ADR-008](docs/decisions/adr-008-frontend-php-puro.md)). Guia completo, pré-requisitos e comandos úteis: [docs/technical/setup-e-operacoes.md](docs/technical/setup-e-operacoes.md).
+
+Testes automatizados (PHPUnit — [docs/technical/testes-e-observabilidade.md](docs/technical/testes-e-observabilidade.md#92-estratégia-de-testes)):
+
+```bash
+composer test:unit         # rápido, sem banco/Redis — seguro rodar sempre
+composer test:integration  # bate no banco de dev de verdade
+```

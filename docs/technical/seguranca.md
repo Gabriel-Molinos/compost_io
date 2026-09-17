@@ -120,19 +120,25 @@ Navegador → API Key externa → Serviço externo
 
 ### 50. Checklist de segurança antes de cada deploy
 
-Antes de colocar qualquer versão em produção:
+Antes de colocar qualquer versão em produção. Auditado de verdade contra o
+código em 2026-09-17 (não é só um template — cada item abaixo foi checado
+com grep/leitura real do repositório nesta data; refazer a checagem sempre
+que uma dessas áreas mudar, não confiar no ✅ indefinidamente):
 
-- [ ] `.env` não está versionado.
-- [ ] Nenhuma API Key aparece no código.
-- [ ] Nenhuma senha aparece no código.
-- [ ] Nenhuma credencial aparece nos logs.
-- [ ] Credenciais WordPress estão separadas por site.
-- [ ] Frontend não possui secrets.
-- [ ] CORS está configurado corretamente.
-- [ ] Acesso ao banco está restrito.
-- [ ] Usuários possuem permissões adequadas.
-- [ ] Integrações externas possuem tratamento de erro.
-- [ ] Credenciais antigas foram removidas/rotacionadas quando necessário.
+- [x] `.env` não está versionado — confirmado em `.gitignore` + `git ls-files` (não rastreado).
+- [x] Nenhuma API Key aparece no código — grep por padrões de chave (`AIza...`, `GOCSPX-...`, chave privada PEM) em `src/`, `public/`, `bin/`, `routes/`: nenhuma ocorrência.
+- [x] Nenhuma senha aparece no código — mesma varredura, nenhuma ocorrência; `DATABASE_PASSWORD` só é lido via `Env::get()` em `Connection.php`.
+- [x] Nenhuma credencial aparece nos logs — os 2 únicos `error_log()` do projeto (`Connection.php:50`, `HomeController.php:57`) logam `$e->getMessage()` de falha de conexão, que não inclui senha (comentário no código já documenta essa preocupação).
+- [x] Credenciais WordPress estão separadas por site — cada site tem sua própria linha de conexão WordPress cifrada (§46/§47), nunca um valor global no `.env`.
+- [x] Frontend não possui secrets — único `Env::get()` usado em `src/Views/` é `APP_URL` e `GOOGLE_CLIENT_ID` (`login.php`), e este último é público por natureza (ver §49).
+- [x] CORS — não há nenhum header `Access-Control-Allow-*` no projeto, **de propósito**: é uma app PHP server-rendered same-origin, sem API consumida por outra origem no browser. Ausência de CORS é o estado correto aqui, não uma lacuna.
+- [ ] Acesso ao banco está restrito — depende da infraestrutura (allowlist de IP/"trusted sources" no cluster gerenciado), não do código; **confirmar manualmente na hospedagem escolhida antes do deploy**, não dá pra auditar por aqui. `DATABASE_SSL=true` já está configurado (TLS ligado), mas com `PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT = false` — verificação de certificado do servidor desligada de propósito (decisão do responsável, 2026-09-17: não é prioridade agora).
+- [x] Usuários possuem permissões adequadas — `Router::dispatch()` centraliza a checagem (`admin: true` em 19 rotas, incluindo a mais destrutiva, `/sites/{id}/delete`); nenhuma rota sensível depende de checagem manual espalhada por Controller.
+- [x] Integrações externas possuem tratamento de erro — WordPress (13 pontos de `catch (WordPressException)` entre Controllers/Services); Gemini/Nano Banana (`GeminiException`/`ImageException` estendem `AIException`, capturadas via `catch (Throwable)` em `ArticlePipeline` — cada imagem/etapa falha isoladamente com warning, nunca derruba o pipeline inteiro — e em `ArticleJobHandlers`, que sempre marca o artigo como `ERROR` e notifica antes de relançar).
+- [x] Credenciais antigas foram removidas/rotacionadas quando necessário — `GA_CLIENT_SECRET`/`GA_REFRESH_TOKEN` (colados em texto puro numa conversa anteriormente) já foram rotacionados pelo responsável.
+
+**Único item que fica de fato pendente pra quando a hospedagem for decidida:**
+acesso ao banco restrito por rede/firewall — não é algo que o código resolva.
 
 ## Ver também
 

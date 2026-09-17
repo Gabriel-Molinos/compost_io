@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use App\Services\AuthService;
-use App\Services\FeedbackService;
 use App\Services\NotificationService;
+use App\Services\PlatformFeedbackService;
 use App\Services\SiteService;
 use App\Support\Avatar;
 use App\Support\Csrf;
@@ -59,7 +59,7 @@ $unreadNotifications = $showNotifications ? (new NotificationService())->unreadC
 // Redator-Chefe não tem nada pra "revisar" aqui, só enviar.
 $showFeedback = $authUser !== null;
 $pendingFeedback = ($showFeedback && $authUser['role'] === 'ADMIN')
-    ? (new FeedbackService())->countPending()
+    ? (new PlatformFeedbackService())->countPending()
     : 0;
 
 // "/sites" só ativo na lista em si (match exato) — dentro de um site

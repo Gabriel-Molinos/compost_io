@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Services\AuthService;
-use App\Services\FeedbackService;
 use App\Services\NotificationService;
+use App\Services\PlatformFeedbackService;
 use App\Services\SiteService;
 use App\Support\Csrf;
 use App\Support\Http;
@@ -15,11 +15,11 @@ use App\View;
 
 final class FeedbackController extends Controller
 {
-    private FeedbackService $feedback;
+    private PlatformFeedbackService $feedback;
 
     public function __construct()
     {
-        $this->feedback = new FeedbackService();
+        $this->feedback = new PlatformFeedbackService();
     }
 
     public function index(): void

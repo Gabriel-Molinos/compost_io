@@ -11,7 +11,13 @@ use App\View;
 /** @var list<array<string,mixed>> $goals */
 /** @var list<array<string,mixed>> $categories */
 /** @var array{all: int, done: int, attention: int, progress: int, discarded: int} $counts */
+/** @var array<string, int> $exactCounts — status exato => contagem, dentro do grupo atual (vazio se o grupo só tem 1 status) */
 /** @var string $statusGroup */
+/** @var string|null $exactStatus */
+/** @var int|null $categoryId */
+/** @var string|null $origin */
+/** @var string|null $search */
+/** @var int $totalForGroup */
 /** @var int $page */
 /** @var int $totalPages */
 /** @var array{id: int}|null $tourReviewArticle */
@@ -19,16 +25,29 @@ use App\View;
 $activeTab = 'production';
 require __DIR__ . '/../_tabs.php';
 
-// Agrupamento por status pra stat-bar + filtro por aba — desde a paginação
-// (2026-09-15) os dados já chegam prontos do controller (`$counts` é sempre
-// o total real do site, `$articles` é só a página atual), então o filtro
-// virou navegação de verdade (?status=...&page=...) em vez de JS
-// client-side escondendo linhas — com a lista paginada, filtrar em cima só
-// da página atual dava contagem errada (achado real, mesma pendência).
-$statusUrl = static fn (string $group): string => '/sites/' . $site['id'] . '/production'
-    . ($group === 'all' ? '' : '?status=' . $group);
-$pageUrl = static fn (int $p): string => '/sites/' . $site['id'] . '/production?page=' . $p
-    . ($statusGroup !== 'all' ? '&status=' . $statusGroup : '');
+// Filtro melhor na Produção (pedido do responsável, 2026-09-17): além das
+// abas de grupo (desde 2026-09-15, ?status=...&page=...), agora dá pra
+// refinar por status exato, categoria, origem e busca — tudo combinável,
+// sempre navegação de verdade (querystring), nunca JS escondendo linha —
+// com a lista paginada, filtrar por cima só da página atual dava contagem
+// errada (achado real da versão anterior deste filtro).
+$baseParams = [
+    'status'       => $statusGroup !== 'all' ? $statusGroup : null,
+    'exact_status' => $exactStatus,
+    'category_id'  => $categoryId,
+    'origin'       => $origin,
+    'q'            => $search,
+];
+$buildUrl = static function (array $overrides) use ($site, $baseParams): string {
+    $params = array_filter(array_merge($baseParams, $overrides), static fn ($v): bool => $v !== null && $v !== '');
+
+    return '/sites/' . $site['id'] . '/production' . ($params !== [] ? '?' . http_build_query($params) : '');
+};
+// Trocar de grupo limpa o sub-filtro de status exato (pertence ao grupo
+// anterior) e some da paginação, mas preserva categoria/origem/busca.
+$statusUrl = static fn (string $group): string => $buildUrl(['status' => $group === 'all' ? null : $group, 'exact_status' => null, 'page' => null]);
+$exactUrl  = static fn (?string $status): string => $buildUrl(['exact_status' => $status, 'page' => null]);
+$pageUrl   = static fn (int $p): string => $buildUrl(['page' => $p]);
 
 $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" '
     . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/>'
@@ -79,7 +98,7 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
     </form>
 </section>
 
-<?php if ($counts['all'] === 0): ?>
+<?php if ($counts['all'] === 0 && !$filtersActive): ?>
     <p class="mt-6 text-text-secondary">Nenhum artigo produzido ainda.</p>
 <?php else: ?>
     <?php
@@ -92,7 +111,7 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
     ];
     ?>
     <div class="mt-8 flex items-center justify-between gap-3">
-        <h3 class="font-display text-lg font-semibold text-text-primary">Rascunhos (<?= $counts[$statusGroup] ?>)</h3>
+        <h3 class="font-display text-lg font-semibold text-text-primary">Rascunhos (<?= $totalForGroup ?>)</h3>
         <div class="flex flex-wrap gap-1.5" role="tablist" aria-label="Filtrar por status">
             <?php foreach ($filterTabs as [$key, $label, $n]): ?>
                 <?php if ($key !== 'all' && $n === 0) continue; ?>
@@ -104,6 +123,60 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
             <?php endforeach; ?>
         </div>
     </div>
+
+    <?php if ($exactCounts !== []): ?>
+        <?php // Sub-filtro por status exato dentro do grupo atual (ex.: "Aprovados" = Aprovado + Agendado + Publicado) — só aparece quando o grupo tem mais de 1 status real. ?>
+        <div class="mt-2.5 flex flex-wrap items-center gap-1.5 pl-1" role="tablist" aria-label="Refinar por status exato">
+            <span class="text-xs text-text-muted">Refinar:</span>
+            <a href="<?= View::e($exactUrl(null)) ?>" role="tab" aria-selected="<?= $exactStatus === null ? 'true' : 'false' ?>"
+               class="rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors <?= $exactStatus === null ? 'border-cyan bg-cyan/10 text-cyan' : 'border-border text-text-secondary hover:border-border-strong' ?>">
+                Todos
+            </a>
+            <?php foreach ($exactCounts as $exactKey => $n): ?>
+                <?php if ($n === 0) continue; ?>
+                <?php $active = $exactStatus === $exactKey; ?>
+                <a href="<?= View::e($exactUrl($exactKey)) ?>" role="tab" aria-selected="<?= $active ? 'true' : 'false' ?>"
+                   class="rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors <?= $active ? 'border-cyan bg-cyan/10 text-cyan' : 'border-border text-text-secondary hover:border-border-strong' ?>">
+                    <?= View::e(Labels::articleStatus($exactKey)) ?> <span class="font-mono"><?= $n ?></span>
+                </a>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <form method="get" action="/sites/<?= View::e($site['id']) ?>/production"
+          class="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface-2/40 p-3.5">
+        <?php if ($statusGroup !== 'all'): ?><input type="hidden" name="status" value="<?= View::e($statusGroup) ?>"><?php endif; ?>
+        <?php if ($exactStatus !== null): ?><input type="hidden" name="exact_status" value="<?= View::e($exactStatus) ?>"><?php endif; ?>
+
+        <label class="min-w-[10rem] text-sm">
+            <span class="block font-medium text-text-secondary">Categoria</span>
+            <select name="category_id" class="mt-1 w-full">
+                <option value="">Todas</option>
+                <?php foreach ($categories as $c): ?>
+                    <option value="<?= View::e($c['id']) ?>" <?= $categoryId === (int) $c['id'] ? 'selected' : '' ?>><?= View::e($c['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label class="min-w-[8.5rem] text-sm">
+            <span class="block font-medium text-text-secondary">Origem</span>
+            <select name="origin" class="mt-1 w-full">
+                <option value="">Todas</option>
+                <option value="AUTO" <?= $origin === 'AUTO' ? 'selected' : '' ?>>Automático</option>
+                <option value="MANUAL" <?= $origin === 'MANUAL' ? 'selected' : '' ?>>Manual</option>
+            </select>
+        </label>
+        <label class="min-w-[14rem] flex-1 text-sm">
+            <span class="block font-medium text-text-secondary">Buscar por título ou palavra-chave</span>
+            <input type="search" name="q" value="<?= View::e($search ?? '') ?>" placeholder="Ex.: marketing digital"
+                   class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-1.5 text-text-primary placeholder:text-text-muted focus:border-cyan focus:outline-none">
+        </label>
+        <button type="submit" class="rounded-md border border-border px-3.5 py-1.5 text-sm font-medium text-text-secondary hover:border-cyan hover:text-text-primary">
+            Filtrar
+        </button>
+        <?php if ($filtersActive): ?>
+            <a href="/sites/<?= View::e($site['id']) ?>/production" class="text-sm text-text-muted hover:text-text-primary">Limpar filtros</a>
+        <?php endif; ?>
+    </form>
 
     <?php
     // Tutorial guiado (assets/js/tour.js): quando existe um rascunho em

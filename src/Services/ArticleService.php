@@ -35,29 +35,46 @@ final class ArticleService
         'progress'  => ['PLANNED', 'IN_PROGRESS', 'IN_REVIEW', 'REVISION_REQUESTED'],
     ];
 
+    /** @return array<string, list<string>> mesmo mapa de STATUS_GROUPS, exposto pra view montar os sub-filtros de status exato. */
+    public static function statusGroups(): array
+    {
+        return self::STATUS_GROUPS;
+    }
+
+    /** @return list<string> todo status real de artigo, em qualquer grupo — pra validar o filtro `exact_status`. */
+    public static function allStatuses(): array
+    {
+        return array_merge(...array_values(self::STATUS_GROUPS));
+    }
+
     /**
      * Página da listagem de artigos (Produção). Paginado desde 2026-09-15 —
      * antes buscava tudo sem `LIMIT`, o que crescia sem parar com o
      * histórico do site (achado real, registrado como pendência em
-     * `docs/technical/testes-e-observabilidade.md`). `$statusGroup` filtra
-     * pelo mesmo agrupamento das abas de filtro ('all' = sem filtro).
+     * `docs/technical/testes-e-observabilidade.md`).
+     *
+     * Filtro melhor (pedido do responsável, 2026-09-17: "tipo um filtro
+     * melhor pra posts em produção, em rascunho etc") — as abas
+     * `$statusGroup` continuam sendo o filtro rápido de alto nível, mas
+     * agora dá pra refinar por status exato (ex.: dentro de "Aprovados",
+     * separar Aprovado/Agendado/Publicado), categoria, origem
+     * (manual/automático) e busca por título/palavra-chave — todos
+     * combináveis (AND), sempre navegação de verdade por querystring
+     * (mesma filosofia de `?status=...`, nunca JS escondendo linha).
      *
      * @return list<array<string, mixed>>
      */
-    public function allForSite(int $siteId, string $statusGroup = 'all', int $page = 1, int $perPage = self::PER_PAGE): array
-    {
-        $where = 'a.site_id = :s AND a.deleted_at IS NULL';
-        $params = ['s' => $siteId];
-        if (isset(self::STATUS_GROUPS[$statusGroup])) {
-            $statuses = self::STATUS_GROUPS[$statusGroup];
-            $placeholders = [];
-            foreach ($statuses as $i => $status) {
-                $key = "st{$i}";
-                $placeholders[] = ":{$key}";
-                $params[$key] = $status;
-            }
-            $where .= ' AND a.status IN (' . implode(', ', $placeholders) . ')';
-        }
+    public function allForSite(
+        int $siteId,
+        string $statusGroup = 'all',
+        int $page = 1,
+        int $perPage = self::PER_PAGE,
+        ?string $exactStatus = null,
+        ?int $categoryId = null,
+        ?string $origin = null,
+        ?string $search = null,
+    ): array {
+        [$where, $params] = $this->buildFilterWhere($siteId, $statusGroup, $exactStatus, $categoryId, $origin, $search);
 
         $offset = max(0, ($page - 1)) * $perPage;
         $stmt = Connection::get()->prepare(
@@ -83,25 +100,48 @@ final class ArticleService
     }
 
     /**
+     * Total de artigos pra uma combinação de filtros — usado pra paginar
+     * corretamente quando `$exactStatus`/categoria/origem/busca reduzem o
+     * total além do que `countsByStatusGroup()` (só por grupo) já cobre.
+     */
+    public function countFiltered(
+        int $siteId,
+        string $statusGroup = 'all',
+        ?string $exactStatus = null,
+        ?int $categoryId = null,
+        ?string $origin = null,
+        ?string $search = null,
+    ): int {
+        [$where, $params] = $this->buildFilterWhere($siteId, $statusGroup, $exactStatus, $categoryId, $origin, $search);
+        $stmt = Connection::get()->prepare("SELECT COUNT(*) FROM articles a WHERE {$where}");
+        $stmt->execute($params);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
      * Contagem por grupo de status (+ 'all') pros badges das abas de filtro
-     * — independente de paginação, sempre reflete o total real do site,
-     * não só a página atual (`allForSite()` já não traz a lista inteira).
+     * — independente de paginação, sempre reflete o total real do site
+     * (dentro dos filtros de categoria/origem/busca já ativos, se algum
+     * estiver, pra badge bater com o que a lista abaixo realmente mostra).
      *
      * @return array{all: int, done: int, attention: int, progress: int, discarded: int}
      */
-    public function countsByStatusGroup(int $siteId): array
+    public function countsByStatusGroup(int $siteId, ?int $categoryId = null, ?string $origin = null, ?string $search = null): array
     {
+        [$where, $params] = $this->buildBaseWhere($siteId, $categoryId, $origin, $search);
+
         $cases = [];
         foreach (self::STATUS_GROUPS as $group => $statuses) {
             $quoted = implode(', ', array_map(static fn (string $s): string => "'{$s}'", $statuses));
             $cases[] = "SUM(CASE WHEN a.status IN ({$quoted}) THEN 1 ELSE 0 END) AS {$group}";
         }
         $stmt = Connection::get()->prepare(
-            'SELECT COUNT(*) AS all_count, ' . implode(', ', $cases) . '
+            'SELECT COUNT(*) AS all_count, ' . implode(', ', $cases) . "
              FROM articles a
-             WHERE a.site_id = :s AND a.deleted_at IS NULL'
+             WHERE {$where}"
         );
-        $stmt->execute(['s' => $siteId]);
+        $stmt->execute($params);
         $row = $stmt->fetch();
 
         return [
@@ -111,6 +151,93 @@ final class ArticleService
             'progress'  => (int) ($row['progress'] ?? 0),
             'discarded' => (int) ($row['discarded'] ?? 0),
         ];
+    }
+
+    /**
+     * Contagem por status exato dentro de UM grupo — os "sub-chips" que
+     * aparecem quando o grupo escolhido tem mais de um status real (ex.:
+     * "Aprovados" = Aprovado + Agendado + Publicado). Grupo com um status
+     * só (ex. "Descartados") não precisa de sub-filtro, devolve vazio.
+     *
+     * @return array<string, int> status real => contagem
+     */
+    public function countsByExactStatus(
+        int $siteId,
+        string $statusGroup,
+        ?int $categoryId = null,
+        ?string $origin = null,
+        ?string $search = null,
+    ): array {
+        $statuses = self::STATUS_GROUPS[$statusGroup] ?? [];
+        if (count($statuses) < 2) {
+            return [];
+        }
+
+        [$where, $params] = $this->buildBaseWhere($siteId, $categoryId, $origin, $search);
+        $stmt = Connection::get()->prepare(
+            "SELECT a.status, COUNT(*) AS n FROM articles a WHERE {$where} GROUP BY a.status"
+        );
+        $stmt->execute($params);
+
+        $counts = array_fill_keys($statuses, 0);
+        foreach ($stmt->fetchAll() as $row) {
+            if (isset($counts[$row['status']])) {
+                $counts[$row['status']] = (int) $row['n'];
+            }
+        }
+
+        return $counts;
+    }
+
+    /** @return array{0: string, 1: array<string, mixed>} */
+    private function buildBaseWhere(int $siteId, ?int $categoryId, ?string $origin, ?string $search): array
+    {
+        $where = ['a.site_id = :s', 'a.deleted_at IS NULL'];
+        $params = ['s' => $siteId];
+
+        if ($categoryId !== null) {
+            $where[] = 'a.category_id = :category_id';
+            $params['category_id'] = $categoryId;
+        }
+        if ($origin !== null && in_array($origin, ['AUTO', 'MANUAL'], true)) {
+            $where[] = 'a.source = :origin';
+            $params['origin'] = $origin;
+        }
+        if ($search !== null && trim($search) !== '') {
+            $where[] = '(a.title LIKE :search1 OR a.focus_keyword LIKE :search2)';
+            $params['search1'] = $params['search2'] = '%' . trim($search) . '%';
+        }
+
+        return [implode(' AND ', $where), $params];
+    }
+
+    /** @return array{0: string, 1: array<string, mixed>} */
+    private function buildFilterWhere(
+        int $siteId,
+        string $statusGroup,
+        ?string $exactStatus,
+        ?int $categoryId,
+        ?string $origin,
+        ?string $search,
+    ): array {
+        [$baseWhere, $params] = $this->buildBaseWhere($siteId, $categoryId, $origin, $search);
+        $where = [$baseWhere];
+
+        if ($exactStatus !== null && in_array($exactStatus, self::allStatuses(), true)) {
+            $where[] = 'a.status = :exact_status';
+            $params['exact_status'] = $exactStatus;
+        } elseif (isset(self::STATUS_GROUPS[$statusGroup])) {
+            $statuses = self::STATUS_GROUPS[$statusGroup];
+            $placeholders = [];
+            foreach ($statuses as $i => $status) {
+                $key = "st{$i}";
+                $placeholders[] = ":{$key}";
+                $params[$key] = $status;
+            }
+            $where[] = 'a.status IN (' . implode(', ', $placeholders) . ')';
+        }
+
+        return [implode(' AND ', $where), $params];
     }
 
     /**

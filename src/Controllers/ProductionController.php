@@ -53,24 +53,61 @@ final class ProductionController extends Controller
     public function index(string $siteId): void
     {
         $site = $this->requireSite($siteId);
+        $categories = (new CategoryService())->allForSite((int) $site['id']);
 
-        $counts = $this->articles->countsByStatusGroup((int) $site['id']);
+        // Filtro melhor na Produção (pedido do responsável, 2026-09-17):
+        // além das abas de grupo já existentes, agora dá pra refinar por
+        // status exato dentro do grupo, categoria, origem (manual/automático)
+        // e busca por título/palavra-chave — tudo combinável, sempre via
+        // querystring (link compartilhável/voltável, nunca JS escondendo
+        // linha — mesma filosofia da paginação).
+        $categoryId = ($_GET['category_id'] ?? '') !== '' && (int) $_GET['category_id'] > 0
+            ? (int) $_GET['category_id']
+            : null;
+        if ($categoryId !== null && !in_array($categoryId, array_column($categories, 'id'), true)) {
+            $categoryId = null; // categoria de outro site (forjado/defasado) — ignora em vez de dar 0 resultado silencioso
+        }
+        $origin = in_array($_GET['origin'] ?? '', ['AUTO', 'MANUAL'], true) ? $_GET['origin'] : null;
+        $search = trim((string) ($_GET['q'] ?? ''));
+        $search = $search !== '' ? $search : null;
+
+        $counts = $this->articles->countsByStatusGroup((int) $site['id'], $categoryId, $origin, $search);
         $statusGroup = (string) ($_GET['status'] ?? 'all');
         if (!isset($counts[$statusGroup])) {
             $statusGroup = 'all';
         }
-        $totalForGroup = $counts[$statusGroup];
+
+        $exactStatus = (string) ($_GET['exact_status'] ?? '');
+        $exactStatus = in_array($exactStatus, ArticleService::allStatuses(), true) ? $exactStatus : null;
+        // Status exato só faz sentido se pertencer ao grupo escolhido — senão
+        // os sub-chips (calculados a partir de $statusGroup) não teriam como
+        // mostrar ele marcado, e o usuário perderia a noção de onde está.
+        if ($exactStatus !== null && !in_array($exactStatus, ArticleService::statusGroups()[$statusGroup] ?? [], true)) {
+            $exactStatus = null;
+        }
+        $exactCounts = $this->articles->countsByExactStatus((int) $site['id'], $statusGroup, $categoryId, $origin, $search);
+
+        $totalForGroup = $exactStatus !== null
+            ? $this->articles->countFiltered((int) $site['id'], $statusGroup, $exactStatus, $categoryId, $origin, $search)
+            : $counts[$statusGroup];
         $totalPages = max(1, (int) ceil($totalForGroup / ArticleService::PER_PAGE));
         $page = max(1, min($totalPages, (int) ($_GET['page'] ?? 1)));
 
         View::render('sites/production/index', [
             'title'        => 'Produção · ' . $site['name'],
             'site'         => $site,
-            'articles'     => $this->articles->allForSite((int) $site['id'], $statusGroup, $page),
+            'articles'     => $this->articles->allForSite((int) $site['id'], $statusGroup, $page, ArticleService::PER_PAGE, $exactStatus, $categoryId, $origin, $search),
             'goals'        => (new GoalService())->allForSite((int) $site['id']),
-            'categories'   => (new CategoryService())->allForSite((int) $site['id']),
+            'categories'   => $categories,
             'counts'       => $counts,
+            'exactCounts'  => $exactCounts,
             'statusGroup'  => $statusGroup,
+            'exactStatus'  => $exactStatus,
+            'categoryId'   => $categoryId,
+            'origin'       => $origin,
+            'search'       => $search,
+            'filtersActive' => $statusGroup !== 'all' || $exactStatus !== null || $categoryId !== null || $origin !== null || $search !== null,
+            'totalForGroup' => $totalForGroup,
             'page'         => $page,
             'totalPages'   => $totalPages,
             'tourReviewArticle' => $this->articles->firstInReview((int) $site['id']),

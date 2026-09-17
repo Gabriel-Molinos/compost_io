@@ -5,110 +5,74 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Database\Connection;
+use PDO;
 
 /**
- * Feedback de rejeição de um artigo (tabela `feedback`, fluxo-editorial §28).
- * Motivo + justificativa + quem rejeitou. O artigo rejeitado fica no histórico.
+ * Feedback geral sobre o COMPOST em si — não sobre o conteúdo gerado, não
+ * pra "ensinar a IA" (isso já existe, é a Memória Editorial de cada site).
+ * Aqui é o Redator-Chefe avaliando a plataforma (o que percebeu, o que
+ * trava, o que está bom) pra admin + Claude Code melhorarem, ver
+ * migration 0024.
  */
 final class FeedbackService
 {
-    public function add(int $articleId, ?int $userId, string $reason, string $justification): int
+    public function create(int $userId, ?int $siteId, ?int $rating, string $message): int
     {
         $pdo = Connection::get();
         $pdo->prepare(
-            'INSERT INTO feedback (article_id, reason, justification, created_by)
-             VALUES (:a, :r, :j, :u)'
-        )->execute([
-            'a' => $articleId,
-            'r' => mb_substr($reason, 0, 50),
-            'j' => trim($justification),
-            'u' => $userId,
-        ]);
+            'INSERT INTO platform_feedback (user_id, site_id, rating, message) VALUES (:u, :s, :r, :m)'
+        )->execute(['u' => $userId, 's' => $siteId, 'r' => $rating, 'm' => $message]);
 
         return (int) $pdo->lastInsertId();
     }
 
-    /** Um feedback específico do site — usado ao promover pra memória editorial curada (Fase 9). @return array<string, mixed>|null */
-    public function findForSite(int $siteId, int $feedbackId): ?array
+    /** @return list<array<string, mixed>> */
+    public function listAll(int $limit = 200): array
     {
         $stmt = Connection::get()->prepare(
-            'SELECT f.id, f.reason, f.justification
-             FROM feedback f
-             JOIN articles a ON a.id = f.article_id
-             WHERE f.id = :f AND a.site_id = :s
-             LIMIT 1'
+            'SELECT f.*, u.name AS author_name, s.name AS site_name, r.name AS reviewer_name
+             FROM platform_feedback f
+             JOIN users u ON u.id = f.user_id
+             LEFT JOIN sites s ON s.id = f.site_id
+             LEFT JOIN users r ON r.id = f.reviewed_by
+             ORDER BY f.created_at DESC
+             LIMIT :lim'
         );
-        $stmt->execute(['f' => $feedbackId, 's' => $siteId]);
+        $stmt->bindValue('lim', $limit, PDO::PARAM_INT);
+        $stmt->execute();
 
-        return $stmt->fetch() ?: null;
+        return $stmt->fetchAll();
     }
 
     /** @return list<array<string, mixed>> */
-    public function forArticle(int $articleId): array
+    public function listForUser(int $userId, int $limit = 50): array
     {
         $stmt = Connection::get()->prepare(
-            'SELECT f.reason, f.justification, f.created_at, u.name AS author
-             FROM feedback f
-             LEFT JOIN users u ON u.id = f.created_by
-             WHERE f.article_id = :a
-             ORDER BY f.id DESC'
+            'SELECT f.*, s.name AS site_name
+             FROM platform_feedback f
+             LEFT JOIN sites s ON s.id = f.site_id
+             WHERE f.user_id = :u
+             ORDER BY f.created_at DESC
+             LIMIT :lim'
         );
-        $stmt->execute(['a' => $articleId]);
+        $stmt->bindValue('u', $userId, PDO::PARAM_INT);
+        $stmt->bindValue('lim', $limit, PDO::PARAM_INT);
+        $stmt->execute();
 
         return $stmt->fetchAll();
     }
 
-    /**
-     * Feedback relevante para a página do artigo: se tem linhagem, mostra a
-     * cadeia inteira; senão, só o do próprio artigo.
-     *
-     * @return list<array<string, mixed>>
-     */
-    public function forContext(int $articleId, ?int $lineageId): array
+    public function countPending(): int
     {
-        return $lineageId !== null ? $this->forLineage($lineageId) : $this->forArticle($articleId);
+        return (int) Connection::get()
+            ->query('SELECT COUNT(*) FROM platform_feedback WHERE reviewed_at IS NULL')
+            ->fetchColumn();
     }
 
-    /**
-     * Rejeições recentes de qualquer artigo do site — "memória editorial" que
-     * entra em toda geração para a IA não repetir erros do site (fatia 6.3).
-     *
-     * @return list<array<string, mixed>>
-     */
-    public function recentForSite(int $siteId, int $limit = 8): array
+    public function markReviewed(int $id, int $reviewerId): void
     {
-        $limit = max(1, min(50, $limit));
-        $stmt = Connection::get()->prepare(
-            "SELECT f.id, f.reason, f.justification, f.created_at
-             FROM feedback f
-             JOIN articles a ON a.id = f.article_id
-             WHERE a.site_id = :s
-             ORDER BY f.id DESC
-             LIMIT {$limit}"
-        );
-        $stmt->execute(['s' => $siteId]);
-
-        return $stmt->fetchAll();
-    }
-
-    /**
-     * Feedback de toda a linhagem (todas as tentativas do mesmo conteúdo) —
-     * usado pela regeneração para a IA não repetir os erros (fatia 6.2).
-     *
-     * @return list<array<string, mixed>>
-     */
-    public function forLineage(int $lineageId): array
-    {
-        $stmt = Connection::get()->prepare(
-            'SELECT f.reason, f.justification, f.created_at, a.attempt_number, u.name AS author
-             FROM feedback f
-             JOIN articles a ON a.id = f.article_id
-             LEFT JOIN users u ON u.id = f.created_by
-             WHERE a.lineage_id = :l
-             ORDER BY a.attempt_number, f.id'
-        );
-        $stmt->execute(['l' => $lineageId]);
-
-        return $stmt->fetchAll();
+        Connection::get()->prepare(
+            'UPDATE platform_feedback SET reviewed_at = NOW(), reviewed_by = :r WHERE id = :id AND reviewed_at IS NULL'
+        )->execute(['r' => $reviewerId, 'id' => $id]);
     }
 }

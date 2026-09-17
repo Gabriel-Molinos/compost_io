@@ -15,6 +15,8 @@ use App\View;
 /** @var int $quickSitesTotal */
 /** @var int $unreadNotifications */
 /** @var bool $showNotifications */
+/** @var bool $showFeedback */
+/** @var int $pendingFeedback */
 /** @var int|null $tourSiteId — site que o tutorial guiado abre a partir daqui (assets/js/tour.js) */
 
 // Fundo do chip do ícone varia por item (pedido do responsável, 2026-09-08:
@@ -62,6 +64,9 @@ $navLink = static function (string $href, string $label, string $icon, bool $act
     <?php endforeach; ?>
     <?php if ($showNotifications): ?>
         <?php $navLink('/notifications', 'Notificações', 'bell', $isActive('/notifications'), $unreadNotifications); ?>
+    <?php endif; ?>
+    <?php if ($showFeedback): ?>
+        <?php $navLink('/feedback', 'Feedback', 'feedback', $isActive('/feedback'), $pendingFeedback); ?>
     <?php endif; ?>
 </nav>
 

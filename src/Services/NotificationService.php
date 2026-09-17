@@ -21,6 +21,7 @@ final class NotificationService
     public const TYPE_SITE_ASSIGNED = 'SITE_ASSIGNED';
     public const TYPE_ATTENTION = 'ATTENTION';
     public const TYPE_ARTICLE_READY = 'ARTICLE_READY';
+    public const TYPE_FEEDBACK = 'FEEDBACK';
 
     public function notify(int $userId, string $type, string $title, string $message, ?int $siteId = null, ?string $link = null): void
     {
@@ -37,6 +38,15 @@ final class NotificationService
     {
         foreach ($this->recipientsForSite($siteId) as $userId) {
             $this->notify($userId, $type, $title, $message, $siteId, $link);
+        }
+    }
+
+    /** Avisa todo ADMIN ativo — usado pelo feedback geral sobre a plataforma (não é de um site específico). */
+    public function notifyAdmins(string $type, string $title, string $message, ?string $link = null): void
+    {
+        $stmt = Connection::get()->query("SELECT id FROM users WHERE is_active = 1 AND role = 'ADMIN'");
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $adminId) {
+            $this->notify((int) $adminId, $type, $title, $message, null, $link);
         }
     }
 

@@ -8,6 +8,7 @@ use App\Controllers\CalendarController;
 use App\Controllers\CategoryController;
 use App\Controllers\EditorialMemoryController;
 use App\Controllers\EditorialRuleController;
+use App\Controllers\FeedbackController;
 use App\Controllers\GoalController;
 use App\Controllers\HomeController;
 use App\Controllers\IntelligenceController;
@@ -48,6 +49,13 @@ return static function (Router $router): void {
     $router->add('GET',  '/profile',        [ProfileController::class, 'edit'],         auth: true);
     $router->add('POST', '/profile/name',   [ProfileController::class, 'updateName'],   auth: true);
     $router->add('POST', '/profile/avatar', [ProfileController::class, 'updateAvatar'], auth: true);
+
+    // Feedback geral sobre o COMPOST (não sobre o conteúdo/artigo — isso é a
+    // Memória Editorial de cada site). Qualquer usuário logado envia;
+    // "marcar como visto" é só do ADMIN, que também vê o feedback de todos.
+    $router->add('GET',  '/feedback',              [FeedbackController::class, 'index'],         auth: true);
+    $router->add('POST', '/feedback',              [FeedbackController::class, 'store'],         auth: true);
+    $router->add('POST', '/feedback/{id}/review',  [FeedbackController::class, 'markReviewed'],  admin: true);
 
     // Notificações (qualquer usuário logado — sempre só as próprias)
     $router->add('GET',  '/notifications',           [NotificationController::class, 'index'],        auth: true);

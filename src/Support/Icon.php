@@ -30,6 +30,8 @@ final class Icon
         'users' => '<circle cx="8.5" cy="9" r="3"/><circle cx="16.5" cy="9.5" r="2.4"/>'
             . '<path d="M2.5 19.8c.6-3.5 3-5.6 6-5.6s5.4 2.1 6 5.6"/><path d="M15 19.8c.4-2.4 1.7-4.1 3.6-4.8"/>',
         'bell'  => '<path d="M6 9a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5Z"/><path d="M9.5 19.5a2.5 2.5 0 0 0 5 0"/>',
+        'feedback' => '<path d="M4 4.5h16a1 1 0 0 1 1 1V15a1 1 0 0 1-1 1H10l-4.5 4V16H4a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1Z"/>'
+            . '<path d="M8 9.5h8M8 12.5h5"/>',
         // --- tela de login ---
         'mail'  => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 7 8.5-7"/>',
         'lock'  => '<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',

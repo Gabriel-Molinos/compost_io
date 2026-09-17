@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Services\AuthService;
+use App\Services\FeedbackService;
 use App\Services\NotificationService;
 use App\Services\SiteService;
 use App\Support\Avatar;
@@ -52,6 +53,14 @@ if ($tourSiteId !== null) {
 
 $showNotifications = $authUser !== null;
 $unreadNotifications = $showNotifications ? (new NotificationService())->unreadCount((int) $authUser['id']) : 0;
+
+// Feedback geral sobre a plataforma — qualquer usuário logado vê o link;
+// o número no chip é só pro ADMIN (quantos ainda não foram "vistos"), o
+// Redator-Chefe não tem nada pra "revisar" aqui, só enviar.
+$showFeedback = $authUser !== null;
+$pendingFeedback = ($showFeedback && $authUser['role'] === 'ADMIN')
+    ? (new FeedbackService())->countPending()
+    : 0;
 
 // "/sites" só ativo na lista em si (match exato) — dentro de um site
 // (/sites/{id}/...) quem mostra onde você está é a seção do site logo

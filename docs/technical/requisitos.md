@@ -22,6 +22,7 @@
 - RF-015 — Redator-Chefe pode configurar categorias, interesses e não-interesses do site (ver [seções 15, 18, 19](../editorial/fluxo-editorial.md#15-estrutura-editorial-de-cada-site)) ✅ *(Fase 3 — categorias, interesses/não-interesses e metas)*
 - RF-016 — Admin pode configurar a conexão WordPress (URL, usuário, credencial) de cada site (ver [Credenciais específicas por site](seguranca.md#46-credenciais-específicas-por-site)) ✅ *(Fase 7.1 — aba WordPress do site, Application Password cifrada com libsodium, botão "Testar conexão")*
 - RF-017 — Admin pode convidar/cadastrar um novo usuário e vincular Redator-Chefe(s) a sites (ver [Onboarding de usuário](../product/onboarding-usuario.md)) ✅ *(Fase 2 — cadastro por senha; convite por e-mail fica para depois)*
+- RF-018 — Qualquer usuário pode enviar feedback geral sobre o COMPOST (a plataforma em si, não o conteúdo gerado — isso é a Memória Editorial) ✅ *(2026-09-17 — aba "Feedback" na navegação global; nota 1-5 opcional + texto livre, opcionalmente ligado a um site; ADMIN vê o feedback de todo mundo e marca como visto, avisado por notificação a cada novo envio; `FeedbackController`/`FeedbackService`, tabela `platform_feedback`)*
 - ...
 
 ### 64. Regras de negócio (RB)

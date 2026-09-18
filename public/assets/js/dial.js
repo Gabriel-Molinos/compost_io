@@ -261,6 +261,9 @@
       var a = e.target instanceof Element ? e.target.closest('a.dial-item') : null;
       var i = a ? links.indexOf(a) : -1;
       if (i < 0) { return; }
+      // Só foco de TECLADO gira o dial. No clique do mouse o foco chega já no "apertar": girar ali
+      // tirava o item de baixo do cursor e o "soltar" não caía mais nele (era preciso clicar 2×).
+      if (!a.matches(':focus-visible')) { return; }
       rollTo(i, 320);
       scheduleReturn(4000);
     });

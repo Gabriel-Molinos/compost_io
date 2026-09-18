@@ -651,10 +651,12 @@
        success → brilho que varre o card de tempos em tempos (calmo)
        danger  → respiração vermelha mais rápida (pede atenção)
        warning → respiração âmbar lenta
-       dark    → fundo preto, respiração cinza-aço bem lenta (em revisão /
-                 agendado — o tom "cyan" da badge; sem ciano no fundo, pedido
-                 do responsável, 2026-09-18: "ainda tem ciano ali no
-                 background, deixa um preto no lugar dele")
+       dark    → fundo preto (em revisão / agendado — o tom "cyan" da badge;
+                 sem ciano no fundo, pedido do responsável, 2026-09-18:
+                 "ainda tem ciano ali no background, deixa um preto no lugar
+                 dele"). Animação em DUAS camadas (pedido: "muito pequena e
+                 pouco visível"): uma respiração larga de cinza claro + uma
+                 faixa de luz com linha de "scanner" que atravessa o card todo
        info    → varredura contínua (a IA está trabalhando)
        muted   → parado (planejado / descartado)
      A base de TODO card é preta (não o azul-petróleo `surface`, que lia
@@ -697,13 +699,24 @@
        isso todos os cards brilham/respiram no mesmo instante, feio. */
     animation-delay: var(--card-phase, 0s);
   }
+  /* Segunda camada animada (só o tom dark usa; os outros deixam em opacity 0). */
+  .article-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0;
+    animation-delay: var(--card-phase, 0s);
+  }
   .article-card--success { --tone: 61 240 122; --tint: .42; }
   .article-card--danger  { --tone: 255 92 122; --tint: .44; }
   .article-card--warning { --tone: 255 197 61; --tint: .32; }
   .article-card--info    { --tone: 111 207 255; --tint: .26; }
-  /* dark: sem tingimento (preto puro) e sem ciano nem na borda — só um
-     cinza-aço bem discreto pra animação ainda aparecer sobre o preto. */
-  .article-card--dark    { --tint: 0; --glow: .3; border-left-color: rgb(var(--tone) / .5); }
+  /* dark: sem tingimento (preto puro) e sem ciano nem na borda. --sheen é o
+     cinza bem claro da luz que anima por cima do preto (sobre preto, um cinza
+     de baixa opacidade some — daí a luz clara e a faixa larga). */
+  .article-card--dark    { --tint: 0; --glow: .3; --sheen: 226 234 242; border-left-color: rgb(var(--tone) / .5); }
 
   .article-card--success::before {
     opacity: 1;
@@ -718,18 +731,41 @@
     animation-delay: var(--card-phase, 0s);
   }
   .article-card--danger::before,
-  .article-card--warning::before,
-  .article-card--dark::before {
+  .article-card--warning::before {
     background: radial-gradient(90% 170% at 0% 50%, rgb(var(--tone) / var(--glow)), transparent 70%);
     animation: article-breathe 2.4s ease-in-out infinite;
     animation-delay: var(--card-phase, 0s);
   }
   .article-card--warning::before { animation-duration: 3.6s; }
-  .article-card--dark::before    { animation-duration: 4.6s; }
+
+  /* dark, camada 1: respiração larga (cobre ~metade do card, não só a borda). */
+  .article-card--dark::before {
+    opacity: 1;
+    background: radial-gradient(130% 240% at 0% 50%, rgb(var(--sheen) / var(--glow)), transparent 72%);
+    animation: article-breathe 4s ease-in-out infinite;
+    animation-delay: var(--card-phase, 0s);
+  }
+  /* dark, camada 2: faixa de luz larga + linha de scanner na borda de baixo,
+     atravessando o card inteiro (mesmo transform nas duas). */
+  .article-card--dark::after {
+    opacity: 1;
+    background-image:
+      linear-gradient(90deg, transparent 10%, rgb(var(--sheen) / .9) 50%, transparent 90%),
+      linear-gradient(105deg, transparent 12%, rgb(var(--sheen) / .2) 50%, transparent 88%);
+    background-size: 100% 2px, 100% 100%;
+    background-position: 0 100%, 0 0;
+    background-repeat: no-repeat;
+    animation: article-scan 3.6s ease-in-out infinite;
+    animation-delay: var(--card-phase, 0s);
+  }
 
   @keyframes article-sheen {
     0%        { transform: translateX(-100%); }
     45%, 100% { transform: translateX(100%); } /* varre e descansa o resto do ciclo */
+  }
+  @keyframes article-scan {
+    0%        { transform: translateX(-100%); }
+    72%, 100% { transform: translateX(100%); } /* atravessa e descansa o resto do ciclo */
   }
   @keyframes article-flow {
     0%   { transform: translateX(-100%); }
@@ -743,6 +779,7 @@
     .article-card { animation: none; transition: none; }
     .article-card:hover { transform: none; }
     .article-card::before { animation: none; opacity: .5; }
+    .article-card::after { animation: none; opacity: 0; }
   }
 
   /* =====================================================================

@@ -57,6 +57,11 @@ final class Icon
         'wordpress'    => '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5v17"/><path d="M6 6.5c2 2 10 2 12 0M6 17.5c2-2 10-2 12 0"/>',
         'ai'           => '<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/>'
             . '<path d="M9 3v3M15 3v3M9 18v3M15 18v3M3 9h3M3 15h3M18 9h3M18 15h3"/>',
+        // --- formulários (usuário) ---
+        'shield'       => '<path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/>',
+        'camera'       => '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/>',
+        'check'        => '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+        'search'       => '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/>',
     ];
 
     /** SVG inline (18×18) do ícone `$key`, ou um círculo vazio genérico se a chave não existir. */

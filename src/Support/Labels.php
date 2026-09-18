@@ -86,7 +86,7 @@ final class Labels
             'warning' => 'article-card--warning',
             'danger'  => 'article-card--danger',
             'info'    => 'article-card--info',
-            'cyan'    => 'article-card--dark', // sem ciano no fundo do card (pedido do responsável, 2026-09-18)
+            'cyan'    => 'article-card--cyan', // fundo continua preto; só a luz da animação é ciano
             default   => 'article-card--muted',
         };
     }

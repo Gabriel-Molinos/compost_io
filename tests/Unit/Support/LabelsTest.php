@@ -75,9 +75,9 @@ final class LabelsTest extends TestCase
         $this->assertSame('article-card--danger', Labels::articleCardTone(Labels::articleStatusTone('ERROR')));
         $this->assertSame('article-card--warning', Labels::articleCardTone(Labels::articleStatusTone('REVISION_REQUESTED')));
         $this->assertSame('article-card--info', Labels::articleCardTone(Labels::articleStatusTone('IN_PROGRESS')));
-        // Em revisão/agendado (tom ciano da badge): o card fica preto, sem ciano no fundo.
-        $this->assertSame('article-card--dark', Labels::articleCardTone(Labels::articleStatusTone('IN_REVIEW')));
-        $this->assertSame('article-card--dark', Labels::articleCardTone(Labels::articleStatusTone('SCHEDULED')));
+        // Em revisão/agendado (tom ciano da badge): fundo preto, detalhes e animação em ciano.
+        $this->assertSame('article-card--cyan', Labels::articleCardTone(Labels::articleStatusTone('IN_REVIEW')));
+        $this->assertSame('article-card--cyan', Labels::articleCardTone(Labels::articleStatusTone('SCHEDULED')));
         $this->assertSame('article-card--muted', Labels::articleCardTone(Labels::articleStatusTone('DISCARDED')));
         $this->assertSame('article-card--muted', Labels::articleCardTone('tom-inexistente'));
     }

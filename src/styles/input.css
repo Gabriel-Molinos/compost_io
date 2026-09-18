@@ -646,38 +646,43 @@
      2026-09-18: "o background dos posts na produção podia ser de acordo
      com o estado dele, aprovado verde, atenção vermelho, tudo animado").
      A cor vem do MESMO tom da badge (Labels::articleStatusTone →
-     Labels::articleCardTone) — card e badge nunca discordam — e cada tom
+     Labels::articleCardTone) — card e badge nunca discordam. O FUNDO é
+     sempre preto ("deixa um preto no lugar" do ciano); a cor do estado vai
+     nos DETALHES — borda, tag, sombra, hover, ícones, chips, animação
+     ("os detalhes tem que ser da cor da situação do post"). Cada estado
      tem uma animação com "personalidade" própria:
        success → brilho que varre o card de tempos em tempos (calmo)
        danger  → respiração vermelha mais rápida (pede atenção)
        warning → respiração âmbar lenta
-       dark    → fundo preto (em revisão / agendado — o tom "cyan" da badge;
-                 sem ciano no fundo, pedido do responsável, 2026-09-18:
-                 "ainda tem ciano ali no background, deixa um preto no lugar
-                 dele"). Animação em DUAS camadas (pedido: "muito pequena e
-                 pouco visível"): uma respiração larga de cinza claro + uma
-                 faixa de luz com linha de "scanner" que atravessa o card todo
+       cyan    → duas camadas: respiração larga + faixa de luz com linha de
+                 "scanner" atravessando o card (em revisão / agendado — fundo
+                 preto, só a luz é ciano)
        info    → varredura contínua (a IA está trabalhando)
        muted   → parado (planejado / descartado)
-     A base de TODO card é preta (não o azul-petróleo `surface`, que lia
-     como ciano e aparecia por trás dos degradês verde/vermelho).
-     Tudo é opacity/transform num pseudo-elemento (compositor — não
-     repinta o card nem causa layout), então uma página cheia de cards
-     animando continua leve. Os nomes `.article-card--*` são literais em
-     Labels.php pelo scanner do Tailwind (ver comentário lá).
+     Estrutura (Views/sites/production/index.php):
+       li.article-card          → borda, sombra e hover. NÃO corta o que
+                                  passa da borda (a tag fica meio pra fora)
+         span.article-card-fx   → camada que corta as animações no raio do card
+         span.article-card-tag  → tag sólida da situação, sobre a borda de cima
+         …conteúdo (título, data, categoria, detalhes)
+     Animação é só opacity/transform em pseudo-elementos (compositor — não
+     repinta nem causa layout), então uma página cheia de cards animando
+     continua leve. Os nomes `.article-card--*` são literais em Labels.php
+     (scanner do Tailwind, ver comentário lá).
      ===================================================================== */
   .article-card {
-    --tone: 143 166 188; /* r g b do tom (muted por padrão) */
-    --tint: .06;         /* força do fundo: os tons de "espera" ficam discretos pra aprovado/atenção saltarem */
-    --glow: .4;          /* força da respiração/varredura do ::before */
+    --tone: 143 166 188;   /* r g b do tom (muted por padrão) */
+    --accent: var(--tone); /* cor de texto/hover; o muted clareia (abaixo) */
+    --tint: .06;           /* tingimento do fundo (0 = preto puro) */
+    --glow: .4;            /* força da respiração da camada de fx */
     position: relative;
-    isolation: isolate; /* o ::before com z-index:-1 fica atrás do texto, na frente do fundo */
-    overflow: hidden;
+    isolation: isolate;    /* o fx (z-index:-1) fica atrás do texto, na frente do fundo */
     border: 1px solid rgb(var(--tone) / .3);
     border-left: 2px solid rgb(var(--tone));
     background-color: #04090D; /* preto (void da identidade, um degrau abaixo) */
     /* Cobre o card inteiro (mais forte na esquerda, onde fica a borda colorida). */
     background-image: linear-gradient(100deg, rgb(var(--tone) / var(--tint)), rgb(var(--tone) / calc(var(--tint) * .5)) 65%, rgb(var(--tone) / calc(var(--tint) * .25)));
+    box-shadow: 0 8px 22px -16px rgb(var(--tone) / .55);
     transition: transform 150ms ease, box-shadow 150ms ease;
     /* backwards (não both): terminada a entrada o transform volta a ser
        livre pro hover — `both` congelaria translateY(0) e ignoraria o hover. */
@@ -686,77 +691,145 @@
   }
   .article-card:hover {
     transform: translateY(-1px);
-    box-shadow: 0 8px 22px -12px rgb(var(--tone) / .65);
-  }
-  .article-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    opacity: 0; /* muted não anima; os tons abaixo ligam */
-    /* Fase negativa espalhada por card (--card-phase, vem da View): sem
-       isso todos os cards brilham/respiram no mesmo instante, feio. */
-    animation-delay: var(--card-phase, 0s);
-  }
-  /* Segunda camada animada (só o tom dark usa; os outros deixam em opacity 0). */
-  .article-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    opacity: 0;
-    animation-delay: var(--card-phase, 0s);
+    box-shadow: 0 12px 30px -12px rgb(var(--tone) / .8), 0 0 0 1px rgb(var(--tone) / .5);
   }
   .article-card--success { --tone: 61 240 122; --tint: .42; }
   .article-card--danger  { --tone: 255 92 122; --tint: .44; }
   .article-card--warning { --tone: 255 197 61; --tint: .32; }
   .article-card--info    { --tone: 111 207 255; --tint: .26; }
-  /* dark: sem tingimento (preto puro) e sem ciano nem na borda. --sheen é o
-     cinza bem claro da luz que anima por cima do preto (sobre preto, um cinza
-     de baixa opacidade some — daí a luz clara e a faixa larga). */
-  .article-card--dark    { --tint: 0; --glow: .3; --sheen: 226 234 242; border-left-color: rgb(var(--tone) / .5); }
+  .article-card--cyan    { --tone: 0 208 240; --tint: 0; --glow: .34; } /* fundo preto puro; só a luz é ciano */
+  .article-card--muted   { --accent: 240 248 255; } /* sem cor de estado: o hover não pode escurecer o título branco */
 
-  .article-card--success::before {
+  /* Camada de animação: corta no raio do card (o card em si não corta). */
+  .article-card-fx {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .article-card-fx::before,
+  .article-card-fx::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0; /* muted não anima; os tons abaixo ligam */
+    /* Fase negativa espalhada por card (--card-phase, vem da View): sem
+       isso todos os cards brilham/respiram no mesmo instante, feio. */
+    animation-delay: var(--card-phase, 0s);
+  }
+  .article-card--success .article-card-fx::before {
     opacity: 1;
     background: linear-gradient(105deg, transparent 35%, rgb(var(--tone) / .24) 50%, transparent 65%);
     animation: article-sheen 6s ease-in-out infinite;
     animation-delay: var(--card-phase, 0s);
   }
-  .article-card--info::before {
+  .article-card--info .article-card-fx::before {
     opacity: 1;
     background: linear-gradient(90deg, transparent 20%, rgb(var(--tone) / .22) 50%, transparent 80%);
     animation: article-flow 2.4s linear infinite;
     animation-delay: var(--card-phase, 0s);
   }
-  .article-card--danger::before,
-  .article-card--warning::before {
+  .article-card--danger .article-card-fx::before,
+  .article-card--warning .article-card-fx::before {
+    opacity: 1;
     background: radial-gradient(90% 170% at 0% 50%, rgb(var(--tone) / var(--glow)), transparent 70%);
     animation: article-breathe 2.4s ease-in-out infinite;
     animation-delay: var(--card-phase, 0s);
   }
-  .article-card--warning::before { animation-duration: 3.6s; }
-
-  /* dark, camada 1: respiração larga (cobre ~metade do card, não só a borda). */
-  .article-card--dark::before {
+  .article-card--warning .article-card-fx::before { animation-duration: 3.6s; }
+  /* cyan, camada 1: respiração larga (cobre ~metade do card, não só a borda). */
+  .article-card--cyan .article-card-fx::before {
     opacity: 1;
-    background: radial-gradient(130% 240% at 0% 50%, rgb(var(--sheen) / var(--glow)), transparent 72%);
+    background: radial-gradient(130% 240% at 0% 50%, rgb(var(--tone) / var(--glow)), transparent 72%);
     animation: article-breathe 4s ease-in-out infinite;
     animation-delay: var(--card-phase, 0s);
   }
-  /* dark, camada 2: faixa de luz larga + linha de scanner na borda de baixo,
+  /* cyan, camada 2: faixa de luz larga + linha de scanner na borda de baixo,
      atravessando o card inteiro (mesmo transform nas duas). */
-  .article-card--dark::after {
+  .article-card--cyan .article-card-fx::after {
     opacity: 1;
     background-image:
-      linear-gradient(90deg, transparent 10%, rgb(var(--sheen) / .9) 50%, transparent 90%),
-      linear-gradient(105deg, transparent 12%, rgb(var(--sheen) / .2) 50%, transparent 88%);
+      linear-gradient(90deg, transparent 10%, rgb(var(--tone) / .95) 50%, transparent 90%),
+      linear-gradient(105deg, transparent 12%, rgb(var(--tone) / .3) 50%, transparent 88%);
     background-size: 100% 2px, 100% 100%;
     background-position: 0 100%, 0 0;
     background-repeat: no-repeat;
     animation: article-scan 3.6s ease-in-out infinite;
     animation-delay: var(--card-phase, 0s);
+  }
+
+  /* Tag da situação: sólida, no canto de cima, meio pra fora da borda (como
+     uma aba). O anel preto "recorta" a borda em volta dela; o segundo
+     sombreado é o brilho na cor do estado. */
+  .article-card-tag {
+    position: absolute;
+    top: 0;
+    left: 1rem;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    transform: translateY(-50%);
+    padding: 0 .7rem;
+    border-radius: .375rem;
+    background: rgb(var(--tone));
+    color: #050B0F;
+    font-size: .6875rem;
+    font-weight: 700;
+    line-height: 1.375rem;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    box-shadow: 0 0 0 3px #04090D, 0 4px 14px -4px rgb(var(--tone) / .75);
+  }
+
+  /* Título: no hover do card (ou do link) assume a cor do estado. */
+  .article-card-title {
+    color: #F0F8FF;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 4px;
+    transition: color 150ms ease, text-decoration-color 150ms ease;
+  }
+  .article-card:hover .article-card-title,
+  .article-card-title:focus-visible {
+    color: rgb(var(--accent));
+  }
+  .article-card-title:hover {
+    text-decoration-color: rgb(var(--accent) / .6);
+  }
+
+  /* Data e categoria: os fatos que importam na lista — maiores e mais claros
+     que o resto dos detalhes, com ícone e chip na cor do estado. */
+  .article-card-fact {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    font-size: .875rem;
+    font-weight: 600;
+    color: #F0F8FF;
+  }
+  .article-card-icon {
+    display: inline-flex;
+    color: rgb(var(--accent));
+  }
+  .article-card-icon svg { width: 15px; height: 15px; }
+  .article-card-fact--chip {
+    padding: .125rem .65rem;
+    border-radius: 999px;
+    border: 1px solid rgb(var(--tone) / .45);
+    background: rgb(var(--tone) / .1);
+    color: rgb(var(--accent));
+  }
+  .article-card-pill {
+    padding: .05rem .5rem;
+    border-radius: 999px;
+    border: 1px solid rgb(var(--tone) / .4);
+    color: rgb(var(--accent));
+    font-size: .6875rem;
+    font-weight: 600;
   }
 
   @keyframes article-sheen {
@@ -778,8 +851,11 @@
   @media (prefers-reduced-motion: reduce) {
     .article-card { animation: none; transition: none; }
     .article-card:hover { transform: none; }
-    .article-card::before { animation: none; opacity: .5; }
-    .article-card::after { animation: none; opacity: 0; }
+    .article-card-title { transition: none; }
+    /* `.article-card .article-card-fx` (mesma especificidade dos seletores por
+       tom acima, e vem depois) — sem o ancestral perderia pra eles. */
+    .article-card .article-card-fx::before { animation: none; opacity: .5; }
+    .article-card .article-card-fx::after { animation: none; opacity: 0; }
   }
 
   /* =====================================================================

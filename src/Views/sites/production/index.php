@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Support\Csrf;
+use App\Support\Icon;
 use App\Support\Labels;
 use App\View;
 
@@ -211,7 +212,8 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
     <?php if ($articles === []): ?>
         <p class="mt-3 text-sm text-text-secondary">Nenhum rascunho neste filtro.</p>
     <?php endif; ?>
-    <ul data-tour="article-list" data-tour-review-href="<?= View::e($tourReviewHref) ?>" class="mt-3 space-y-2">
+    <ul data-tour="article-list" data-tour-review-href="<?= View::e($tourReviewHref) ?>" class="mt-6 space-y-6">
+        <?php // Espaço maior entre os cards: a tag da situação fica meio pra fora da borda de cima e precisa de ar. ?>
         <?php foreach ($articles as $i => $a): ?>
             <?php
             $tone = Labels::articleStatusTone((string) $a['status']);
@@ -220,25 +222,46 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
             // escalonada só nos primeiros cards; fase negativa por posição pra
             // os brilhos/respirações não baterem todos no mesmo instante.
             $cardStyle = sprintf('--card-enter: %dms; --card-phase: -%.2Fs', min($i, 8) * 35, ($i % 7) * 0.85); // %F: sem vírgula de locale no CSS
+            // Detalhes de menor peso (o que importa — data e categoria — sobe pra
+            // linha de destaque abaixo). Já escapados; vão juntos, separados por ·.
+            $details = [];
+            if ((int) ($a['attempt_number'] ?? 1) > 1) {
+                $details[] = 'tentativa ' . View::e($a['attempt_number']);
+            }
+            if (!empty($a['word_count'])) {
+                $details[] = View::e($a['word_count']) . ' palavras';
+            }
+            $details[] = '<span class="font-mono">US$ ' . number_format((float) $a['ai_cost'], 4) . '</span>';
             ?>
-            <li class="article-card <?= Labels::articleCardTone($tone) ?> flex flex-col gap-2.5 rounded-lg px-4 py-3.5"
+            <li class="article-card <?= Labels::articleCardTone($tone) ?> flex flex-col gap-2.5 rounded-lg px-4 pb-3.5 pt-5"
                 style="<?= View::e($cardStyle) ?>">
+                <span class="article-card-fx" aria-hidden="true"></span>
+                <?php // Tag da situação (cor do estado, sobre a borda de cima) — texto + cor, nunca só cor (R-UI-07). ?>
+                <span class="article-card-tag">
+                    <?php if ($isGenerating): ?><span class="status-dot h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true"></span><?php endif; ?>
+                    <?= View::e(Labels::articleStatus((string) $a['status'])) ?>
+                </span>
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
                         <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>"
-                           class="font-medium text-text-primary hover:text-cyan">
+                           class="article-card-title font-semibold">
                             <?= View::e($a['title'] ?: 'Rascunho #' . $a['id']) ?>
                         </a>
-                        <div class="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                            <?= Labels::articleStatusBadge((string) $a['status']) ?>
-                            <span><?= View::e(date('d/m/Y', strtotime((string) $a['created_at']))) ?></span>
-                            <?php if (($a['source'] ?? 'MANUAL') === 'AUTO'): ?>
-                                <span class="rounded-full bg-cyan/10 px-1.5 py-0.5 text-[11px] font-medium text-cyan">automático</span>
+                        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                            <span class="article-card-fact">
+                                <span class="article-card-icon"><?= Icon::nav('calendar') ?></span>
+                                <?= View::e(date('d/m/Y', strtotime((string) $a['created_at']))) ?>
+                            </span>
+                            <?php if (!empty($a['category_name'])): ?>
+                                <span class="article-card-fact article-card-fact--chip">
+                                    <span class="article-card-icon"><?= Icon::nav('categories') ?></span>
+                                    <?= View::e($a['category_name']) ?>
+                                </span>
                             <?php endif; ?>
-                            <?php if ((int) ($a['attempt_number'] ?? 1) > 1): ?><span>· tentativa <?= View::e($a['attempt_number']) ?></span><?php endif; ?>
-                            <?php if (!empty($a['category_name'])): ?><span>· <?= View::e($a['category_name']) ?></span><?php endif; ?>
-                            <?php if (!empty($a['word_count'])): ?><span>· <?= View::e($a['word_count']) ?> palavras</span><?php endif; ?>
-                            <span class="font-mono">· US$ <?= number_format((float) $a['ai_cost'], 4) ?></span>
+                            <?php if (($a['source'] ?? 'MANUAL') === 'AUTO'): ?>
+                                <span class="article-card-pill">automático</span>
+                            <?php endif; ?>
+                            <span class="text-xs text-text-muted"><?= implode('<span aria-hidden="true" class="mx-1.5">·</span>', $details) ?></span>
                         </div>
                     </div>
                     <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>/delete"

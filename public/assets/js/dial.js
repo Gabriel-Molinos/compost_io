@@ -15,10 +15,13 @@
  *   - arrastar (mouse/toque), roda do mouse, setas ↑/↓ e Tab giram o dial; parado
  *     ~2,6 s ele volta pro item da página atual;
  *   - com poucos itens cabendo no arco a lista não dá a volta (sem repetição);
- *   - o × recolhe a coluna (desktop, lembrado em localStorage) / fecha a gaveta
- *     (celular); o botão redondo reabre.
+ *   - no celular o dial é uma gaveta (botão redondo abre, × / Esc / toque fora fecham);
+ *     no desktop ele é fixo.
  * Véu de transição: ao clicar num item, um degradê cobre tudo menos a sidebar e
  * só sai depois que a página nova carregou — sem tempo fixo (ver `.page-veil`).
+ * Desempenho: cada quadro só escreve `transform`/`opacity` (nada de variável CSS, que
+ * recalcularia o estilo do dial inteiro) e a navegação começa NA HORA do clique — o giro
+ * termina enquanto o servidor responde, em vez de somar espera antes da navegação.
  * Sem JS a lista continua normal e usável; `prefers-reduced-motion`: nada anima
  * (o dial aparece já na posição certa, ainda em arco).
  */
@@ -30,28 +33,19 @@
   var desktop = window.matchMedia('(min-width: 1024px)');
   var dials = [];
 
-  // ── Recolher / abrir ────────────────────────────────────────────────────
-  function isOpen() { return desktop.matches ? !root.classList.contains('dial-closed') : root.classList.contains('dial-open'); }
-
+  // ── Gaveta (celular/tablet). No desktop o dial é fixo: não recolhe. ─────────
   function setOpen(open) {
-    if (desktop.matches) {
-      root.classList.toggle('dial-closed', !open);
-      try { window.localStorage.setItem('compost:dial', open ? 'open' : 'closed'); } catch (e) { /* sem lembrar */ }
-    } else {
-      root.classList.toggle('dial-open', open);
-    }
-    // A geometria do arco não muda com a largura, mas garante o desenho certo depois da animação.
-    window.setTimeout(function () { dials.forEach(function (d) { d.layout(); }); }, 520);
+    root.classList.toggle('dial-open', open && !desktop.matches);
   }
 
   document.addEventListener('click', function (e) {
     var t = e.target instanceof Element ? e.target.closest('[data-dial-toggle]') : null;
-    if (t) { setOpen(!isOpen()); }
+    if (t) { setOpen(!root.classList.contains('dial-open')); }
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !desktop.matches && root.classList.contains('dial-open')) { setOpen(false); }
+    if (e.key === 'Escape' && root.classList.contains('dial-open')) { setOpen(false); }
   });
-  // Gaveta aberta no celular e a tela virou desktop (ou o contrário): não deixa estado preso.
+  // A tela virou desktop com a gaveta aberta: não deixa estado preso.
   desktop.addEventListener('change', function () { root.classList.remove('dial-open'); });
 
   // ── Véu de transição de página (CSS: `.page-veil`) ──────────────────────
@@ -147,9 +141,7 @@
         var a = Math.abs(d);
         var el = links[i];
         if (a > g.half + 0.5) {
-          el.style.opacity = '0';
-          el.style.pointerEvents = 'none';
-          el.removeAttribute('data-center');
+          if (el.style.opacity !== '0') { el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.removeAttribute('data-center'); }
           continue;
         }
         var th = d * g.step;
@@ -158,14 +150,16 @@
         var left = xm - g.itemW / 2;
         var sc = 0.88 - 0.02 * Math.min(a, 4) + 0.2 * Math.max(0, 1 - a);
         var op = clamp(1 - 0.075 * a, 0.38, 1) * clamp(g.half + 0.5 - a, 0, 1);
-        el.style.setProperty('--dt', 'translate3d(' + left.toFixed(1) + 'px,' + ym.toFixed(1) + 'px,0) rotate(' + (th * 0.55).toFixed(4) + 'rad) scale(' + sc.toFixed(3) + ')');
+        el.style.transform = 'translate3d(' + left.toFixed(1) + 'px,' + ym.toFixed(1) + 'px,0) rotate(' + (th * 0.55).toFixed(4) + 'rad) scale(' + sc.toFixed(3) + ')';
         el.style.opacity = op.toFixed(3);
-        el.style.zIndex = String(100 - Math.round(a * 10));
+        var z = String(100 - Math.round(a * 10));
+        if (el.style.zIndex !== z) { el.style.zIndex = z; }
         el.style.pointerEvents = op < 0.1 ? 'none' : '';
-        if (a < 0.5) { el.setAttribute('data-center', ''); } else { el.removeAttribute('data-center'); }
+        var center = a < 0.5;
+        if (center !== el.hasAttribute('data-center')) { el.toggleAttribute('data-center', center); }
       }
       // As marcas do mostrador giram junto com a seleção (mesmo passo angular).
-      if (ticks) { dial.style.setProperty('--spin', (-p * g.step * 180 / Math.PI).toFixed(3) + 'deg'); }
+      if (ticks) { ticks.style.transform = 'rotate(' + (-p * g.step * 180 / Math.PI).toFixed(3) + 'deg)'; }
     }
 
     function stop() { if (raf) { window.cancelAnimationFrame(raf); raf = 0; } }
@@ -225,10 +219,12 @@
       storage(key, i);
       startVeil();
       var dist = loop ? Math.abs(wrap(i - pos, n)) : Math.abs(i - pos);
-      if (dist < 0.5) { return; } // já no centro: navegação normal
+      if (dist < 0.5) { return; } // já no centro: navegação normal (com o véu)
+      // Navega NA HORA: a página antiga continua pintada (e o giro rodando) até a nova chegar.
       e.preventDefault();
       window.clearTimeout(idle);
-      rollTo(i, 360, function () { window.location.href = a.href; });
+      rollTo(i, 320);
+      window.location.href = a.href;
     });
 
     // Arrastar (mouse/toque) gira o dial, com inércia; ao soltar, encaixa no item mais próximo.

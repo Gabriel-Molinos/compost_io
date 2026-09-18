@@ -269,8 +269,12 @@ fontFamily: {
   arco, cada um na sua cor. O item do centro é o selecionado (pílula acesa + nome do grupo);
   ao mudar de seção o mostrador **gira** (itens e marcas) até o item novo — arrastar, roda do
   mouse, setas e Tab também giram, com inércia e encaixe. Ao navegar pela sidebar um véu em
-  degradê cobre tudo menos ela e só sai quando a página nova carrega (sem tempo fixo). O × recolhe
-  a coluna (lembrado); no celular vira gaveta com botão redondo. Geometria em `assets/js/dial.js`
+  degradê (bordas nítidas com fio ciano) cobre tudo menos ela e só sai quando a página nova
+  carrega (sem tempo fixo). O dial é fixo no desktop; no celular vira gaveta com botão redondo.
+  Desempenho: cada quadro só escreve transform/opacity, a navegação começa na hora do clique e a
+  sidebar busca as contagens numa consulta só (`SidebarService`) — o banco gerenciado custa ~280 ms
+  por ida e volta e eram 5 por página. Tela `/profile` refeita no mesmo tema (foto grande com
+  pré-visualização ao vivo, nome, papel e sites). Geometria em `assets/js/dial.js`
   (mesma fórmula do CSS), HTML em `layout/_dial.php`.
 
 ## Ver também

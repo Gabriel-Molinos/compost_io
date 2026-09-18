@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Services\AuthService;
+use App\Services\SiteService;
 use App\Services\UserService;
 use App\Support\Csrf;
 use App\Support\Http;
@@ -35,11 +36,19 @@ final class ProfileController
 
     public function edit(): void
     {
+        $this->render(AuthService::user() ?? [], null, []);
+    }
+
+    /** Monta a tela com os sites que o usuário enxerga (ADMIN: todos; Redator-Chefe: os vinculados) — cartão "Meus sites". */
+    private function render(array $user, ?string $error, array $nameErrors): void
+    {
+        $sites = new SiteService();
         View::render('profile/edit', [
             'title'      => 'Meu perfil',
-            'user'       => AuthService::user(),
-            'error'      => null,
-            'nameErrors' => [],
+            'user'       => $user,
+            'error'      => $error,
+            'nameErrors' => $nameErrors,
+            'sites'      => ($user['role'] ?? null) === 'ADMIN' ? $sites->all() : $sites->forUser((int) ($user['id'] ?? 0)),
         ]);
     }
 
@@ -56,12 +65,7 @@ final class ProfileController
         $errors = (new Validator($_POST, ['name' => ['required', 'max:191']], ['name' => 'Nome']))->errors();
         if ($errors !== []) {
             http_response_code(422);
-            View::render('profile/edit', [
-                'title'      => 'Meu perfil',
-                'user'       => ['id' => $user['id'], 'role' => $user['role'], 'avatar_path' => $user['avatar_path'], 'name' => $_POST['name'] ?? ''],
-                'error'      => null,
-                'nameErrors' => $errors,
-            ]);
+            $this->render(array_merge($user, ['name' => $_POST['name'] ?? '']), null, $errors);
             return;
         }
 
@@ -93,12 +97,7 @@ final class ProfileController
         try {
             $avatar = Uploads::image($_FILES['avatar'] ?? null, 'avatars', $id);
         } catch (\RuntimeException $e) {
-            View::render('profile/edit', [
-                'title'      => 'Meu perfil',
-                'user'       => $user,
-                'error'      => $e->getMessage(),
-                'nameErrors' => [],
-            ]);
+            $this->render($user, $e->getMessage(), []);
             return;
         }
 

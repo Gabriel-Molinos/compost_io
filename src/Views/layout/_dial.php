@@ -119,7 +119,7 @@ if ($showFeedback) {
             </div>
         <?php endif; ?>
 
-        <button type="button" class="dial-close" data-dial-toggle aria-label="Recolher o menu" title="Recolher o menu" data-nodrag>
+        <button type="button" class="dial-close" data-dial-toggle aria-label="Fechar o menu" title="Fechar o menu" data-nodrag>
             <?= Icon::nav('close') ?>
         </button>
 

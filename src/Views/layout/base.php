@@ -3,9 +3,7 @@
 declare(strict_types=1);
 
 use App\Services\AuthService;
-use App\Services\NotificationService;
-use App\Services\PlatformFeedbackService;
-use App\Services\SiteService;
+use App\Services\SidebarService;
 use App\Support\Avatar;
 use App\Support\Csrf;
 use App\Support\Icon;
@@ -44,23 +42,23 @@ if ($authUser !== null) {
 // (pedido do responsável, 2026-09-08) e só quando tem pelo menos 1 site
 // vinculado (o primeiro passo depois da tela inicial abre um site de
 // verdade; sem site nenhum pra abrir, o tour não tem pra onde ir).
-$tourSiteId = $authUser !== null && $authUser['role'] === 'REDATOR_CHEFE'
-    ? (new SiteService())->firstIdForUser((int) $authUser['id'])
-    : null;
+// Contagens da sidebar numa consulta só (SidebarService — cada ida ao banco custa ~280 ms).
+$sidebar = $authUser !== null
+    ? (new SidebarService())->counts((int) $authUser['id'], $authUser['role'] === 'ADMIN')
+    : ['unread' => 0, 'pendingFeedback' => 0, 'sitesTotal' => 0, 'firstSiteId' => null];
+$tourSiteId = $authUser !== null && $authUser['role'] === 'REDATOR_CHEFE' ? $sidebar['firstSiteId'] : null;
 if ($tourSiteId !== null) {
     $globalNav[] = ['/?tour=1', 'Tutorial', 'help'];
 }
 
 $showNotifications = $authUser !== null;
-$unreadNotifications = $showNotifications ? (new NotificationService())->unreadCount((int) $authUser['id']) : 0;
+$unreadNotifications = $sidebar['unread'];
 
 // Feedback geral sobre a plataforma — qualquer usuário logado vê o link;
 // o número no chip é só pro ADMIN (quantos ainda não foram "vistos"), o
 // Redator-Chefe não tem nada pra "revisar" aqui, só enviar.
 $showFeedback = $authUser !== null;
-$pendingFeedback = ($showFeedback && $authUser['role'] === 'ADMIN')
-    ? (new PlatformFeedbackService())->countPending()
-    : 0;
+$pendingFeedback = $sidebar['pendingFeedback'];
 
 // "/sites" só ativo na lista em si (match exato) — dentro de um site
 // (/sites/{id}/...) quem mostra onde você está é a seção do site logo
@@ -78,10 +76,8 @@ $hasSiteNav = $authUser !== null && $site !== null && $tabs !== null;
 $quickSites = [];
 $quickSitesTotal = 0;
 if ($authUser !== null && !$hasSiteNav) {
-    $sites = new SiteService();
-    $isAdmin = $authUser['role'] === 'ADMIN';
-    $quickSites = $sites->recentForSidebar((int) $authUser['id'], $isAdmin);
-    $quickSitesTotal = $isAdmin ? $sites->countAll() : $sites->countForUser((int) $authUser['id']);
+    $quickSites = (new SidebarService())->quickSites((int) $authUser['id'], $authUser['role'] === 'ADMIN');
+    $quickSitesTotal = $sidebar['sitesTotal'];
 }
 ?>
 <!doctype html>
@@ -118,14 +114,10 @@ if ($authUser !== null && !$hasSiteNav) {
 
     <script>
         // Véu de transição (assets/js/dial.js): se a página anterior foi deixada por um clique
-        // na sidebar, esta já nasce coberta (sem piscar) até o dial.js liberar. Também restaura a sidebar
-        // recolhida (só desktop).
+        // na sidebar, esta já nasce coberta (sem piscar) até o dial.js liberar.
         (function () {
             document.documentElement.classList.add('js');
             try {
-                if (window.matchMedia('(min-width: 1024px)').matches && localStorage.getItem('compost:dial') === 'closed') {
-                    document.documentElement.classList.add('dial-closed');
-                }
                 var t = parseInt(sessionStorage.getItem('compost:veil') || '', 10);
                 sessionStorage.removeItem('compost:veil');
                 if (t && Date.now() - t < 10000) { document.documentElement.classList.add('veil-on'); }

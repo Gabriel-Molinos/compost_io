@@ -7,7 +7,7 @@ namespace App\Support;
 /**
  * Ícones de linha, autorais (sem biblioteca/font externa — mesma filosofia
  * "sem dependência pesada" do resto do projeto), usados na navegação da
- * sidebar (layout/_nav.php). SVG inline, 24×24, `currentColor` — herda a cor
+ * sidebar (layout/_dial.php). SVG inline, 24×24, `currentColor` — herda a cor
  * do texto do link ao redor, incluindo o estado ativo (ciano).
  */
 final class Icon
@@ -63,6 +63,8 @@ final class Icon
         'check'        => '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
         'globe'        => '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.4 3.8 5.3 3.8 8.5s-1.3 6.1-3.8 8.5c-2.5-2.4-3.8-5.3-3.8-8.5S9.5 5.9 12 3.5Z"/>',
         'search'       => '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/>',
+        'close'        => '<path d="M6 6l12 12M18 6 6 18"/>',
+        'menu'         => '<path d="M4 7h16M4 12h16M4 17h10"/>',
         'plus'         => '<path d="M12 5v14M5 12h14"/>',
         'arrow'        => '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
         'clock'        => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',

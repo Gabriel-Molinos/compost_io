@@ -9,7 +9,7 @@ use App\Services\AuthService;
 
 /**
  * Não renderiza nada — só monta $tabs. A navegação em si (seções do site)
- * mora na sidebar (layout/_nav.php), fora do fluxo de $content; PHP
+ * mora na sidebar (layout/_dial.php), fora do fluxo de $content; PHP
  * compartilha o escopo de `require` entre este arquivo, a View que o chama
  * e o layout (mesma técnica que já existia pra $content chegar ao layout).
  */

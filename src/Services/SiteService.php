@@ -81,7 +81,7 @@ final class SiteService
      * plataforma escalar (§97 performance). Combinar com count*() abaixo
      * pra saber se "Ver todos" precisa aparecer.
      *
-     * @return list<array{id: int, name: string}>
+     * @return list<array{id: int, name: string, is_active: int}>
      */
     public function recentForSidebar(int $userId, bool $isAdmin, int $limit = 8): array
     {
@@ -89,11 +89,11 @@ final class SiteService
         $pdo = Connection::get();
 
         if ($isAdmin) {
-            return $pdo->query("SELECT id, name FROM sites ORDER BY name LIMIT {$limit}")->fetchAll();
+            return $pdo->query("SELECT id, name, is_active FROM sites ORDER BY name LIMIT {$limit}")->fetchAll();
         }
 
         $stmt = $pdo->prepare(
-            "SELECT s.id, s.name
+            "SELECT s.id, s.name, s.is_active
              FROM sites s
              JOIN user_site us ON us.site_id = s.id
              WHERE us.user_id = :id

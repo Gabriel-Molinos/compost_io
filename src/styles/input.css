@@ -580,6 +580,601 @@
     transform: scale(1.05);
   }
 
+  /* =====================================================================
+     Sidebar radial — o "dial" (layout/base.php + layout/_dial.php +
+     assets/js/dial.js). Pedido do responsável, 2026-09-18: uma sidebar
+     redonda tipo "rotary dial / radial selector": um disco no canto da tela
+     (avatar meio escondido, atalhos redondos em arco) e, em volta dele, um
+     anel onde os itens de navegação ficam ao longo de um arco e GIRAM
+     quando a seleção muda. Geometria (a mesma do JS): o painel tem largura
+     W e a altura da tela H; o arco externo passa por (W, H/2) no meio e
+     recua 12% de H nas pontas → raio Ro = 1,1017·H, centro em x = W − Ro
+     (fora da tela, à esquerda). O anel tem a largura --band; o disco interno
+     tem raio Ro − band.
+       .dial            a coluna (encolhe a 0 quando recolhida no desktop;
+                        vira gaveta por cima da página no celular)
+       .dial-band       o círculo externo (anel escuro + fio de luz)
+       .dial-ticks      marcas de mostrador na borda do anel — giram com a seleção
+       .dial-disc       o disco interno, com varredura de radar
+       .dial-ring       camada dos itens; cada .dial-item recebe --dt (posição no
+                        arco) do JS a cada quadro
+       .dial-btn        atalhos redondos (notificações, feedback, sair)
+     Sem JS o anel vira uma lista vertical simples (`.dial-ring:not(.is-live)`).
+     Só transform/opacity animam (compositor). Os nomes dos tons são literais em
+     _dial.php (scanner do Tailwind).
+     ===================================================================== */
+  .dial {
+    --dial-w: 23rem;
+    --band: 9rem;
+    --H: 100vh;
+    --ro: calc(var(--H) * 1.1017);
+    --ri: calc(var(--ro) - var(--band));
+    --avatar: clamp(7.5rem, 22vh, 13rem);
+    position: relative;
+    flex-shrink: 0;
+    width: var(--dial-w);
+    height: 100vh;
+    overflow: hidden;
+    z-index: 30;
+    transition: width 480ms cubic-bezier(.65, 0, .35, 1);
+  }
+  @supports (height: 100dvh) {
+    .dial { --H: 100dvh; height: 100dvh; }
+  }
+  .dial-panel {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: var(--dial-w);
+    transition: transform 480ms cubic-bezier(.65, 0, .35, 1);
+  }
+
+  /* Recolher (desktop): a coluna some e o conteúdo ocupa a tela toda. */
+  @media (min-width: 1024px) {
+    html.dial-closed .dial { width: 0; }
+    html.dial-closed .dial-panel { transform: translateX(-100%); }
+  }
+  /* Celular/tablet: gaveta por cima da página. */
+  @media (max-width: 1023.98px) {
+    .dial {
+      --dial-w: min(23rem, 92vw);
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 60;
+      pointer-events: none;
+    }
+    .dial-panel { transform: translateX(-104%); }
+    html.dial-open .dial { pointer-events: auto; }
+    html.dial-open .dial-panel { transform: none; }
+  }
+  .dial-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(5, 11, 15, .6);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 320ms ease;
+  }
+  @media (max-width: 1023.98px) {
+    html.dial-open .dial-backdrop { opacity: 1; pointer-events: auto; }
+  }
+  @media (min-width: 1024px) { .dial-backdrop { display: none; } }
+
+  .dial-band,
+  .dial-disc,
+  .dial-ticks {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .dial-band {
+    width: calc(var(--ro) * 2);
+    height: calc(var(--ro) * 2);
+    left: calc(var(--dial-w) - var(--ro) * 2);
+    top: calc(50% - var(--ro));
+    background: radial-gradient(circle closest-side, #0A2647 0%, #07182A 72%, #050B0F 100%);
+    box-shadow: inset 0 0 0 1px rgba(0, 208, 240, .32), inset 0 0 46px rgba(0, 208, 240, .1), 0 0 64px -12px rgba(0, 208, 240, .35);
+  }
+  /* Marcas do mostrador: ficam na borda de fora do anel e giram com a seleção (--spin vem do JS). */
+  .dial-ticks {
+    --tick-r: calc(var(--ro) - .45rem);
+    width: calc(var(--tick-r) * 2);
+    height: calc(var(--tick-r) * 2);
+    left: calc(var(--dial-w) - var(--ro) - var(--tick-r));
+    top: calc(50% - var(--tick-r));
+    background:
+      repeating-conic-gradient(from -.16deg, rgba(0, 208, 240, .95) 0 .32deg, transparent .32deg 6deg),
+      repeating-conic-gradient(from -.08deg, rgba(143, 166, 188, .5) 0 .16deg, transparent .16deg 1.5deg);
+    -webkit-mask-image: radial-gradient(circle closest-side, transparent calc(100% - .7rem), #000 calc(100% - .7rem), #000 calc(100% - .22rem), transparent calc(100% - .22rem));
+    mask-image: radial-gradient(circle closest-side, transparent calc(100% - .7rem), #000 calc(100% - .7rem), #000 calc(100% - .22rem), transparent calc(100% - .22rem));
+    transform: rotate(var(--spin, 0deg));
+    will-change: transform;
+  }
+  .dial-disc {
+    width: calc(var(--ri) * 2);
+    height: calc(var(--ri) * 2);
+    left: calc(var(--dial-w) - var(--band) - var(--ri) * 2);
+    top: calc(50% - var(--ri));
+    overflow: hidden;
+    background:
+      radial-gradient(circle at 100% 50%, rgba(0, 208, 240, .17), transparent 46%),
+      linear-gradient(90deg, #08203A 15%, #064058 100%);
+    box-shadow: 0 0 0 1px rgba(0, 208, 240, .4), inset -22px 0 46px -22px rgba(0, 208, 240, .4), 12px 0 40px -10px rgba(0, 0, 0, .55);
+  }
+  /* Anéis concêntricos discretos + varredura de radar. */
+  .dial-disc::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: repeating-radial-gradient(circle at 50% 50%, rgba(240, 248, 255, .045) 0 1px, transparent 1px 38px);
+  }
+  .dial-disc::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 0deg, transparent 318deg, rgba(0, 208, 240, .1) 352deg, rgba(127, 232, 255, .22) 359deg, transparent 360deg);
+    animation: dial-sweep 14s linear infinite;
+    will-change: transform;
+  }
+  @keyframes dial-sweep { to { transform: rotate(360deg); } }
+
+  /* Ponteiro fixo no meio da borda: aponta o item selecionado. */
+  .dial-marker {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: .7rem;
+    height: 1.6rem;
+    margin-top: -.8rem;
+    background: #00D0F0;
+    clip-path: polygon(100% 0, 100% 100%, 0 50%);
+    filter: drop-shadow(0 0 6px #00D0F0);
+    z-index: 70;
+    pointer-events: none;
+    animation: dial-marker 2.4s ease-in-out infinite;
+  }
+  @keyframes dial-marker { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+
+  /* ---- Itens do anel ---- */
+  .nav-tone-cyan    { --tone: 0 208 240; }
+  .nav-tone-success { --tone: 61 240 122; }
+  .nav-tone-warning { --tone: 255 197 61; }
+  .nav-tone-danger  { --tone: 255 92 122; }
+  .nav-tone-info    { --tone: 111 207 255; }
+
+  .dial-ring {
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    pointer-events: none;
+  }
+  .dial-ring { transition: opacity 320ms ease; }
+  /* Com JS o anel espera o dial.js posicionar os itens (nada de lista solta piscando na chegada). */
+  html.js .dial-ring:not(.is-live) { opacity: 0; pointer-events: none; }
+  /* Sem JS: lista simples no anel. */
+  .dial-ring:not(.is-live) {
+    inset: 0 0 0 calc(var(--dial-w) - var(--band) + .5rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: .4rem;
+    padding-right: 1rem;
+    pointer-events: auto;
+  }
+  .dial-item {
+    --tone: 0 208 240;
+    --mx: 50%;
+    --my: 50%;
+    --dx: 0;
+    --dy: 0;
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    height: 2.5rem;
+    padding: 0 .55rem 0 .4rem;
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    color: #8FA6BC;
+    font-size: .82rem;
+    font-weight: 500;
+    line-height: 1.1;
+    pointer-events: auto;
+    transition: color 180ms ease, background-color 220ms ease, border-color 220ms ease, box-shadow 260ms ease, height 260ms ease, margin-top 260ms ease;
+  }
+  .dial-ring.is-live .dial-item {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: calc(var(--band) - 1.5rem);
+    margin-top: -1.25rem;
+    transform-origin: 50% 50%;
+    transform: var(--dt, none) translate(calc(var(--dx) * 1.5px), calc(var(--dy) * 1px));
+    will-change: transform, opacity;
+  }
+  .dial-item::before { /* holofote que segue o mouse (btn-fx.js) */
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(circle 70px at var(--mx) var(--my), rgb(var(--tone) / .34), transparent 72%);
+    opacity: 0;
+    transition: opacity 220ms ease;
+  }
+  .dial-item:hover {
+    color: #F0F8FF;
+    background-color: rgb(var(--tone) / .1);
+    border-color: rgb(var(--tone) / .4);
+    box-shadow: 0 6px 18px -8px rgb(var(--tone) / .8);
+  }
+  .dial-item:hover::before { opacity: 1; }
+  .dial-item:focus-visible { outline: 2px solid rgb(var(--tone) / .9); outline-offset: 2px; }
+  /* O do centro do dial = o selecionado: pílula acesa, um pouco maior, com o nome do grupo embaixo. */
+  .dial-ring.is-live .dial-item[data-center] {
+    height: 3.05rem;
+    margin-top: -1.525rem;
+    color: #F0F8FF;
+    background-color: rgb(var(--tone) / .17);
+    border-color: rgb(var(--tone) / .6);
+    box-shadow: 0 0 0 1px rgb(var(--tone) / .2), 0 10px 26px -10px rgb(var(--tone) / .9), inset 0 0 18px rgb(var(--tone) / .12);
+    font-weight: 600;
+  }
+  .dial-item[aria-current="page"] { color: rgb(var(--tone)); }
+  .dial-item[aria-current="page"] .dial-icon {
+    background: rgb(var(--tone));
+    color: #050B0F;
+    box-shadow: 0 0 14px -2px rgb(var(--tone) / .9);
+  }
+  .dial-icon {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 1.65rem;
+    height: 1.65rem;
+    border-radius: 50%;
+    background: rgb(var(--tone) / .16);
+    color: rgb(var(--tone));
+    transition: transform 240ms cubic-bezier(.34, 1.56, .64, 1), background-color 200ms ease, color 200ms ease, box-shadow 250ms ease;
+  }
+  .dial-icon svg { width: 15px; height: 15px; }
+  .dial-item:hover .dial-icon { transform: scale(1.12) rotate(-8deg); background: rgb(var(--tone) / .3); }
+  .dial-text { min-width: 0; display: flex; flex-direction: column; }
+  .dial-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dial-sub {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    color: rgb(var(--tone));
+    font-size: .58rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: max-height 240ms ease, opacity 240ms ease;
+  }
+  .dial-ring.is-live .dial-item[data-center] .dial-sub { max-height: 1rem; opacity: .9; }
+  .dial-ring:not(.is-live) .dial-sub { display: none; }
+
+  .nav-badge {
+    display: flex;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0 .28rem;
+    border-radius: 9999px;
+    background: #FF5C7A;
+    color: #050B0F;
+    font-size: .625rem;
+    font-weight: 700;
+    animation: nav-badge-ping 2.4s ease-out infinite;
+  }
+  .dial-item .nav-badge { margin-left: auto; margin-right: .2rem; }
+  @keyframes nav-badge-ping {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 92, 122, .55); }
+    70%, 100% { box-shadow: 0 0 0 7px rgba(255, 92, 122, 0); }
+  }
+
+  /* ---- Lado esquerdo do disco: avatar, atalhos redondos, marca, relógio ---- */
+  .dial-avatar {
+    position: absolute;
+    left: calc(var(--avatar) / -2);
+    top: calc(50% - var(--avatar) / 2);
+    z-index: 42;
+    width: var(--avatar);
+    height: var(--avatar);
+    border-radius: 50%;
+    padding: 5px;
+    background: #050B0F;
+    box-shadow: 0 0 0 2px rgba(0, 208, 240, .55), 0 0 34px -4px rgba(0, 208, 240, .55), 0 18px 40px -12px rgba(0, 0, 0, .8);
+    transition: transform 300ms cubic-bezier(.34, 1.56, .64, 1), box-shadow 300ms ease;
+  }
+  .dial-avatar > :first-child { width: 100%; height: 100%; border-radius: 50%; }
+  .dial-avatar:hover {
+    transform: scale(1.04) translateX(4px);
+    box-shadow: 0 0 0 2px #00D0F0, 0 0 46px -2px rgba(0, 208, 240, .8), 0 18px 40px -12px rgba(0, 0, 0, .8);
+  }
+  .dial-avatar::before { /* anel tracejado girando */
+    content: '';
+    position: absolute;
+    inset: -12px;
+    border-radius: 50%;
+    border: 1.5px dashed rgba(0, 208, 240, .5);
+    animation: dial-ring-spin 30s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes dial-ring-spin { to { transform: rotate(360deg); } }
+
+  .dial-me {
+    position: absolute;
+    z-index: 42;
+    left: 1.1rem;
+    top: calc(50% + var(--avatar) / 2 + 1.1rem);
+    max-width: 8.4rem;
+  }
+
+  .dial-btn {
+    --tone: 0 208 240;
+    --mx: 50%;
+    --my: 50%;
+    --dx: 0;
+    --dy: 0;
+    position: absolute;
+    z-index: 44;
+    left: calc(var(--dial-w) - var(--band) - 4.35rem + var(--arc, 0rem));
+    top: calc(50% + var(--k, 0) * 5.6rem - 1.5rem);
+    isolation: isolate;
+    overflow: visible;
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid rgb(var(--tone) / .5);
+    border-radius: 50%;
+    background: rgba(5, 11, 15, .55);
+    color: rgb(var(--tone));
+    cursor: pointer;
+    transform: translate(calc(var(--dx) * 2px), calc(var(--dy) * 2px));
+    transition: transform 160ms ease-out, background-color 220ms ease, color 220ms ease, box-shadow 260ms ease, border-color 220ms ease;
+  }
+  .dial-btn svg { width: 19px; height: 19px; position: relative; }
+  .dial-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(circle 46px at var(--mx) var(--my), rgba(255, 255, 255, .55), transparent 70%);
+    opacity: 0;
+    transition: opacity 220ms ease;
+  }
+  .dial-btn:hover {
+    background-color: rgb(var(--tone));
+    color: #050B0F;
+    border-color: rgb(var(--tone));
+    box-shadow: 0 0 0 5px rgb(var(--tone) / .18), 0 0 24px rgb(var(--tone) / .6);
+    transform: translate(calc(var(--dx) * 2px), calc(var(--dy) * 2px)) scale(1.1);
+  }
+  .dial-btn:hover::before { opacity: 1; }
+  .dial-btn:focus-visible { outline: 2px solid rgb(var(--tone) / .9); outline-offset: 3px; }
+  .dial-btn .nav-badge { position: absolute; right: -.25rem; top: -.25rem; }
+  .dial-btn-tip { /* rótulo que aparece no hover */
+    position: absolute;
+    left: 50%;
+    top: calc(100% + .45rem);
+    padding: .15rem .55rem;
+    border-radius: .4rem;
+    background: rgb(var(--tone));
+    color: #050B0F;
+    font-size: .625rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, -4px);
+    pointer-events: none;
+    transition: opacity 180ms ease, transform 180ms ease;
+  }
+  .dial-btn:hover .dial-btn-tip,
+  .dial-btn:focus-visible .dial-btn-tip { opacity: 1; transform: translate(-50%, 0); }
+
+  .dial-close {
+    position: absolute;
+    z-index: 44;
+    left: 1.1rem;
+    bottom: 1.1rem;
+    display: grid;
+    place-items: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border: 1px solid rgba(143, 166, 188, .5);
+    border-radius: 50%;
+    background: rgba(5, 11, 15, .5);
+    color: #F0F8FF;
+    cursor: pointer;
+    transition: transform 300ms cubic-bezier(.34, 1.56, .64, 1), background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  }
+  .dial-close:hover { transform: rotate(90deg) scale(1.08); background: #FF5C7A; border-color: #FF5C7A; color: #050B0F; }
+  .dial-close svg { width: 16px; height: 16px; }
+
+  /* Botão redondo que reabre o dial (desktop recolhido / celular). */
+  .dial-fab {
+    position: fixed;
+    left: 1rem;
+    top: 1rem;
+    z-index: 40;
+    display: none;
+    place-items: center;
+    width: 2.9rem;
+    height: 2.9rem;
+    border: 1px solid rgba(0, 208, 240, .55);
+    border-radius: 50%;
+    background: rgba(6, 63, 89, .92);
+    color: #00D0F0;
+    box-shadow: 0 0 22px -4px rgba(0, 208, 240, .6);
+    cursor: pointer;
+    transition: transform 300ms cubic-bezier(.34, 1.56, .64, 1), background-color 200ms ease, color 200ms ease;
+    animation: fade-in-up 300ms ease backwards;
+  }
+  .dial-fab:hover { transform: scale(1.1) rotate(-12deg); background: #00D0F0; color: #050B0F; }
+  .dial-fab svg { width: 20px; height: 20px; }
+  @media (max-width: 1023.98px) { .dial-fab { display: grid; } }
+  @media (min-width: 1024px) { html.dial-closed .dial-fab { display: grid; } }
+
+  /* Marca no topo do disco. */
+  .dial-brand {
+    position: absolute;
+    z-index: 42;
+    left: 1.1rem;
+    top: 1.15rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+
+  /* Alturas pequenas: o avatar já encolhe (clamp); o resto do lado esquerdo se compacta. */
+  @media (max-height: 760px) {
+    .dial-me .clock-hide-sm { display: none; }
+    .dial-clock { display: none; }
+  }
+
+  /* Relógio (layout/_clock.php + assets/js/footer-clock.js). */
+  .dial-clock {
+    position: absolute;
+    z-index: 42;
+    left: 1.1rem;
+    bottom: 4.6rem;
+    width: 8.4rem;
+  }
+  .clock-card {
+    position: relative;
+    overflow: hidden;
+    padding: .55rem .7rem .6rem;
+    border: 1px solid rgb(0 208 240 / .3);
+    border-radius: 1rem;
+    background: rgb(5 11 15 / .55);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .06), 0 10px 24px -14px rgb(0 208 240 / .6);
+  }
+  .clock-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(120% 90% at 100% 0%, rgb(0 208 240 / .18), transparent 60%);
+  }
+  .clock-colon { animation: clock-blink 1s steps(2, jump-none) infinite; }
+  @keyframes clock-blink {
+    0%   { opacity: 1; }
+    100% { opacity: .18; }
+  }
+  .clock-bar {
+    position: relative;
+    height: 3px;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / .1);
+  }
+  .clock-bar > span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    border-radius: inherit;
+    background: #00D0F0;
+    box-shadow: 0 0 8px rgb(0 208 240 / .9);
+    transform-origin: 0 50%;
+    transform: scaleX(var(--sec, 0));
+    transition: transform 1s linear;
+  }
+  .clock-bar > span.no-tween { transition: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dial, .dial-panel { transition: none; }
+    .dial-disc::after, .dial-avatar::before, .dial-marker, .nav-badge, .clock-colon { animation: none; }
+    .dial-btn, .dial-btn:hover { transform: none; }
+    .dial-avatar:hover { transform: none; }
+    /* O dial não anima, mas continua em arco (a posição de cada item vem de --dt). */
+    .dial-ring.is-live .dial-item, .dial-ring.is-live .dial-item:hover { transform: var(--dt, none); }
+  }
+
+  /* Véu de transição de página (assets/js/dial.js) — pedido do responsável,
+     2026-09-18: ao clicar num item da sidebar, um degradê cobre tudo MENOS a
+     sidebar, a página troca e o degradê sai varrendo na página nova. Sem duração
+     fixa: entra ao clicar (junto com o giro do tambor), FICA enquanto a página
+     carrega (linha de progresso correndo no topo) e só sai quando a nova página
+     está pronta — dura o mesmo que a troca. Entre duas páginas de verdade
+     (navegação normal), então o estado viaja em sessionStorage e um script no
+     <head> já liga `veil-on` antes do primeiro quadro (sem piscar a página nova).
+       html.veil-in   página antiga: varre pra dentro e segura
+       html.veil-on   página nova, ao nascer: já coberta
+       html.veil-out  página nova pronta: varre pra fora
+     A faixa é 3× a largura da tela, com bordas suaves nas duas pontas; os
+     translateX em % são da própria faixa (-100% fora à esquerda, -25.3% cobrindo,
+     +33.4% fora à direita). Só transform (compositor). */
+  .page-veil {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  @media (min-width: 1024px) {
+    .page-veil { left: 23rem; } /* largura do dial: a sidebar nunca é coberta */
+    html.dial-closed .page-veil { left: 0; }
+  }
+  .page-veil::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 300%;
+    background: linear-gradient(90deg,
+      rgba(0, 208, 240, 0) 0%,
+      rgba(0, 208, 240, .5) 15%,
+      #0B4A66 23%,
+      #063049 44%,
+      #050B0F 62%,
+      rgba(0, 208, 240, .32) 70%,
+      rgba(0, 208, 240, 0) 100%);
+    transform: translateX(-100%);
+    will-change: transform;
+  }
+  /* Linha de progresso indeterminada: mostra que ainda está carregando. */
+  .page-veil::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 38%;
+    background: linear-gradient(90deg, transparent, #00D0F0, transparent);
+    box-shadow: 0 0 12px #00D0F0;
+    opacity: 0;
+    animation: veil-run 1.2s ease-in-out infinite;
+  }
+  html.veil-in .page-veil,
+  html.veil-on .page-veil,
+  html.veil-out .page-veil { display: block; }
+  html.veil-in .page-veil,
+  html.veil-on .page-veil { pointer-events: auto; }
+  html.veil-in .page-veil::before { animation: veil-in 440ms cubic-bezier(.65, 0, .35, 1) forwards; }
+  html.veil-on .page-veil::before { transform: translateX(-25.3%); }
+  html.veil-out .page-veil::before { animation: veil-out 580ms cubic-bezier(.65, 0, .35, 1) forwards; }
+  html.veil-in .page-veil::after,
+  html.veil-on .page-veil::after { opacity: 1; transition: opacity 200ms ease 300ms; }
+  @keyframes veil-in  { from { transform: translateX(-100%); }  to { transform: translateX(-25.3%); } }
+  @keyframes veil-out { from { transform: translateX(-25.3%); } to { transform: translateX(33.4%); } }
+  @keyframes veil-run { from { transform: translateX(-100%); } to { transform: translateX(270%); } }
+
   /* Tutorial guiado (assets/js/tour.js) — três camadas fixas montadas via JS:
      overlay (bloqueia clique no resto da página, sem cor própria — quem dá
      o efeito de "apagado" é o box-shadow gigante do spotlight, técnica

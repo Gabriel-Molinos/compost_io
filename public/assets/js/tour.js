@@ -42,7 +42,7 @@
     function isSiteIntelligence(path) { return /^\/sites\/\d+\/intelligence$/.test(path); }
 
     // Passo "ponteiro": destaca o link da próxima seção na sidebar (cada
-    // link de aba de site carrega data-tour="tab-{chave}", ver _nav.php)
+    // link de aba de site carrega data-tour="tab-{chave}", ver _dial.php)
     // antes de navegar pra ela.
     function pointerStep(matchFn, tabKey, label, destUrl) {
         return {
@@ -364,9 +364,12 @@
             tooltipEl.style.left = left + 'px';
         };
 
+        // Alvo dentro do dial da sidebar (dial.js): traz o item pro centro antes de destacar.
+        if (window.CompostWheel) { window.CompostWheel.reveal(target); }
         target.scrollIntoView({ block: 'center', behavior: 'smooth' });
         place();
         setTimeout(place, 350); // depois do smooth-scroll assentar
+        setTimeout(place, 800); // e depois do giro do tambor
     }
 
     function escapeHtml(s) {

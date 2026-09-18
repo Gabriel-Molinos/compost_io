@@ -40,7 +40,7 @@ if ($authUser !== null) {
     $globalNav[] = ['/sites', 'Sites', 'sites'];
 }
 
-// Tutorial guiado (layout/_nav.php + assets/js/tour.js) — só pra Redator-Chefe
+// Tutorial guiado (layout/_dial.php + assets/js/tour.js) — só pra Redator-Chefe
 // (pedido do responsável, 2026-09-08) e só quando tem pelo menos 1 site
 // vinculado (o primeiro passo depois da tela inicial abre um site de
 // verdade; sem site nenhum pra abrir, o tour não tem pra onde ir).
@@ -110,10 +110,28 @@ if ($authUser !== null && !$hasSiteNav) {
     <script src="<?= View::e(View::asset('assets/js/image-carousel.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/avatar-preview.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/footer-clock.js')) ?>" defer></script>
+    <script src="<?= View::e(View::asset('assets/js/dial.js')) ?>" defer></script>
     <?php if ($tourSiteId !== null): ?>
         <script>window.COMPOST_TOUR_SITE_ID = <?= (int) $tourSiteId ?>;</script>
         <script src="<?= View::e(View::asset('assets/js/tour.js')) ?>" defer></script>
     <?php endif; ?>
+
+    <script>
+        // Véu de transição (assets/js/dial.js): se a página anterior foi deixada por um clique
+        // na sidebar, esta já nasce coberta (sem piscar) até o dial.js liberar. Também restaura a sidebar
+        // recolhida (só desktop).
+        (function () {
+            document.documentElement.classList.add('js');
+            try {
+                if (window.matchMedia('(min-width: 1024px)').matches && localStorage.getItem('compost:dial') === 'closed') {
+                    document.documentElement.classList.add('dial-closed');
+                }
+                var t = parseInt(sessionStorage.getItem('compost:veil') || '', 10);
+                sessionStorage.removeItem('compost:veil');
+                if (t && Date.now() - t < 10000) { document.documentElement.classList.add('veil-on'); }
+            } catch (e) { /* sem sessionStorage: sem véu */ }
+        })();
+    </script>
 
     <style>
         /* Sem border-radius aqui: "outline-radius" não existe em CSS — essa
@@ -134,96 +152,26 @@ if ($authUser !== null && !$hasSiteNav) {
     </style>
 </head>
 <body class="app-bg h-screen overflow-hidden text-text-primary font-sans antialiased">
+    <div class="page-veil" aria-hidden="true"></div>
     <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
 
     <div class="relative z-10 flex h-screen">
-        <!-- Sidebar fixa (telas ≥ lg) — não rola junto com a página, só a
-             navegação dentro dela (se a lista de seções não couber) e o
-             conteúdo principal ao lado (ver <main> abaixo) têm scroll próprio. -->
-        <aside class="hidden w-64 shrink-0 flex-col border-r border-border bg-surface/90 py-5 lg:flex">
-            <a href="/" class="flex items-center gap-2.5 px-5">
-                <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-7 w-7 shrink-0">
-                <img src="/assets/brand/wordmark.png" alt="COMPOST" class="h-4 w-auto">
-            </a>
-
-            <?php if ($authUser !== null): ?>
-                <div class="mx-4 mt-5 flex items-center gap-2.5 rounded-lg border border-border bg-surface-2/50 p-2.5">
-                    <a href="/profile" class="flex min-w-0 flex-1 items-center gap-2.5 rounded-md" title="Meu perfil">
-                        <?= Avatar::html($authUser['avatar_path'] ?? null, $authUser['name'], size: 'h-9 w-9', radius: 'rounded-md', textSize: 'text-sm') ?>
-                        <span class="min-w-0">
-                            <span class="block truncate text-sm font-semibold text-text-primary"><?= View::e($authUser['name']) ?></span>
-                            <span class="block truncate text-xs text-text-muted"><?= View::e(Labels::role($authUser['role'])) ?></span>
-                        </span>
-                    </a>
-                    <form method="post" action="/logout">
-                        <?= Csrf::field() ?>
-                        <button type="submit" title="Sair"
-                                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-cyan">
-                            <?= Icon::nav('logout') ?>
-                        </button>
-                    </form>
-                </div>
-            <?php endif; ?>
-
-            <div class="mt-6 flex-1 overflow-y-auto px-4">
-                <?php require __DIR__ . '/_nav.php'; ?>
-            </div>
-
-            <div class="border-t border-border px-4 pt-4 text-[11px] uppercase tracking-wide text-text-muted">
-                <div class="flex items-center justify-between">
-                    <span class="font-mono tabular-nums text-text-secondary" data-clock>00:00:00</span>
-                    <span class="flex items-center gap-1.5">
-                        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan shadow-[0_0_6px_rgba(0,208,240,.8)]"></span>
-                        COMPOST
-                    </span>
-                </div>
-                <p class="mt-1 font-mono text-text-secondary"><?= View::e(View::todayShort()) ?></p>
-            </div>
-        </aside>
+        <?php if ($authUser !== null): ?>
+            <?php // Sidebar radial (dial): coluna fixa no desktop, gaveta no celular. Só o conteúdo ao lado (<main>) rola. ?>
+            <?php require __DIR__ . '/_dial.php'; ?>
+            <div class="dial-backdrop" data-dial-toggle aria-hidden="true"></div>
+            <button type="button" class="dial-fab" data-dial-toggle aria-label="Abrir o menu" title="Abrir o menu">
+                <?= Icon::nav('menu') ?>
+            </button>
+        <?php endif; ?>
 
         <div class="flex min-h-0 min-w-0 flex-1 flex-col">
-            <!-- Topo compacto (telas < lg) — a navegação mora num <details>, sem depender de JS. -->
-            <header class="flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-3 lg:hidden">
+            <!-- Topo compacto (telas < lg): só a marca — o menu é o botão redondo à esquerda (gaveta do dial). -->
+            <header class="flex shrink-0 items-center justify-end gap-4 border-b border-border px-4 py-3 pl-16 lg:hidden">
                 <a href="/" class="flex items-center gap-2.5">
                     <img src="/assets/brand/icon.webp" alt="" aria-hidden="true" class="brand-icon h-6 w-6 shrink-0">
                     <img src="/assets/brand/wordmark.png" alt="COMPOST" class="h-4 w-auto">
                 </a>
-                <?php if ($authUser !== null): ?>
-                    <details class="relative">
-                        <summary class="rounded-md border border-border px-3 py-1.5 text-sm text-text-secondary">Menu</summary>
-                        <div class="absolute right-0 z-40 mt-2 w-64 rounded-lg border border-border bg-surface p-4 shadow-2xl">
-                            <div class="flex items-center gap-2.5 rounded-lg border border-border bg-surface-2/50 p-2.5">
-                                <a href="/profile" class="flex min-w-0 flex-1 items-center gap-2.5 rounded-md" title="Meu perfil">
-                                    <?= Avatar::html($authUser['avatar_path'] ?? null, $authUser['name'], size: 'h-9 w-9', radius: 'rounded-md', textSize: 'text-sm') ?>
-                                    <span class="min-w-0">
-                                        <span class="block truncate text-sm font-semibold text-text-primary"><?= View::e($authUser['name']) ?></span>
-                                        <span class="block truncate text-xs text-text-muted"><?= View::e(Labels::role($authUser['role'])) ?></span>
-                                    </span>
-                                </a>
-                                <form method="post" action="/logout">
-                                    <?= Csrf::field() ?>
-                                    <button type="submit" title="Sair"
-                                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-text-secondary hover:bg-surface hover:text-cyan">
-                                        <?= Icon::nav('logout') ?>
-                                    </button>
-                                </form>
-                            </div>
-                            <div class="mt-4 border-t border-border pt-4">
-                                <?php require __DIR__ . '/_nav.php'; ?>
-                            </div>
-                            <div class="mt-4 border-t border-border pt-4 text-[11px] uppercase tracking-wide text-text-muted">
-                                <div class="flex items-center justify-between">
-                                    <span class="font-mono tabular-nums text-text-secondary" data-clock>00:00:00</span>
-                                    <span class="flex items-center gap-1.5">
-                                        <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan shadow-[0_0_6px_rgba(0,208,240,.8)]"></span>
-                                        COMPOST
-                                    </span>
-                                </div>
-                                <p class="mt-1 font-mono text-text-secondary"><?= View::e(View::todayShort()) ?></p>
-                            </div>
-                        </div>
-                    </details>
-                <?php endif; ?>
             </header>
 
             <main id="conteudo" class="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-10">

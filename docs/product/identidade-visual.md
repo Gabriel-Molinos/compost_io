@@ -262,6 +262,16 @@ fontFamily: {
   problema e botão "Abrir site". Busca + chips de Situação/WordPress + idioma + ordenação, todos
   GET reais com filtro em tempo real (mesma técnica da Produção). Regras em `SiteListing`
   (testadas); dados em `SiteService::overview()` (1 consulta pra todos os sites).
+- **2026-09-18** — **sidebar radial ("dial")** (pedido do responsável, referência de "rotary
+  dial / radial selector"): a sidebar deixou de ser uma coluna reta. Um disco no canto da tela
+  (avatar meio escondido, atalhos redondos de notificações/feedback/sair em arco, relógio de
+  Brasília em cartão) e, em volta, um anel escuro com os itens de navegação ao longo de um
+  arco, cada um na sua cor. O item do centro é o selecionado (pílula acesa + nome do grupo);
+  ao mudar de seção o mostrador **gira** (itens e marcas) até o item novo — arrastar, roda do
+  mouse, setas e Tab também giram, com inércia e encaixe. Ao navegar pela sidebar um véu em
+  degradê cobre tudo menos ela e só sai quando a página nova carrega (sem tempo fixo). O × recolhe
+  a coluna (lembrado); no celular vira gaveta com botão redondo. Geometria em `assets/js/dial.js`
+  (mesma fórmula do CSS), HTML em `layout/_dial.php`.
 
 ## Ver também
 

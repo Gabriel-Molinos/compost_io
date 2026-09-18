@@ -86,7 +86,7 @@ final class Labels
             'warning' => 'article-card--warning',
             'danger'  => 'article-card--danger',
             'info'    => 'article-card--info',
-            'cyan'    => 'article-card--cyan',
+            'cyan'    => 'article-card--dark', // sem ciano no fundo do card (pedido do responsável, 2026-09-18)
             default   => 'article-card--muted',
         };
     }

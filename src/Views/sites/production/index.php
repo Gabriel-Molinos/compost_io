@@ -221,7 +221,7 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
             // os brilhos/respirações não baterem todos no mesmo instante.
             $cardStyle = sprintf('--card-enter: %dms; --card-phase: -%.2Fs', min($i, 8) * 35, ($i % 7) * 0.85); // %F: sem vírgula de locale no CSS
             ?>
-            <li class="article-card <?= Labels::articleCardTone($tone) ?> flex flex-col gap-2.5 rounded-lg bg-surface px-4 py-3.5"
+            <li class="article-card <?= Labels::articleCardTone($tone) ?> flex flex-col gap-2.5 rounded-lg px-4 py-3.5"
                 style="<?= View::e($cardStyle) ?>">
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">

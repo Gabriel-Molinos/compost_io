@@ -651,9 +651,14 @@
        success → brilho que varre o card de tempos em tempos (calmo)
        danger  → respiração vermelha mais rápida (pede atenção)
        warning → respiração âmbar lenta
-       cyan    → respiração ciano bem lenta (em revisão / agendado)
+       dark    → fundo preto, respiração cinza-aço bem lenta (em revisão /
+                 agendado — o tom "cyan" da badge; sem ciano no fundo, pedido
+                 do responsável, 2026-09-18: "ainda tem ciano ali no
+                 background, deixa um preto no lugar dele")
        info    → varredura contínua (a IA está trabalhando)
        muted   → parado (planejado / descartado)
+     A base de TODO card é preta (não o azul-petróleo `surface`, que lia
+     como ciano e aparecia por trás dos degradês verde/vermelho).
      Tudo é opacity/transform num pseudo-elemento (compositor — não
      repinta o card nem causa layout), então uma página cheia de cards
      animando continua leve. Os nomes `.article-card--*` são literais em
@@ -661,12 +666,14 @@
      ===================================================================== */
   .article-card {
     --tone: 143 166 188; /* r g b do tom (muted por padrão) */
-    --tint: .1;          /* força do fundo: os tons de "espera" ficam discretos pra aprovado/atenção saltarem */
+    --tint: .06;         /* força do fundo: os tons de "espera" ficam discretos pra aprovado/atenção saltarem */
+    --glow: .4;          /* força da respiração/varredura do ::before */
     position: relative;
     isolation: isolate; /* o ::before com z-index:-1 fica atrás do texto, na frente do fundo */
     overflow: hidden;
     border: 1px solid rgb(var(--tone) / .3);
     border-left: 2px solid rgb(var(--tone));
+    background-color: #04090D; /* preto (void da identidade, um degrau abaixo) */
     /* Cobre o card inteiro (mais forte na esquerda, onde fica a borda colorida). */
     background-image: linear-gradient(100deg, rgb(var(--tone) / var(--tint)), rgb(var(--tone) / calc(var(--tint) * .5)) 65%, rgb(var(--tone) / calc(var(--tint) * .25)));
     transition: transform 150ms ease, box-shadow 150ms ease;
@@ -690,11 +697,13 @@
        isso todos os cards brilham/respiram no mesmo instante, feio. */
     animation-delay: var(--card-phase, 0s);
   }
-  .article-card--success { --tone: 61 240 122; --tint: .32; }
-  .article-card--danger  { --tone: 255 92 122; --tint: .34; }
-  .article-card--warning { --tone: 255 197 61; --tint: .24; }
-  .article-card--info    { --tone: 111 207 255; --tint: .2; }
-  .article-card--cyan    { --tone: 0 208 240; --tint: .14; }
+  .article-card--success { --tone: 61 240 122; --tint: .42; }
+  .article-card--danger  { --tone: 255 92 122; --tint: .44; }
+  .article-card--warning { --tone: 255 197 61; --tint: .32; }
+  .article-card--info    { --tone: 111 207 255; --tint: .26; }
+  /* dark: sem tingimento (preto puro) e sem ciano nem na borda — só um
+     cinza-aço bem discreto pra animação ainda aparecer sobre o preto. */
+  .article-card--dark    { --tint: 0; --glow: .3; border-left-color: rgb(var(--tone) / .5); }
 
   .article-card--success::before {
     opacity: 1;
@@ -710,13 +719,13 @@
   }
   .article-card--danger::before,
   .article-card--warning::before,
-  .article-card--cyan::before {
-    background: radial-gradient(90% 170% at 0% 50%, rgb(var(--tone) / .4), transparent 70%);
+  .article-card--dark::before {
+    background: radial-gradient(90% 170% at 0% 50%, rgb(var(--tone) / var(--glow)), transparent 70%);
     animation: article-breathe 2.4s ease-in-out infinite;
     animation-delay: var(--card-phase, 0s);
   }
   .article-card--warning::before { animation-duration: 3.6s; }
-  .article-card--cyan::before    { animation-duration: 4.6s; }
+  .article-card--dark::before    { animation-duration: 4.6s; }
 
   @keyframes article-sheen {
     0%        { transform: translateX(-100%); }

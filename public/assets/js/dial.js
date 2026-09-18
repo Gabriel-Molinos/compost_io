@@ -121,7 +121,7 @@
         var left = xm - g.itemW / 2;
         var sc = 0.88 - 0.02 * Math.min(a, 4) + 0.2 * Math.max(0, 1 - a);
         var op = clamp(1 - 0.075 * a, 0.38, 1) * clamp(g.half + 0.5 - a, 0, 1);
-        el.style.transform = 'translate3d(' + left.toFixed(1) + 'px,' + ym.toFixed(1) + 'px,0) rotate(' + (th * 0.55).toFixed(4) + 'rad) scale(' + sc.toFixed(3) + ')';
+        el.style.transform = 'translate3d(' + left.toFixed(1) + 'px,' + ym.toFixed(1) + 'px,0) scale(' + sc.toFixed(3) + ')';
         el.style.opacity = op.toFixed(3);
         var z = String(100 - Math.round(a * 10));
         if (el.style.zIndex !== z) { el.style.zIndex = z; }

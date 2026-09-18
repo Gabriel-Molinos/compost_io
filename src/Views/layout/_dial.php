@@ -38,31 +38,36 @@ use App\View;
 $toneClasses = ['nav-tone-cyan', 'nav-tone-success', 'nav-tone-warning', 'nav-tone-danger', 'nav-tone-info'];
 $toneFor = static fn (string $icon): string => $toneClasses[crc32($icon) % count($toneClasses)];
 
-/** @var list<array{href:string,label:string,icon:string,active:bool,group:string,tour:?string,letter:?string,inactive:bool}> $ring */
-$ring = [];
+// Cada grupo começa com um divisor (`sep`) no anel — assim dá pra distinguir a navegação principal
+// (Início, Sites…) do que é de DENTRO do site atual (ou dos atalhos de sites). Os itens levam `scope`
+// (main | site | sites): os do site têm o ícone quadrado, os principais são redondos.
+/** @var list<array<string,mixed>> $ring */
+$ring = [['sep' => 'Navegação', 'scope' => 'main']];
 foreach ($globalNav as [$href, $label, $icon]) {
-    $ring[] = ['href' => $href, 'label' => $label, 'icon' => $icon, 'active' => $isActive($href), 'group' => 'Navegação', 'tour' => null, 'letter' => null, 'inactive' => false];
+    $ring[] = ['href' => $href, 'label' => $label, 'icon' => $icon, 'active' => $isActive($href), 'group' => 'Navegação', 'scope' => 'main', 'tour' => null, 'letter' => null, 'inactive' => false];
 }
 $ringTour = null;
 if ($hasSiteNav) {
     $ringTour = 'site-tabs';
+    $ring[] = ['sep' => 'Site · ' . $site['name'], 'scope' => 'site'];
     foreach ($tabs as [$key, $label, $href, $visible]) {
         if (!$visible) {
             continue;
         }
-        $ring[] = ['href' => $href, 'label' => $label, 'icon' => $key, 'active' => ($activeTab ?? '') === $key, 'group' => 'Site · ' . $site['name'], 'tour' => 'tab-' . $key, 'letter' => null, 'inactive' => false];
+        $ring[] = ['href' => $href, 'label' => $label, 'icon' => $key, 'active' => ($activeTab ?? '') === $key, 'group' => 'Site · ' . $site['name'], 'scope' => 'site', 'tour' => 'tab-' . $key, 'letter' => null, 'inactive' => false];
     }
 } elseif ($quickSites !== []) {
     $ringTour = 'quick-sites';
+    $ring[] = ['sep' => 'Meus sites', 'scope' => 'sites'];
     foreach ($quickSites as $s) {
         $ring[] = [
-            'href' => '/sites/' . $s['id'], 'label' => (string) $s['name'], 'icon' => 'sites', 'active' => false, 'group' => 'Meus sites',
+            'href' => '/sites/' . $s['id'], 'label' => (string) $s['name'], 'icon' => 'sites', 'active' => false, 'group' => 'Meus sites', 'scope' => 'sites',
             'tour' => isset($tourSiteId) && (int) $s['id'] === $tourSiteId ? 'quick-sites-target' : null,
             'letter' => mb_strtoupper(mb_substr(trim((string) $s['name']), 0, 1)) ?: '?', 'inactive' => (int) ($s['is_active'] ?? 1) !== 1,
         ];
     }
     if ($quickSitesTotal > count($quickSites)) {
-        $ring[] = ['href' => '/sites', 'label' => 'Ver todos (' . $quickSitesTotal . ')', 'icon' => 'arrow', 'active' => false, 'group' => 'Meus sites', 'tour' => null, 'letter' => null, 'inactive' => false];
+        $ring[] = ['href' => '/sites', 'label' => 'Ver todos (' . $quickSitesTotal . ')', 'icon' => 'arrow', 'active' => false, 'group' => 'Meus sites', 'scope' => 'sites', 'tour' => null, 'letter' => null, 'inactive' => false];
     }
 }
 
@@ -126,8 +131,12 @@ if ($showFeedback) {
         <?php // Anel de navegação: o dial.js posiciona os itens no arco (`is-live`) e gira; sem JS é uma lista. ?>
         <nav class="dial-ring" data-ring aria-label="Principal"<?= $ringTour !== null ? ' data-tour="' . $ringTour . '"' : '' ?>>
             <?php foreach ($ring as $it): ?>
+                <?php if (isset($it['sep'])): ?>
+                    <span class="dial-sep" data-scope="<?= $it['scope'] ?>" aria-hidden="true"><span class="truncate"><?= View::e($it['sep']) ?></span></span>
+                    <?php continue; ?>
+                <?php endif; ?>
                 <a href="<?= View::e($it['href']) ?>"<?= $it['tour'] !== null ? ' data-tour="' . View::e($it['tour']) . '"' : '' ?><?= $it['active'] ? ' aria-current="page"' : '' ?>
-                   class="dial-item <?= $toneFor($it['icon']) ?>" data-group="<?= View::e($it['group']) ?>">
+                   class="dial-item <?= $toneFor($it['icon']) ?>" data-scope="<?= $it['scope'] ?>" data-group="<?= View::e($it['group']) ?>">
                     <span class="dial-icon <?= $it['letter'] !== null ? 'font-display text-[.7rem] font-bold' : '' ?>"><?= $it['letter'] !== null ? View::e($it['letter']) : Icon::nav($it['icon']) ?></span>
                     <span class="dial-text">
                         <span class="dial-label"><?= View::e($it['label']) ?></span>

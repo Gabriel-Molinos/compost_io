@@ -69,14 +69,18 @@
     var ring = dial.querySelector('[data-ring]');
     var ticks = dial.querySelector('[data-dial-ticks]');
     if (!panel || !ring) { return; }
-    var links = [].slice.call(ring.querySelectorAll('a.dial-item'));
+    // `links` traz os itens E os divisores de grupo (`.dial-sep`), na ordem do DOM: os divisores ocupam
+    // uma posição no arco como qualquer item, mas nunca são selecionados (real()/nearestReal() pulam).
+    var links = [].slice.call(ring.querySelectorAll('a.dial-item, .dial-sep'));
     var n = links.length;
     if (n === 0) { return; }
+    function isSep(i) { return links[i].classList.contains('dial-sep'); }
     var key = 'compost:dial:pos';
 
     var g = {};            // geometria (recalculada em layout())
     var loop = false;
     var activeIdx = 0;
+    for (var f = 0; f < n; f++) { if (!isSep(f)) { activeIdx = f; break; } } // sem página ativa no anel: o primeiro item de verdade
     links.forEach(function (a, i) { if (a.getAttribute('aria-current') === 'page') { activeIdx = i; } });
 
     var pos = activeIdx;
@@ -126,7 +130,7 @@
         var z = String(100 - Math.round(a * 10));
         if (el.style.zIndex !== z) { el.style.zIndex = z; }
         el.style.pointerEvents = op < 0.1 ? 'none' : '';
-        var center = a < 0.5;
+        var center = a < 0.5 && !isSep(i);
         if (center !== el.hasAttribute('data-center')) { el.toggleAttribute('data-center', center); }
       }
       // As marcas do mostrador giram junto com a seleção (mesmo passo angular).
@@ -136,6 +140,24 @@
     function stop() { if (raf) { window.cancelAnimationFrame(raf); raf = 0; } }
 
     function limit(target) { return loop ? target : clamp(target, 0, n - 1); }
+
+    // Posição de um item de verdade a partir de `i`, andando na direção `dir` (pula os divisores).
+    function real(i, dir) {
+      for (var k = 0; k < n; k++) {
+        var j = loop ? mod(i + k * dir, n) : i + k * dir;
+        if (j < 0 || j > n - 1) { break; }
+        if (!isSep(j)) { return j; }
+      }
+      return real(clamp(i, 0, n - 1), -dir); // bateu na ponta: tenta pro outro lado
+    }
+    // O item de verdade mais perto de `i` (empate: o da direção `dir`).
+    function nearestReal(i, dir) {
+      var c = loop ? mod(i, n) : clamp(i, 0, n - 1);
+      if (!isSep(c)) { return c; }
+      var a = real(c, dir >= 0 ? 1 : -1);
+      var b = real(c, dir >= 0 ? -1 : 1);
+      return Math.abs(wrap(a - c, n)) <= Math.abs(wrap(b - c, n)) ? a : b;
+    }
 
     function rollTo(target, ms, done) {
       stop();
@@ -234,7 +256,7 @@
       window.setTimeout(function () { justDragged = false; }, 0);
       // Inércia: continua um pouco no sentido do arrasto (no máx. 3 itens) e encaixa.
       var carry = clamp(-(d.v * 220) / g.slot, -3, 3);
-      rollTo(Math.round(pos + carry), 420);
+      rollTo(nearestReal(Math.round(pos + carry), carry), 420);
       scheduleReturn(3200);
     }
     panel.addEventListener('pointerup', endDrag);
@@ -252,7 +274,8 @@
       var now = performance.now();
       if (now - lastWheel < 130) { return; }
       lastWheel = now;
-      rollTo(Math.round(pos) + (e.deltaY > 0 ? 1 : -1), 260);
+      var dir = e.deltaY > 0 ? 1 : -1;
+      rollTo(real(Math.round(pos) + dir, dir), 260);
       scheduleReturn(2600);
     }, { passive: false });
 
@@ -272,8 +295,8 @@
       var i = links.indexOf(document.activeElement);
       if (i < 0) { return; }
       e.preventDefault();
-      var next = i + (e.key === 'ArrowDown' ? 1 : -1);
-      links[loop ? mod(next, n) : clamp(next, 0, n - 1)].focus({ preventScroll: true });
+      var dir = e.key === 'ArrowDown' ? 1 : -1;
+      links[real(loop ? mod(i + dir, n) : clamp(i + dir, 0, n - 1), dir)].focus({ preventScroll: true });
     });
 
     dials.push({

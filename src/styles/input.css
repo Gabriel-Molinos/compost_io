@@ -776,6 +776,45 @@
     transform-origin: 50% 50%;
     will-change: transform, opacity;
   }
+  /* Divisor de grupo no anel: rótulo com fios dos dois lados. */
+  .dial-sep {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    height: 1.4rem;
+    padding: 0 .4rem;
+    color: #7B8FA1;
+    font-size: .58rem;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .dial-sep::before,
+  .dial-sep::after {
+    content: '';
+    flex: 1 0 .6rem;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, currentColor);
+    opacity: .55;
+  }
+  .dial-sep::after { background: linear-gradient(90deg, currentColor, transparent); }
+  .dial-sep > span { min-width: 0; }
+  .dial-sep[data-scope="site"] { color: #00D0F0; }
+  .dial-sep[data-scope="sites"] { color: #6FCFFF; }
+  .dial-ring.is-live .dial-sep {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: calc(var(--band) - 1.5rem);
+    margin-top: -.7rem;
+    will-change: transform, opacity;
+  }
+  .dial-ring:not(.is-live) .dial-sep { margin: .5rem 0 .1rem; }
+  /* Itens de DENTRO do site (ou atalhos de sites) têm o ícone quadrado; os principais são redondos. */
+  .dial-item[data-scope="site"] .dial-icon,
+  .dial-item[data-scope="sites"] .dial-icon { border-radius: .5rem; }
   .dial-item::before { /* holofote que segue o mouse (btn-fx.js) */
     content: '';
     position: absolute;

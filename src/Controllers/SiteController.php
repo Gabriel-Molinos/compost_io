@@ -104,6 +104,7 @@ final class SiteController extends Controller
     public function store(): void
     {
         Csrf::verify();
+        $this->applyLanguageChoice();
 
         $errors = $this->validate($_POST);
         if ($errors !== []) {
@@ -148,6 +149,7 @@ final class SiteController extends Controller
     public function update(string $id): void
     {
         Csrf::verify();
+        $this->applyLanguageChoice();
         $site = $this->sites->find((int) $id) ?? $this->notFound();
 
         $errors = $this->validate($_POST);
@@ -247,6 +249,20 @@ final class SiteController extends Controller
         ];
     }
 
+    /**
+     * Seletor de idioma da tela do site: os presets (português/inglês/espanhol)
+     * mandam o próprio texto a gravar em `language`; a opção "Outro" manda o
+     * marcador `other` e o texto digitado vem em `language_custom`. Resolve isso
+     * ANTES de validar/gravar/re-renderizar, então o resto do fluxo só enxerga
+     * o idioma final (e "Outro" em branco cai no erro normal de campo obrigatório).
+     */
+    private function applyLanguageChoice(): void
+    {
+        if (($_POST['language'] ?? '') === 'other') {
+            $_POST['language'] = trim((string) ($_POST['language_custom'] ?? ''));
+        }
+    }
+
     /** @return list<int> */
     private function postedUserIds(): array
     {
@@ -328,10 +344,11 @@ final class SiteController extends Controller
             'wordpress_url' => ['max:255'],
             'niche'         => ['max:191'],
             'tone'          => ['max:100'],
+            'target_audience' => ['max:255'],
             'editorial_identity' => ['max:5000'],
         ], [
             'name' => 'Nome', 'language' => 'Idioma', 'wordpress_url' => 'URL do WordPress',
-            'niche' => 'Nicho', 'tone' => 'Tom', 'editorial_identity' => 'Identidade editorial',
+            'niche' => 'Nicho', 'tone' => 'Tom', 'target_audience' => 'Público', 'editorial_identity' => 'Identidade editorial',
         ]))->errors();
     }
 }

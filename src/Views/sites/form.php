@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use App\Support\Avatar;
 use App\Support\Csrf;
+use App\Support\Flag;
 use App\Support\Form;
 use App\Support\Icon;
+use App\Support\Languages;
 use App\View;
 
 /** @var array<string, mixed> $site */
@@ -55,6 +57,37 @@ $wpTags = [
 [$wpLabel, $wpIcon, $wpTone] = $wpTags[$wpState];
 $verifiedAt = ($wp['last_verified_at'] ?? null) !== null ? date('d/m/Y \à\s H:i', strtotime((string) $wp['last_verified_at'])) : null;
 
+// Tag "Ativo/Inativo" da placa: só existe com o WordPress de fato conectado (pedido do
+// responsável, 2026-09-18) — na criação, ou sem conexão, "Ativo" não diria nada verdadeiro.
+$showActiveTag = $wpState === 'OK';
+
+// ── Voz editorial ─────────────────────────────────────────────────────────
+$language = trim((string) ($site['language'] ?? ''));
+$langPresets = Languages::presets();
+$langKey = Languages::presetFor($language);
+// "Outro": idioma que não é nenhum preset — ou o campo "Outro" enviado em branco (re-render de erro).
+$langOther = $langKey === null && ($language !== '' || array_key_exists('language_custom', $site));
+$langCustom = $langOther ? ($language !== '' ? $language : (string) ($site['language_custom'] ?? '')) : '';
+$splitTokens = static fn (string $v): array => array_values(array_filter(array_map('trim', explode(',', $v)), static fn (string $t): bool => $t !== ''));
+$lowerTokens = static fn (string $v): array => array_map('mb_strtolower', $splitTokens($v));
+$toneValue = (string) ($site['tone'] ?? '');
+$audienceValue = (string) ($site['target_audience'] ?? '');
+$identityValue = (string) ($site['editorial_identity'] ?? '');
+$toneTokens = $lowerTokens($toneValue);
+$audienceTokens = $lowerTokens($audienceValue);
+$toneChips = ['Amigável', 'Profissional', 'Descontraído', 'Autoritativo', 'Didático', 'Inspirador', 'Técnico', 'Empático', 'Direto', 'Bem-humorado'];
+$audienceChips = ['Iniciantes', 'Profissionais', 'Empresas (B2B)', 'Consumidores (B2C)', 'Estudantes', 'Público geral'];
+$langLabel = $langKey !== null
+    ? $langPresets[$langKey]['label'] . ($langKey === 'pt' ? ' (Brasil)' : '')
+    : $langCustom;
+$voiceDone = count(array_filter([$language !== '' || $langOther && $langCustom !== '', $toneValue !== '', $audienceValue !== '', trim($identityValue) !== '']));
+// Pro resumo: sem ponto final (o texto do usuário já pode terminar em ponto) e cortado se muito longo.
+$clip = static function (string $t, int $n): string {
+    $t = rtrim(trim($t), ". ");
+
+    return mb_strlen($t) > $n ? mb_substr($t, 0, $n - 1) . '…' : $t;
+};
+
 // ── Redatores ─────────────────────────────────────────────────────────────
 $assignedCount = count(array_filter($editors, static fn (array $u): bool => in_array((int) $u['id'], $assignedUserIds, true)));
 $editorsTotal = count($editors);
@@ -80,6 +113,7 @@ $editorsTotal = count($editors);
             <div data-swap-pulse class="relative rounded-3xl bg-white px-8 pb-10 pt-9 shadow-[0_24px_60px_-24px_rgba(0,208,240,.5)]">
                 <span class="absolute left-5 top-4 text-[10px] font-bold uppercase tracking-[.2em] text-slate-400">Logo do site</span>
 
+                <?php if ($showActiveTag): ?>
                 <span class="absolute right-4 top-3.5 flex gap-1.5" aria-label="Situação do site">
                     <span data-active-tag="1" class="inline-flex items-center gap-1.5 rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 <?= $isActive ? '' : 'hidden' ?>">
                         <span aria-hidden="true" class="status-dot h-1.5 w-1.5 rounded-full bg-current"></span>Ativo
@@ -88,6 +122,7 @@ $editorsTotal = count($editors);
                         <span aria-hidden="true" class="h-1.5 w-1.5 rounded-full bg-current"></span>Inativo
                     </span>
                 </span>
+                <?php endif; ?>
 
                 <span data-avatar-preview data-avatar-transition
                       data-avatar-img-class="<?= View::e(Avatar::imgClass($logoSize, 'rounded-xl', 'contain', 'bg-white')) ?>"
@@ -294,27 +329,169 @@ $editorsTotal = count($editors);
             <?php endif; ?>
         </section>
 
-        <?php // ── Voz editorial ── ?>
-        <section class="rounded-2xl border border-border bg-surface p-6">
-            <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan/10 text-cyan"><?= Icon::nav('intelligence') ?></span>
-                <div>
-                    <h2 class="font-display text-lg font-semibold text-text-primary">Voz editorial</h2>
-                    <p class="mt-0.5 text-sm text-text-secondary">Orienta a IA na produção — quanto mais específico, mais os artigos soam com a cara do site.</p>
+        <?php // ── Voz editorial: idioma (bandeiras), tom, público e identidade, com resumo ao vivo ── ?>
+        <section class="rounded-2xl border border-border bg-surface p-6" data-voice>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan/10 text-cyan"><?= Icon::nav('intelligence') ?></span>
+                    <div>
+                        <h2 class="font-display text-lg font-semibold text-text-primary">Voz editorial</h2>
+                        <p class="mt-0.5 text-sm text-text-secondary">Orienta a IA em toda geração — quanto mais específico, mais os artigos soam com a cara do site.</p>
+                    </div>
+                </div>
+                <div class="text-right" aria-live="polite">
+                    <div class="flex justify-end gap-1" aria-hidden="true">
+                        <?php for ($i = 0; $i < 4; $i++): ?>
+                            <span data-voice-seg class="h-1.5 w-7 rounded-full transition-colors duration-300 <?= $i < $voiceDone ? 'bg-cyan' : 'bg-border-strong' ?>"></span>
+                        <?php endfor; ?>
+                    </div>
+                    <p class="mt-1.5 text-xs text-text-muted"><span data-voice-done><?= $voiceDone ?></span> de 4 preenchidos</p>
                 </div>
             </div>
 
-            <div class="mt-5 space-y-5">
-                <div class="grid gap-5 sm:grid-cols-2">
-                    <?= Form::text('language', 'Idioma', $site, $errors, required: true) ?>
-                    <?= Form::text('tone', 'Tom', $site, $errors) ?>
+            <?php // Resumo: mostra, em uma frase, o que a IA vai receber (o servidor já entrega; o script atualiza ao vivo). ?>
+            <div class="mt-5 flex items-start gap-3 rounded-xl border border-cyan/25 bg-cyan/5 p-4">
+                <span class="mt-0.5 shrink-0 text-cyan [&>svg]:h-5 [&>svg]:w-5"><?= Icon::nav('intelligence') ?></span>
+                <div class="min-w-0">
+                    <p class="text-[11px] font-bold uppercase tracking-widest text-cyan">Como a IA vai escrever</p>
+                    <p data-voice-summary class="mt-1 break-words text-sm leading-relaxed text-text-primary">Escreve em <strong class="text-cyan-bright"><?= View::e($langLabel !== '' ? $langLabel : '…') ?></strong><?php if ($toneValue !== ''): ?>, com tom <strong class="text-cyan-bright"><?= View::e($clip($toneValue, 80)) ?></strong><?php endif; ?><?php if ($audienceValue !== ''): ?>, para <strong class="text-cyan-bright"><?= View::e($clip($audienceValue, 80)) ?></strong><?php endif; ?>.</p>
                 </div>
-                <?= Form::text('target_audience', 'Público', $site, $errors) ?>
-                <div>
-                    <?= Form::textarea('editorial_identity', 'Identidade editorial', $site, $errors, rows: 5) ?>
-                    <p class="mt-1 text-xs text-text-muted">
-                        Voz e estilo do site em texto livre (ex.: “explica como para um amigo, usa exemplos reais, evita jargão”).
-                    </p>
+            </div>
+
+            <?php // 1 — Idioma ?>
+            <div class="mt-7">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-cyan/15 font-mono text-xs font-bold text-cyan">1</span>
+                    <h3 class="text-sm font-semibold text-text-primary">Idioma de publicação <span class="text-danger" aria-hidden="true">*</span></h3>
+                </div>
+                <fieldset class="group/lang mt-3">
+                    <legend class="sr-only">Idioma de publicação</legend>
+                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <?php foreach ($langPresets as $key => $preset): ?>
+                            <?php
+                            $isThis = $langKey === $key;
+                            // Valor já salvo que é apelido do preset (ex.: "English") continua igual — abrir e salvar nunca reescreve a grafia.
+                            $radioValue = $isThis && $language !== '' ? $language : $preset['value'];
+                            $radioLabel = $preset['label'] . ($key === 'pt' ? ' (Brasil)' : '');
+                            ?>
+                            <label class="relative block cursor-pointer">
+                                <input type="radio" name="language" value="<?= View::e($radioValue) ?>" data-lang-radio data-label="<?= View::e($radioLabel) ?>"
+                                       class="peer sr-only" <?= $isThis ? 'checked' : '' ?>>
+                                <span class="flex h-full flex-col items-center gap-2.5 rounded-xl border border-border bg-surface-2 px-3 pb-3.5 pt-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan/60 peer-checked:border-cyan peer-checked:bg-cyan/10 peer-checked:shadow-[0_0_0_1px_rgba(0,208,240,.35),0_12px_28px_-14px_rgba(0,208,240,.6)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan">
+                                    <span class="block h-8 w-12 overflow-hidden rounded-[5px] shadow-[0_0_0_1px_rgba(255,255,255,.2),0_6px_12px_-4px_rgba(0,0,0,.6)]"><?= Flag::svg($preset['flag']) ?></span>
+                                    <span>
+                                        <span class="block text-sm font-semibold text-text-primary"><?= View::e($preset['label']) ?></span>
+                                        <span class="block text-xs text-text-muted"><?= View::e($preset['country']) ?></span>
+                                    </span>
+                                </span>
+                                <span aria-hidden="true" class="pointer-events-none absolute right-2 top-2 flex h-5 w-5 scale-0 items-center justify-center rounded-full bg-cyan text-void transition-transform duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] peer-checked:scale-100">
+                                    <span class="[&>svg]:h-3 [&>svg]:w-3"><?= Icon::nav('check') ?></span>
+                                </span>
+                            </label>
+                        <?php endforeach; ?>
+
+                        <label class="relative block cursor-pointer">
+                            <input type="radio" name="language" value="other" data-lang-radio data-label="" class="peer sr-only" <?= $langOther ? 'checked' : '' ?>>
+                            <span class="flex h-full flex-col items-center gap-2.5 rounded-xl border border-dashed border-border-strong bg-surface-2 px-3 pb-3.5 pt-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan/60 peer-checked:border-solid peer-checked:border-cyan peer-checked:bg-cyan/10 peer-checked:shadow-[0_0_0_1px_rgba(0,208,240,.35),0_12px_28px_-14px_rgba(0,208,240,.6)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan">
+                                <span class="flex h-8 w-12 items-center justify-center rounded-[5px] bg-white/5 text-cyan [&>svg]:h-6 [&>svg]:w-6"><?= Icon::nav('globe') ?></span>
+                                <span>
+                                    <span class="block text-sm font-semibold text-text-primary">Outro</span>
+                                    <span class="block text-xs text-text-muted">Escrever o idioma</span>
+                                </span>
+                            </span>
+                            <span aria-hidden="true" class="pointer-events-none absolute right-2 top-2 flex h-5 w-5 scale-0 items-center justify-center rounded-full bg-cyan text-void transition-transform duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] peer-checked:scale-100">
+                                <span class="[&>svg]:h-3 [&>svg]:w-3"><?= Icon::nav('check') ?></span>
+                            </span>
+                        </label>
+                    </div>
+
+                    <?php // Campo do idioma "Outro": aparece só com "Outro" marcado (CSS puro; o script só reforça). ?>
+                    <div data-lang-other class="mt-3 <?= $langOther ? '' : 'hidden' ?> group-has-[input[value=other]:checked]/lang:block">
+                        <label for="f_language_custom" class="block text-sm font-medium text-text-secondary">Qual idioma?</label>
+                        <div class="relative mt-1">
+                            <span aria-hidden="true" class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-cyan [&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('globe') ?></span>
+                            <input type="text" id="f_language_custom" name="language_custom" value="<?= View::e($langCustom) ?>" maxlength="20"
+                                   placeholder="Ex.: Français, Deutsch, Italiano"
+                                   <?= isset($errors['language']) ? 'aria-invalid="true" aria-describedby="f_language_err"' : '' ?>
+                                   class="w-full rounded-xl border bg-surface-2 py-2.5 pl-10 pr-4 text-text-primary placeholder:text-text-muted focus:outline-none <?= isset($errors['language']) ? 'border-danger' : 'border-border focus:border-cyan' ?>">
+                        </div>
+                        <p class="mt-1 text-xs text-text-muted">Até 20 caracteres — o texto vai como está pra IA.</p>
+                    </div>
+                    <?php if (isset($errors['language'])): ?>
+                        <p id="f_language_err" class="mt-2 text-sm text-danger"><?= View::e($errors['language']) ?></p>
+                    <?php endif; ?>
+                </fieldset>
+            </div>
+
+            <?php // 2 — Tom ?>
+            <div class="mt-8">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-cyan/15 font-mono text-xs font-bold text-cyan">2</span>
+                    <h3 class="text-sm font-semibold text-text-primary">Tom de voz</h3>
+                    <span class="ml-auto font-mono text-xs text-text-muted"><span data-count-for="#f_tone"><?= mb_strlen($toneValue) ?></span> / 100</span>
+                </div>
+                <label for="f_tone" class="sr-only">Tom de voz</label>
+                <input type="text" id="f_tone" name="tone" value="<?= View::e($toneValue) ?>" placeholder="Ex.: amigável, didático, direto"
+                       <?= isset($errors['tone']) ? 'aria-invalid="true" aria-describedby="f_tone_err"' : '' ?>
+                       class="mt-3 w-full rounded-xl border bg-surface-2 px-4 py-2.5 text-text-primary placeholder:text-text-muted focus:outline-none <?= isset($errors['tone']) ? 'border-danger' : 'border-border focus:border-cyan' ?>">
+                <?php if (isset($errors['tone'])): ?>
+                    <p id="f_tone_err" class="mt-1 text-sm text-danger"><?= View::e($errors['tone']) ?></p>
+                <?php endif; ?>
+                <div class="mt-3 flex flex-wrap gap-2" data-chips="#f_tone" data-max="100" role="group" aria-label="Sugestões de tom">
+                    <?php foreach ($toneChips as $chip): ?>
+                        <button type="button" data-chip="<?= View::e($chip) ?>" aria-pressed="<?= in_array(mb_strtolower($chip), $toneTokens, true) ? 'true' : 'false' ?>"
+                                class="rounded-full border border-border bg-surface-2 px-3 py-1 text-xs font-medium text-text-secondary transition-all duration-150 hover:-translate-y-px hover:border-cyan/60 hover:text-text-primary active:scale-95 aria-pressed:border-cyan aria-pressed:bg-cyan/15 aria-pressed:text-cyan">
+                            <?= View::e($chip) ?>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <?php // 3 — Público ?>
+            <div class="mt-8">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-cyan/15 font-mono text-xs font-bold text-cyan">3</span>
+                    <h3 class="text-sm font-semibold text-text-primary">Público</h3>
+                    <span class="ml-auto font-mono text-xs text-text-muted"><span data-count-for="#f_target_audience"><?= mb_strlen($audienceValue) ?></span> / 255</span>
+                </div>
+                <label for="f_target_audience" class="sr-only">Público</label>
+                <input type="text" id="f_target_audience" name="target_audience" value="<?= View::e($audienceValue) ?>" placeholder="Ex.: pessoas que trabalham remoto e querem morar fora"
+                       <?= isset($errors['target_audience']) ? 'aria-invalid="true" aria-describedby="f_target_audience_err"' : '' ?>
+                       class="mt-3 w-full rounded-xl border bg-surface-2 px-4 py-2.5 text-text-primary placeholder:text-text-muted focus:outline-none <?= isset($errors['target_audience']) ? 'border-danger' : 'border-border focus:border-cyan' ?>">
+                <?php if (isset($errors['target_audience'])): ?>
+                    <p id="f_target_audience_err" class="mt-1 text-sm text-danger"><?= View::e($errors['target_audience']) ?></p>
+                <?php endif; ?>
+                <div class="mt-3 flex flex-wrap gap-2" data-chips="#f_target_audience" data-max="255" role="group" aria-label="Sugestões de público">
+                    <?php foreach ($audienceChips as $chip): ?>
+                        <button type="button" data-chip="<?= View::e($chip) ?>" aria-pressed="<?= in_array(mb_strtolower($chip), $audienceTokens, true) ? 'true' : 'false' ?>"
+                                class="rounded-full border border-border bg-surface-2 px-3 py-1 text-xs font-medium text-text-secondary transition-all duration-150 hover:-translate-y-px hover:border-cyan/60 hover:text-text-primary active:scale-95 aria-pressed:border-cyan aria-pressed:bg-cyan/15 aria-pressed:text-cyan">
+                            <?= View::e($chip) ?>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <?php // 4 — Identidade editorial ?>
+            <div class="mt-8">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-cyan/15 font-mono text-xs font-bold text-cyan">4</span>
+                    <h3 class="text-sm font-semibold text-text-primary">Identidade editorial</h3>
+                    <span class="ml-auto font-mono text-xs text-text-muted"><span data-count-for="#f_editorial_identity"><?= mb_strlen($identityValue) ?></span> / 5000</span>
+                </div>
+                <label for="f_editorial_identity" class="sr-only">Identidade editorial</label>
+                <textarea id="f_editorial_identity" name="editorial_identity" rows="6"
+                          placeholder="Voz e estilo do site em texto livre…"
+                          <?= isset($errors['editorial_identity']) ? 'aria-invalid="true" aria-describedby="f_editorial_identity_err"' : '' ?>
+                          class="mt-3 w-full rounded-xl border bg-surface-2 px-4 py-3 text-text-primary placeholder:text-text-muted focus:outline-none <?= isset($errors['editorial_identity']) ? 'border-danger' : 'border-border focus:border-cyan' ?>"><?= View::e($identityValue) ?></textarea>
+                <?php if (isset($errors['editorial_identity'])): ?>
+                    <p id="f_editorial_identity_err" class="mt-1 text-sm text-danger"><?= View::e($errors['editorial_identity']) ?></p>
+                <?php endif; ?>
+                <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+                    <p class="text-xs text-text-muted">Ex.: “explica como para um amigo, usa exemplos reais, evita jargão”.</p>
+                    <button type="button" data-identity-template class="btn btn-secondary px-3 py-1.5 text-xs">
+                        <span class="[&>svg]:h-3.5 [&>svg]:w-3.5"><?= Icon::nav('intelligence') ?></span>
+                        Inserir modelo
+                    </button>
                 </div>
             </div>
         </section>
@@ -451,6 +628,129 @@ $editorsTotal = count($editors);
                 label.textContent = file.files && file.files[0] ? file.files[0].name : original;
             });
         }
+    })();
+</script>
+
+<script>
+    // Voz editorial (melhoria progressiva — sem JS o formulário envia os mesmos campos):
+    // resumo e barra de preenchimento ao vivo, contadores, chips que montam o texto de
+    // tom/público (lista separada por vírgula) e o botão de modelo da identidade.
+    (function () {
+        var root = document.querySelector('[data-voice]');
+        if (!root) return;
+
+        var tone = root.querySelector('#f_tone');
+        var audience = root.querySelector('#f_target_audience');
+        var identity = root.querySelector('#f_editorial_identity');
+        var custom = root.querySelector('#f_language_custom');
+        var otherBlock = root.querySelector('[data-lang-other]');
+        var summary = root.querySelector('[data-voice-summary]');
+        var segs = root.querySelectorAll('[data-voice-seg]');
+        var done = root.querySelector('[data-voice-done]');
+
+        // Sem ponto final (o texto do usuário já pode terminar em ponto) e cortado se muito longo.
+        function clip(text, n) { text = text.replace(/[.\s]+$/, ''); return text.length > n ? text.slice(0, n - 1) + '…' : text; }
+
+        function selectedLanguage() {
+            var checked = root.querySelector('[data-lang-radio]:checked');
+            if (!checked) return '';
+            return checked.value === 'other' ? custom.value.trim() : checked.getAttribute('data-label');
+        }
+
+        function strong(text) {
+            var el = document.createElement('strong');
+            el.className = 'text-cyan-bright';
+            el.textContent = text;
+            return el;
+        }
+
+        function sync() {
+            var lang = selectedLanguage();
+            var t = tone.value.trim();
+            var a = audience.value.trim();
+
+            if (otherBlock) {
+                var other = root.querySelector('[data-lang-radio][value="other"]');
+                otherBlock.classList.toggle('hidden', !(other && other.checked));
+            }
+
+            // Texto vindo do usuário entra por textContent (nunca innerHTML).
+            summary.textContent = '';
+            summary.appendChild(document.createTextNode('Escreve em '));
+            summary.appendChild(strong(lang !== '' ? lang : '…'));
+            if (t !== '') { summary.appendChild(document.createTextNode(', com tom ')); summary.appendChild(strong(clip(t, 80))); }
+            if (a !== '') { summary.appendChild(document.createTextNode(', para ')); summary.appendChild(strong(clip(a, 80))); }
+            summary.appendChild(document.createTextNode('.'));
+
+            var filled = [lang !== '', t !== '', a !== '', identity.value.trim() !== ''].filter(Boolean).length;
+            if (done) done.textContent = String(filled);
+            segs.forEach(function (seg, i) {
+                seg.classList.toggle('bg-cyan', i < filled);
+                seg.classList.toggle('bg-border-strong', i >= filled);
+            });
+
+            root.querySelectorAll('[data-count-for]').forEach(function (el) {
+                var field = root.querySelector(el.getAttribute('data-count-for'));
+                if (field) el.textContent = String(field.value.length);
+            });
+        }
+
+        function tokens(value) {
+            return value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+        }
+
+        // Chips: liga/desliga a palavra na lista do campo (respeita o limite de caracteres).
+        root.querySelectorAll('[data-chips]').forEach(function (group) {
+            var field = root.querySelector(group.getAttribute('data-chips'));
+            var max = parseInt(group.getAttribute('data-max'), 10) || 0;
+            if (!field) return;
+
+            function paint() {
+                var current = tokens(field.value).map(function (s) { return s.toLowerCase(); });
+                group.querySelectorAll('[data-chip]').forEach(function (chip) {
+                    chip.setAttribute('aria-pressed', current.indexOf(chip.getAttribute('data-chip').toLowerCase()) !== -1 ? 'true' : 'false');
+                });
+            }
+
+            group.querySelectorAll('[data-chip]').forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    var word = chip.getAttribute('data-chip');
+                    var list = tokens(field.value);
+                    var at = list.map(function (s) { return s.toLowerCase(); }).indexOf(word.toLowerCase());
+                    if (at !== -1) {
+                        list.splice(at, 1);
+                    } else {
+                        var next = list.concat(word).join(', ');
+                        if (max && next.length > max) return; // não cabe: deixa como está
+                        list.push(word);
+                    }
+                    field.value = list.join(', ');
+                    field.dispatchEvent(new Event('input', { bubbles: true }));
+                });
+            });
+            field.addEventListener('input', paint);
+        });
+
+        var TEMPLATE = 'Voz: como o site fala com o leitor (ex.: explica como para um amigo).\n'
+            + 'Estilo: frases curtas, exemplos reais e listas quando ajudam.\n'
+            + 'Evitar: jargão, promessas exageradas e clickbait.';
+        var templateBtn = root.querySelector('[data-identity-template]');
+        if (templateBtn) {
+            templateBtn.addEventListener('click', function () {
+                identity.value = identity.value.trim() === '' ? TEMPLATE : identity.value.replace(/\s+$/, '') + '\n\n' + TEMPLATE;
+                identity.focus();
+                identity.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        }
+
+        [tone, audience, identity, custom].forEach(function (el) { if (el) el.addEventListener('input', sync); });
+        root.querySelectorAll('[data-lang-radio]').forEach(function (r) {
+            r.addEventListener('change', function () {
+                sync();
+                if (r.value === 'other' && custom) custom.focus();
+            });
+        });
+        sync();
     })();
 </script>
 

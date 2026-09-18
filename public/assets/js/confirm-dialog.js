@@ -66,32 +66,25 @@
     });
   }
 
-  function bind(form) {
-    if (form.dataset.confirmBound === '1') {
+  // Delegação no document (fase de captura) em vez de ligar um listener em
+  // cada <form> na carga da página: telas que trocam pedaços do DOM sem
+  // recarregar (ex.: filtro em tempo real da Produção) trazem forms novos
+  // que nunca passariam por um "bind" inicial — e o botão de descartar
+  // deles submeteria direto, sem confirmação nenhuma.
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm')) {
       return;
     }
-    form.dataset.confirmBound = '1';
-    form.addEventListener('submit', function (e) {
-      if (form.dataset.confirmed === '1') {
-        form.dataset.confirmed = '';
-        return; // já passou pelo diálogo — deixa submeter de verdade.
-      }
-      e.preventDefault();
-      ensureDialog();
-      messageEl.textContent = form.dataset.confirm;
-      pendingForm = form;
-      dialog.showModal();
-      cancelBtn.focus();
-    });
-  }
-
-  function init() {
-    document.querySelectorAll('form[data-confirm]').forEach(bind);
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+    if (form.dataset.confirmed === '1') {
+      form.dataset.confirmed = '';
+      return; // já passou pelo diálogo — deixa submeter de verdade.
+    }
+    e.preventDefault();
+    ensureDialog();
+    messageEl.textContent = form.dataset.confirm;
+    pendingForm = form;
+    dialog.showModal();
+    cancelBtn.focus();
+  }, true);
 })();

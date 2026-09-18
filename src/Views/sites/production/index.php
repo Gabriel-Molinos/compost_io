@@ -17,6 +17,7 @@ use App\View;
 /** @var int|null $categoryId */
 /** @var string|null $origin */
 /** @var string|null $search */
+/** @var bool $filtersActive */
 /** @var int $totalForGroup */
 /** @var int $page */
 /** @var int $totalPages */
@@ -110,6 +111,8 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
         ['discarded', 'Descartados', $counts['discarded']],
     ];
     ?>
+    <?php // [data-results-top] e [data-results-body] são as duas regiões que o filtro em tempo real troca (script no fim); o formulário entre elas nunca é trocado, senão foco e cursor da busca se perderiam. ?>
+    <div data-results-top class="transition-opacity duration-150">
     <div class="mt-8 flex items-center justify-between gap-3">
         <h3 class="font-display text-lg font-semibold text-text-primary">Rascunhos (<?= $totalForGroup ?>)</h3>
         <div class="flex flex-wrap gap-1.5" role="tablist" aria-label="Filtrar por status">
@@ -117,7 +120,11 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
                 <?php if ($key !== 'all' && $n === 0) continue; ?>
                 <?php $active = $key === $statusGroup; ?>
                 <a href="<?= View::e($statusUrl($key)) ?>" role="tab" aria-selected="<?= $active ? 'true' : 'false' ?>"
-                   class="rounded-full border px-3 py-1 text-xs font-medium transition-colors <?= $active ? 'border-cyan bg-cyan/10 text-cyan' : 'border-border text-text-secondary hover:border-border-strong' ?>">
+                   class="rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all duration-150
+                          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan/60
+                          <?= $active
+                                ? 'border-cyan bg-cyan/15 text-cyan shadow-[0_0_0_1px_rgba(0,208,240,.15)]'
+                                : 'border-border text-text-secondary hover:border-cyan/50 hover:bg-surface-2 hover:text-text-primary active:scale-95' ?>">
                     <?= View::e($label) ?> <span class="font-mono"><?= $n ?></span>
                 </a>
             <?php endforeach; ?>
@@ -129,37 +136,47 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
         <div class="mt-2.5 flex flex-wrap items-center gap-1.5 pl-1" role="tablist" aria-label="Refinar por status exato">
             <span class="text-xs text-text-muted">Refinar:</span>
             <a href="<?= View::e($exactUrl(null)) ?>" role="tab" aria-selected="<?= $exactStatus === null ? 'true' : 'false' ?>"
-               class="rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors <?= $exactStatus === null ? 'border-cyan bg-cyan/10 text-cyan' : 'border-border text-text-secondary hover:border-border-strong' ?>">
+               class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150
+                      focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan/60
+                      <?= $exactStatus === null
+                            ? 'border-cyan bg-cyan/15 text-cyan'
+                            : 'border-border text-text-secondary hover:border-cyan/50 hover:bg-surface-2 hover:text-text-primary active:scale-95' ?>">
                 Todos
             </a>
             <?php foreach ($exactCounts as $exactKey => $n): ?>
                 <?php if ($n === 0) continue; ?>
                 <?php $active = $exactStatus === $exactKey; ?>
                 <a href="<?= View::e($exactUrl($exactKey)) ?>" role="tab" aria-selected="<?= $active ? 'true' : 'false' ?>"
-                   class="rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors <?= $active ? 'border-cyan bg-cyan/10 text-cyan' : 'border-border text-text-secondary hover:border-border-strong' ?>">
+                   class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all duration-150
+                          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan/60
+                          <?= $active
+                                ? 'border-cyan bg-cyan/15 text-cyan'
+                                : 'border-border text-text-secondary hover:border-cyan/50 hover:bg-surface-2 hover:text-text-primary active:scale-95' ?>">
                     <?= View::e(Labels::articleStatus($exactKey)) ?> <span class="font-mono"><?= $n ?></span>
                 </a>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
+    </div>
 
     <form method="get" action="/sites/<?= View::e($site['id']) ?>/production"
+          data-filter-form
           class="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface-2/40 p-3.5">
         <?php if ($statusGroup !== 'all'): ?><input type="hidden" name="status" value="<?= View::e($statusGroup) ?>"><?php endif; ?>
         <?php if ($exactStatus !== null): ?><input type="hidden" name="exact_status" value="<?= View::e($exactStatus) ?>"><?php endif; ?>
 
-        <label class="min-w-[10rem] text-sm">
+        <label class="min-w-[14rem] text-sm">
             <span class="block font-medium text-text-secondary">Categoria</span>
-            <select name="category_id" class="mt-1 w-full">
+            <select name="category_id" data-filter-auto class="mt-1 w-full">
                 <option value="">Todas</option>
                 <?php foreach ($categories as $c): ?>
                     <option value="<?= View::e($c['id']) ?>" <?= $categoryId === (int) $c['id'] ? 'selected' : '' ?>><?= View::e($c['name']) ?></option>
                 <?php endforeach; ?>
             </select>
         </label>
-        <label class="min-w-[8.5rem] text-sm">
+        <label class="min-w-[9rem] text-sm">
             <span class="block font-medium text-text-secondary">Origem</span>
-            <select name="origin" class="mt-1 w-full">
+            <select name="origin" data-filter-auto class="mt-1 w-full">
                 <option value="">Todas</option>
                 <option value="AUTO" <?= $origin === 'AUTO' ? 'selected' : '' ?>>Automático</option>
                 <option value="MANUAL" <?= $origin === 'MANUAL' ? 'selected' : '' ?>>Manual</option>
@@ -168,14 +185,20 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
         <label class="min-w-[14rem] flex-1 text-sm">
             <span class="block font-medium text-text-secondary">Buscar por título ou palavra-chave</span>
             <input type="search" name="q" value="<?= View::e($search ?? '') ?>" placeholder="Ex.: marketing digital"
+                   data-filter-search autocomplete="off"
                    class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-1.5 text-text-primary placeholder:text-text-muted focus:border-cyan focus:outline-none">
         </label>
-        <button type="submit" class="rounded-md border border-border px-3.5 py-1.5 text-sm font-medium text-text-secondary hover:border-cyan hover:text-text-primary">
+        <button type="submit"
+                class="rounded-md border border-border px-3.5 py-1.5 text-sm font-medium text-text-secondary transition-all duration-150
+                       hover:border-cyan hover:bg-cyan/10 hover:text-text-primary active:scale-95
+                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan/60">
             Filtrar
         </button>
-        <?php if ($filtersActive): ?>
-            <a href="/sites/<?= View::e($site['id']) ?>/production" class="text-sm text-text-muted hover:text-text-primary">Limpar filtros</a>
-        <?php endif; ?>
+        <?php // Sempre no DOM (só `hidden` quando não há filtro) pro script poder mostrar/esconder sem recarregar a página. ?>
+        <a href="/sites/<?= View::e($site['id']) ?>/production" data-clear-filters <?= $filtersActive ? '' : 'hidden' ?>
+           class="rounded-md px-2 py-1.5 text-sm text-text-muted transition-colors hover:text-text-primary">
+            Limpar filtros
+        </a>
     </form>
 
     <?php
@@ -188,6 +211,7 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
         ? '/sites/' . $site['id'] . '/production/' . $tourReviewArticle['id']
         : '';
     ?>
+    <div data-results-body class="transition-opacity duration-150">
     <?php if ($articles === []): ?>
         <p class="mt-3 text-sm text-text-secondary">Nenhum rascunho neste filtro.</p>
     <?php endif; ?>
@@ -243,18 +267,115 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
     </ul>
 
     <?php if ($totalPages > 1): ?>
+        <?php $pagerBtn = 'rounded-md border border-border px-3 py-1.5 text-text-secondary transition-all duration-150 hover:border-cyan hover:bg-cyan/10 hover:text-text-primary active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan/60'; ?>
         <nav class="mt-5 flex items-center justify-center gap-3 text-sm" aria-label="Paginação">
             <?php if ($page > 1): ?>
-                <a href="<?= View::e($pageUrl($page - 1)) ?>" class="rounded-md border border-border px-3 py-1.5 text-text-secondary hover:border-border-strong">← Anterior</a>
+                <a href="<?= View::e($pageUrl($page - 1)) ?>" class="<?= $pagerBtn ?>">← Anterior</a>
             <?php else: ?>
                 <span class="rounded-md border border-border px-3 py-1.5 text-text-muted opacity-40">← Anterior</span>
             <?php endif; ?>
             <span class="text-text-secondary">Página <?= $page ?> de <?= $totalPages ?></span>
             <?php if ($page < $totalPages): ?>
-                <a href="<?= View::e($pageUrl($page + 1)) ?>" class="rounded-md border border-border px-3 py-1.5 text-text-secondary hover:border-border-strong">Próxima →</a>
+                <a href="<?= View::e($pageUrl($page + 1)) ?>" class="<?= $pagerBtn ?>">Próxima →</a>
             <?php else: ?>
                 <span class="rounded-md border border-border px-3 py-1.5 text-text-muted opacity-40">Próxima →</span>
             <?php endif; ?>
         </nav>
     <?php endif; ?>
+    </div>
 <?php endif; ?>
+
+<script>
+    // Filtro em tempo real (pedido do responsável, 2026-09-17): categoria/
+    // origem atualizam na hora (são escolhas discretas); a busca por texto
+    // espera uma pausa curta de digitação (debounce) — senão cada tecla
+    // dispararia uma consulta nova. Nada de recarregar a página: a primeira
+    // versão fazia isso e a cada pausa a tela inteira piscava e o cursor
+    // voltava pro começo do campo (a letra seguinte entrava no início do
+    // texto). Agora busca a MESMA URL (?category_id=…&q=…, continua
+    // compartilhável/atualizável com F5) via fetch, troca só as duas regiões
+    // de resultado e deixa o formulário — e portanto foco e cursor — quietos.
+    // Qualquer falha (rede, sessão expirada, HTML inesperado) cai numa
+    // navegação normal pra mesma URL, então nunca deixa a tela numa versão velha.
+    // `select-enhance.js` troca a caixa visível por um botão + lista própria,
+    // mas o <select> real continua recebendo o evento `change` normal — é
+    // nele que este script escuta, sem precisar saber do componente customizado.
+    (function () {
+        var form = document.querySelector('[data-filter-form]');
+        var top = document.querySelector('[data-results-top]');
+        var body = document.querySelector('[data-results-body]');
+        if (!form || !top || !body) return;
+
+        var clear = form.querySelector('[data-clear-filters]');
+        var search = form.querySelector('[data-filter-search]');
+        var timer = null;
+        var inflight = null;
+
+        function filterUrl() {
+            var params = new URLSearchParams();
+            new FormData(form).forEach(function (value, key) {
+                if (value !== '') params.append(key, value);
+            });
+            var qs = params.toString();
+            return form.getAttribute('action') + (qs ? '?' + qs : '');
+        }
+
+        function setBusy(busy) {
+            [top, body].forEach(function (el) {
+                el.classList.toggle('opacity-50', busy);
+                el.setAttribute('aria-busy', busy ? 'true' : 'false');
+            });
+        }
+
+        function update() {
+            if (timer) { clearTimeout(timer); timer = null; }
+            var url = filterUrl();
+            if (inflight) inflight.abort();
+            var mine = inflight = new AbortController();
+            setBusy(true);
+
+            fetch(url, { credentials: 'same-origin', signal: mine.signal })
+                .then(function (res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.text();
+                })
+                .then(function (html) {
+                    var doc = new DOMParser().parseFromString(html, 'text/html');
+                    var newTop = doc.querySelector('[data-results-top]');
+                    var newBody = doc.querySelector('[data-results-body]');
+                    if (!newTop || !newBody) throw new Error('resposta sem as regiões de resultado');
+                    top.innerHTML = newTop.innerHTML;
+                    body.innerHTML = newBody.innerHTML;
+                    if (clear) {
+                        var newClear = doc.querySelector('[data-clear-filters]');
+                        clear.hidden = !newClear || newClear.hidden;
+                    }
+                    history.replaceState(null, '', url);
+                    setBusy(false);
+                })
+                .catch(function (err) {
+                    if (err.name === 'AbortError') return; // trocada por uma consulta mais nova
+                    window.location.href = url;
+                })
+                .finally(function () {
+                    if (inflight === mine) inflight = null;
+                });
+        }
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            update();
+        });
+
+        form.querySelectorAll('[data-filter-auto]').forEach(function (field) {
+            field.addEventListener('change', update);
+        });
+
+        if (search) {
+            search.addEventListener('input', function () {
+                if (timer) clearTimeout(timer);
+                timer = setTimeout(update, 350);
+            });
+        }
+    })();
+</script>

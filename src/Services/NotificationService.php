@@ -108,6 +108,14 @@ final class NotificationService
         )->execute(['id' => $id, 'u' => $userId]);
     }
 
+    /** Volta uma notificação pra "não lida" (o botão de alternar da tela de notificações). */
+    public function markUnread(int $id, int $userId): void
+    {
+        Connection::get()->prepare(
+            'UPDATE notifications SET read_at = NULL WHERE id = :id AND user_id = :u AND read_at IS NOT NULL'
+        )->execute(['id' => $id, 'u' => $userId]);
+    }
+
     public function markAllRead(int $userId): void
     {
         Connection::get()->prepare(

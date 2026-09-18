@@ -276,6 +276,13 @@ fontFamily: {
   por ida e volta e eram 5 por página. Tela `/profile` refeita no mesmo tema (foto grande com
   pré-visualização ao vivo, nome, papel e sites). Geometria em `assets/js/dial.js`
   (mesma fórmula do CSS), HTML em `layout/_dial.php`.
+- **2026-09-18** — **notificações redesenhadas** (pedido do responsável: "mais bonita e mais
+  interativa"): cabeçalho com contador grande das não lidas (sino com pulso, tag "Novas"/"Tudo em
+  dia"), busca e filtros instantâneos (situação e tipo, com contagem), lista agrupada por dia
+  (Hoje / Ontem / Esta semana / Mais antigas) e cards no sistema `.article-card` — colorido pelo
+  tipo enquanto não lida, apagado depois de lida. Interação sem recarregar: marcar UMA como
+  lida/não lida e "marcar todas" (fetch → JSON), atualizando contador, selo do sino na sidebar e
+  cor do card; clicar no card abre. Endpoints novos: `POST /notifications/{id}/read|unread`.
 
 ## Ver também
 

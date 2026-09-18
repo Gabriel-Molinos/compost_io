@@ -61,6 +61,8 @@ return static function (Router $router): void {
     $router->add('GET',  '/notifications',           [NotificationController::class, 'index'],        auth: true);
     $router->add('POST', '/notifications/read-all',  [NotificationController::class, 'markAllRead'],  auth: true);
     $router->add('POST', '/notifications/{id}/open', [NotificationController::class, 'open'],          auth: true);
+    $router->add('POST', '/notifications/{id}/read', [NotificationController::class, 'read'],          auth: true);
+    $router->add('POST', '/notifications/{id}/unread', [NotificationController::class, 'unread'],      auth: true);
 
     // Usuários (somente ADMIN)
     $router->add('GET',  '/users',           [UserController::class, 'index'],  admin: true);

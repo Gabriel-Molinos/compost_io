@@ -1780,6 +1780,43 @@
     .article-card .article-card-fx::after { animation: none; opacity: 0; }
   }
 
+  /* Tela de notificações (views/notifications/index.php): o card usa o sistema `.article-card`
+     (tom pelo tipo enquanto NÃO lida; apagado depois de lida) e ganha ícone, título e o pulso do sino. */
+  .notif-icon {
+    background: rgb(var(--tone) / .16);
+    color: rgb(var(--tone));
+    box-shadow: 0 0 0 1px rgb(var(--tone) / .4);
+    transition: transform 240ms cubic-bezier(.34, 1.56, .64, 1), background-color 200ms ease;
+  }
+  .notif-card:hover .notif-icon { transform: scale(1.08) rotate(-6deg); }
+  .notif-title { color: #F0F8FF; transition: color 200ms ease; }
+  .notif-card:hover .notif-title { color: rgb(var(--accent)); }
+  .notif-dot { color: rgb(var(--tone)); }
+  .notif-card[data-read="1"] .notif-title { color: #8FA6BC; }
+  .notif-card[data-read="1"] .notif-icon { background: rgb(143 166 188 / .12); color: #8FA6BC; box-shadow: 0 0 0 1px rgb(143 166 188 / .3); }
+  .notif-card[data-open] { cursor: pointer; }
+  .notif-ring {
+    position: absolute;
+    inset: -7px;
+    border-radius: 50%;
+    border: 2px solid rgb(0 208 240 / .6);
+    pointer-events: none;
+    animation: notif-ring 2.2s ease-out infinite;
+  }
+  @keyframes notif-ring {
+    0%   { opacity: .8; transform: scale(.9); }
+    100% { opacity: 0; transform: scale(1.35); }
+  }
+  .notif-pop { animation: notif-pop 460ms cubic-bezier(.34, 1.56, .64, 1); }
+  @keyframes notif-pop {
+    0%   { transform: scale(1.5); color: #7FE8FF; }
+    100% { transform: scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .notif-ring, .notif-pop { animation: none; }
+    .notif-card:hover .notif-icon { transform: none; }
+  }
+
   /* =====================================================================
      Diálogo de confirmação — troca o confirm() nativo do navegador (feio,
      sem identidade nenhuma do produto) por um <dialog> desenhado com a

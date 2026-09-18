@@ -54,10 +54,6 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
     . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/>'
     . '<path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/>'
     . '<path d="M10 11v6"/><path d="M14 11v6"/></svg>';
-$toneBorder = static fn (string $tone): string => match ($tone) {
-    'success' => 'border-l-success', 'warning' => 'border-l-warning', 'danger' => 'border-l-danger',
-    'info', 'cyan' => 'border-l-cyan', default => 'border-l-border',
-};
 ?>
 <h2 class="font-display text-lg font-semibold text-text-primary">Produção</h2>
 <p class="mt-1 text-sm text-text-secondary">
@@ -216,12 +212,17 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
         <p class="mt-3 text-sm text-text-secondary">Nenhum rascunho neste filtro.</p>
     <?php endif; ?>
     <ul data-tour="article-list" data-tour-review-href="<?= View::e($tourReviewHref) ?>" class="mt-3 space-y-2">
-        <?php foreach ($articles as $a): ?>
+        <?php foreach ($articles as $i => $a): ?>
             <?php
             $tone = Labels::articleStatusTone((string) $a['status']);
             $isGenerating = in_array($a['status'], ['PLANNED', 'IN_PROGRESS'], true);
+            // Fundo e animação por estado (.article-card--* em input.css). Entrada
+            // escalonada só nos primeiros cards; fase negativa por posição pra
+            // os brilhos/respirações não baterem todos no mesmo instante.
+            $cardStyle = sprintf('--card-enter: %dms; --card-phase: -%.2Fs', min($i, 8) * 35, ($i % 7) * 0.85); // %F: sem vírgula de locale no CSS
             ?>
-            <li class="flex flex-col gap-2.5 rounded-lg border-l-2 <?= $toneBorder($tone) ?> border-y border-r border-border bg-surface px-4 py-3.5">
+            <li class="article-card <?= Labels::articleCardTone($tone) ?> flex flex-col gap-2.5 rounded-lg bg-surface px-4 py-3.5"
+                style="<?= View::e($cardStyle) ?>">
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
                         <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>"

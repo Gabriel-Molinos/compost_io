@@ -71,6 +71,26 @@ final class Labels
         };
     }
 
+    /**
+     * Classe do card de rascunho na lista de Produção (fundo colorido + animação
+     * por estado — `.article-card--*` em src/styles/input.css). Parte do MESMO
+     * tom da badge, então card e badge nunca discordam. Os nomes ficam por
+     * extenso aqui de propósito: o scanner do Tailwind só mantém regra de
+     * `@layer components` cujo nome aparece literal num arquivo de `content`
+     * — montar `'article-card--' . $tone` sumiria com o CSS sem erro nenhum.
+     */
+    public static function articleCardTone(string $tone): string
+    {
+        return match ($tone) {
+            'success' => 'article-card--success',
+            'warning' => 'article-card--warning',
+            'danger'  => 'article-card--danger',
+            'info'    => 'article-card--info',
+            'cyan'    => 'article-card--cyan',
+            default   => 'article-card--muted',
+        };
+    }
+
     /** Badge pronta (HTML) pro status de um artigo — texto + cor, nunca só cor (R-UI-07). */
     public static function articleStatusBadge(string $status): string
     {

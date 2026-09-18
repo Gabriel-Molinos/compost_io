@@ -62,6 +62,24 @@ final class LabelsTest extends TestCase
         $this->assertSame('danger', Labels::articleStatusTone('ERROR'));
     }
 
+    /**
+     * O card da Produção tem que seguir o MESMO tom da badge: aprovado verde,
+     * atenção (bloqueado/falha) vermelho, e todo status cai numa classe de card
+     * (nunca vazia — senão o card ficaria sem fundo/borda).
+     */
+    public function testArticleCardFollowsTheSameToneAsTheBadge(): void
+    {
+        $this->assertSame('article-card--success', Labels::articleCardTone(Labels::articleStatusTone('APPROVED')));
+        $this->assertSame('article-card--success', Labels::articleCardTone(Labels::articleStatusTone('PUBLISHED')));
+        $this->assertSame('article-card--danger', Labels::articleCardTone(Labels::articleStatusTone('BLOCKED')));
+        $this->assertSame('article-card--danger', Labels::articleCardTone(Labels::articleStatusTone('ERROR')));
+        $this->assertSame('article-card--warning', Labels::articleCardTone(Labels::articleStatusTone('REVISION_REQUESTED')));
+        $this->assertSame('article-card--info', Labels::articleCardTone(Labels::articleStatusTone('IN_PROGRESS')));
+        $this->assertSame('article-card--cyan', Labels::articleCardTone(Labels::articleStatusTone('IN_REVIEW')));
+        $this->assertSame('article-card--muted', Labels::articleCardTone(Labels::articleStatusTone('DISCARDED')));
+        $this->assertSame('article-card--muted', Labels::articleCardTone('tom-inexistente'));
+    }
+
     public function testUnknownToneFallsBackToMutedClasses(): void
     {
         $this->assertSame('bg-border/40 text-text-secondary', Labels::toneClasses('tom-inexistente'));

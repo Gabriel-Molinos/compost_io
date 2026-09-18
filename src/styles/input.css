@@ -642,6 +642,101 @@
   }
 
   /* =====================================================================
+     Card de rascunho na lista de Produção (pedido do responsável,
+     2026-09-18: "o background dos posts na produção podia ser de acordo
+     com o estado dele, aprovado verde, atenção vermelho, tudo animado").
+     A cor vem do MESMO tom da badge (Labels::articleStatusTone →
+     Labels::articleCardTone) — card e badge nunca discordam — e cada tom
+     tem uma animação com "personalidade" própria:
+       success → brilho que varre o card de tempos em tempos (calmo)
+       danger  → respiração vermelha mais rápida (pede atenção)
+       warning → respiração âmbar lenta
+       cyan    → respiração ciano bem lenta (em revisão / agendado)
+       info    → varredura contínua (a IA está trabalhando)
+       muted   → parado (planejado / descartado)
+     Tudo é opacity/transform num pseudo-elemento (compositor — não
+     repinta o card nem causa layout), então uma página cheia de cards
+     animando continua leve. Os nomes `.article-card--*` são literais em
+     Labels.php pelo scanner do Tailwind (ver comentário lá).
+     ===================================================================== */
+  .article-card {
+    --tone: 143 166 188; /* r g b do tom (muted por padrão) */
+    --tint: .1;          /* força do fundo: os tons de "espera" ficam discretos pra aprovado/atenção saltarem */
+    position: relative;
+    isolation: isolate; /* o ::before com z-index:-1 fica atrás do texto, na frente do fundo */
+    overflow: hidden;
+    border: 1px solid rgb(var(--tone) / .3);
+    border-left: 2px solid rgb(var(--tone));
+    /* Cobre o card inteiro (mais forte na esquerda, onde fica a borda colorida). */
+    background-image: linear-gradient(100deg, rgb(var(--tone) / var(--tint)), rgb(var(--tone) / calc(var(--tint) * .5)) 65%, rgb(var(--tone) / calc(var(--tint) * .25)));
+    transition: transform 150ms ease, box-shadow 150ms ease;
+    /* backwards (não both): terminada a entrada o transform volta a ser
+       livre pro hover — `both` congelaria translateY(0) e ignoraria o hover. */
+    animation: fade-in-up 260ms ease backwards;
+    animation-delay: var(--card-enter, 0ms);
+  }
+  .article-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px -12px rgb(var(--tone) / .65);
+  }
+  .article-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0; /* muted não anima; os tons abaixo ligam */
+    /* Fase negativa espalhada por card (--card-phase, vem da View): sem
+       isso todos os cards brilham/respiram no mesmo instante, feio. */
+    animation-delay: var(--card-phase, 0s);
+  }
+  .article-card--success { --tone: 61 240 122; --tint: .32; }
+  .article-card--danger  { --tone: 255 92 122; --tint: .34; }
+  .article-card--warning { --tone: 255 197 61; --tint: .24; }
+  .article-card--info    { --tone: 111 207 255; --tint: .2; }
+  .article-card--cyan    { --tone: 0 208 240; --tint: .14; }
+
+  .article-card--success::before {
+    opacity: 1;
+    background: linear-gradient(105deg, transparent 35%, rgb(var(--tone) / .24) 50%, transparent 65%);
+    animation: article-sheen 6s ease-in-out infinite;
+    animation-delay: var(--card-phase, 0s);
+  }
+  .article-card--info::before {
+    opacity: 1;
+    background: linear-gradient(90deg, transparent 20%, rgb(var(--tone) / .22) 50%, transparent 80%);
+    animation: article-flow 2.4s linear infinite;
+    animation-delay: var(--card-phase, 0s);
+  }
+  .article-card--danger::before,
+  .article-card--warning::before,
+  .article-card--cyan::before {
+    background: radial-gradient(90% 170% at 0% 50%, rgb(var(--tone) / .4), transparent 70%);
+    animation: article-breathe 2.4s ease-in-out infinite;
+    animation-delay: var(--card-phase, 0s);
+  }
+  .article-card--warning::before { animation-duration: 3.6s; }
+  .article-card--cyan::before    { animation-duration: 4.6s; }
+
+  @keyframes article-sheen {
+    0%        { transform: translateX(-100%); }
+    45%, 100% { transform: translateX(100%); } /* varre e descansa o resto do ciclo */
+  }
+  @keyframes article-flow {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  @keyframes article-breathe {
+    0%, 100% { opacity: .2; }
+    50%      { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .article-card { animation: none; transition: none; }
+    .article-card:hover { transform: none; }
+    .article-card::before { animation: none; opacity: .5; }
+  }
+
+  /* =====================================================================
      Diálogo de confirmação — troca o confirm() nativo do navegador (feio,
      sem identidade nenhuma do produto) por um <dialog> desenhado com a
      mesma linguagem visual do resto do app (assets/js/confirm-dialog.js

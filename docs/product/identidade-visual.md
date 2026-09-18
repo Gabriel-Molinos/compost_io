@@ -268,7 +268,7 @@ fontFamily: {
   Brasília em cartão) e, em volta, um anel escuro com os itens de navegação ao longo de um
   arco, cada um na sua cor. O item do centro é o selecionado (pílula acesa + nome do grupo);
   ao mudar de seção o mostrador **gira** (itens e marcas) até o item novo — arrastar, roda do
-  mouse, setas e Tab também giram, com inércia e encaixe. Ao navegar pela sidebar um véu em
+  mouse, setas e Tab também giram, com inércia e encaixe. Em qualquer troca de página (links, envios de formulário, login) um véu em
   degradê (bordas nítidas com fio ciano) cobre tudo menos ela e só sai quando a página nova
   carrega (sem tempo fixo). O dial é fixo no desktop; no celular vira gaveta com botão redondo.
   Desempenho: cada quadro só escreve transform/opacity, a navegação começa na hora do clique e a

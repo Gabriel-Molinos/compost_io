@@ -48,37 +48,8 @@
   // A tela virou desktop com a gaveta aberta: não deixa estado preso.
   desktop.addEventListener('change', function () { root.classList.remove('dial-open'); });
 
-  // ── Véu de transição de página (CSS: `.page-veil`) ──────────────────────
-  function startVeil() {
-    if (reduced) { return; }
-    try { window.sessionStorage.setItem('compost:veil', String(Date.now())); } catch (e) { /* sem véu na chegada */ }
-    root.classList.add('veil-in');
-  }
-
-  function releaseVeil() {
-    if (!root.classList.contains('veil-on')) { return; }
-    root.classList.remove('veil-on');
-    root.classList.add('veil-out');
-    var done = function () { root.classList.remove('veil-out'); };
-    var veil = document.querySelector('.page-veil');
-    if (veil) { veil.addEventListener('animationend', done, { once: true }); }
-    window.setTimeout(done, 1200); // garantia: nunca deixa o véu preso
-  }
-
-  // Página nova pronta: dois quadros depois do parse (o conteúdo já pintou por baixo do véu).
-  window.requestAnimationFrame(function () { window.requestAnimationFrame(releaseVeil); });
-  window.setTimeout(releaseVeil, 10000);
-  // Voltar/avançar (bfcache) restaura a página antiga com o véu ainda ligado: limpa.
-  window.addEventListener('pageshow', function (e) {
-    if (e.persisted) { root.classList.remove('veil-in', 'veil-on', 'veil-out'); }
-  });
-  // Itens fora do dial giratório (lista simples sem JS de arco, atalhos redondos) também usam o véu.
-  document.addEventListener('click', function (e) {
-    var a = e.target instanceof Element ? e.target.closest('.dial a[href]') : null;
-    if (!a || a.closest('.dial-ring.is-live') || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) { return; }
-    if (a.target && a.target !== '_self') { return; }
-    startVeil();
-  });
+  // O véu de transição é do veil.js (vale pra qualquer troca de página); o dial só o usa ao navegar.
+  var veil = { go: function (url) { if (window.CompostVeil) { window.CompostVeil.go(url); } else { window.location.href = url; } } };
 
   // ── Matemática do mostrador ─────────────────────────────────────────────
   function mod(x, n) { return ((x % n) + n) % n; }
@@ -217,14 +188,12 @@
       var i = links.indexOf(a);
       if (i < 0) { return; }
       storage(key, i);
-      startVeil();
       var dist = loop ? Math.abs(wrap(i - pos, n)) : Math.abs(i - pos);
-      if (dist < 0.5) { return; } // já no centro: navegação normal (com o véu)
-      // Navega NA HORA: a página antiga continua pintada (e o giro rodando) até a nova chegar.
+      if (dist < 0.5) { return; } // já no centro: o veil.js cuida do clique
       e.preventDefault();
       window.clearTimeout(idle);
       rollTo(i, 320);
-      window.location.href = a.href;
+      veil.go(a.href); // o véu entra enquanto o dial gira; a navegação vem logo em seguida
     });
 
     // Arrastar (mouse/toque) gira o dial, com inércia; ao soltar, encaixa no item mais próximo.

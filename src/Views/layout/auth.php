@@ -24,6 +24,8 @@ use App\View;
     <link rel="stylesheet" href="<?= View::e(View::asset('assets/css/app.css')) ?>">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="<?= View::e(View::asset('assets/js/btn-fx.js')) ?>" defer></script>
+    <script src="<?= View::e(View::asset('assets/js/veil.js')) ?>" defer></script>
+    <?php require __DIR__ . '/_veil_head.php'; ?>
 
     <style>
         /* Sem border-radius aqui: "outline-radius" não existe em CSS — essa
@@ -37,6 +39,7 @@ use App\View;
     </style>
 </head>
 <body class="app-bg flex min-h-screen flex-col items-center justify-center px-6 py-12 font-sans text-text-primary antialiased">
+    <div class="page-veil" aria-hidden="true"></div>
     <main id="conteudo" class="relative z-10 w-full max-w-sm">
         <img src="/assets/brand/logo-lockup.webp" alt="COMPOST — Editorial Dashboard"
              class="mx-auto mb-8 h-auto w-56 drop-shadow-[0_0_30px_rgba(0,208,240,0.25)]">

@@ -669,7 +669,7 @@
     left: calc(var(--dial-w) - var(--ro) * 2);
     top: calc(50% - var(--ro));
     background: radial-gradient(circle closest-side, #0A2647 0%, #07182A 72%, #050B0F 100%);
-    box-shadow: inset 0 0 0 1px rgba(0, 208, 240, .32), inset 0 0 46px rgba(0, 208, 240, .1), 0 0 64px -12px rgba(0, 208, 240, .35);
+    box-shadow: inset 0 0 0 1px rgba(0, 208, 240, .32), inset 0 0 46px rgba(0, 208, 240, .1);
   }
   /* Marcas do mostrador: ficam na borda de fora do anel e giram com a seleção (o JS gira por transform). */
   .dial-ticks {
@@ -1115,12 +1115,9 @@
     display: none;
     position: fixed;
     inset: 0;
-    z-index: 45;
+    z-index: 25; /* abaixo do dial (z 30): o disco e o anel ficam por cima; o fundo em volta do arco é coberto */
     overflow: hidden;
     pointer-events: none;
-  }
-  @media (min-width: 1024px) {
-    .page-veil { left: 23rem; } /* largura do dial: a sidebar nunca é coberta */
   }
   /* A faixa tem 2× a largura da área: bordas NÍTIDAS (uma linha ciano acesa em
      cada ponta — a que entra na frente e, na saída, a que varre por último) e
@@ -1158,7 +1155,7 @@
   html.veil-out .page-veil { display: block; }
   html.veil-in .page-veil,
   html.veil-on .page-veil { pointer-events: auto; }
-  html.veil-in .page-veil::before { animation: veil-in 300ms cubic-bezier(.3, .7, .2, 1) forwards; }
+  html.veil-in .page-veil::before { animation: veil-in 260ms cubic-bezier(.3, .7, .2, 1) forwards; }
   html.veil-on .page-veil::before { transform: translateX(-25%); }
   html.veil-out .page-veil::before { animation: veil-out 420ms cubic-bezier(.5, 0, .2, 1) forwards; }
   html.veil-in .page-veil::after,

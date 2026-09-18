@@ -106,24 +106,14 @@ if ($authUser !== null && !$hasSiteNav) {
     <script src="<?= View::e(View::asset('assets/js/image-carousel.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/avatar-preview.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/footer-clock.js')) ?>" defer></script>
+    <script src="<?= View::e(View::asset('assets/js/veil.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/dial.js')) ?>" defer></script>
     <?php if ($tourSiteId !== null): ?>
         <script>window.COMPOST_TOUR_SITE_ID = <?= (int) $tourSiteId ?>;</script>
         <script src="<?= View::e(View::asset('assets/js/tour.js')) ?>" defer></script>
     <?php endif; ?>
 
-    <script>
-        // Véu de transição (assets/js/dial.js): se a página anterior foi deixada por um clique
-        // na sidebar, esta já nasce coberta (sem piscar) até o dial.js liberar.
-        (function () {
-            document.documentElement.classList.add('js');
-            try {
-                var t = parseInt(sessionStorage.getItem('compost:veil') || '', 10);
-                sessionStorage.removeItem('compost:veil');
-                if (t && Date.now() - t < 10000) { document.documentElement.classList.add('veil-on'); }
-            } catch (e) { /* sem sessionStorage: sem véu */ }
-        })();
-    </script>
+    <?php require __DIR__ . '/_veil_head.php'; ?>
 
     <style>
         /* Sem border-radius aqui: "outline-radius" não existe em CSS — essa
@@ -144,10 +134,11 @@ if ($authUser !== null && !$hasSiteNav) {
     </style>
 </head>
 <body class="app-bg h-screen overflow-hidden text-text-primary font-sans antialiased">
-    <div class="page-veil" aria-hidden="true"></div>
     <a href="#conteudo" class="skip-link">Pular para o conteúdo</a>
 
     <div class="relative z-10 flex h-screen">
+        <?php // Véu de transição: DENTRO do wrapper pra ficar abaixo do dial (z-index) e cobrir também o fundo em volta do arco. ?>
+        <div class="page-veil" aria-hidden="true"></div>
         <?php if ($authUser !== null): ?>
             <?php // Sidebar radial (dial): coluna fixa no desktop, gaveta no celular. Só o conteúdo ao lado (<main>) rola. ?>
             <?php require __DIR__ . '/_dial.php'; ?>

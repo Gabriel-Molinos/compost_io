@@ -63,7 +63,11 @@ final class ArticleReviewService
     public function checklist(array $article): array
     {
         $version = $this->articles->latestVersion((int) $article['id']);
-        $html = (string) ($version['content_html'] ?? '');
+        // A coluna de article_versions é `content` (não `content_html`, que é só o nome
+        // do campo no JSON do passo de escrita da IA). Com a chave errada o corpo vinha
+        // sempre vazio → 0 links → todo artigo reprovava no checklist (achado real
+        // 2026-09-18, ao rodar a suíte de integração de verdade pela 1ª vez).
+        $html = (string) ($version['content'] ?? '');
 
         $site = $this->sites->find((int) $article['site_id']);
         $siteHost = $site !== null && !empty($site['wordpress_url'])

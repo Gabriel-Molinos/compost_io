@@ -109,6 +109,68 @@ final class SiteService
         return $stmt->fetchColumn() !== false;
     }
 
+    /**
+     * Redatores-Chefe vinculados ao site (ADMIN não tem vínculo — enxerga tudo).
+     *
+     * @return list<int>
+     */
+    public function userIdsFor(int $siteId): array
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT us.user_id FROM user_site us
+             JOIN users u ON u.id = us.user_id
+             WHERE us.site_id = :s AND u.role = 'REDATOR_CHEFE'"
+        );
+        $stmt->execute(['s' => $siteId]);
+
+        return array_map('intval', $stmt->fetchAll(\PDO::FETCH_COLUMN));
+    }
+
+    /**
+     * Troca o conjunto de Redatores-Chefe vinculados a este site (tela do site,
+     * espelho de `UserService::syncSites()` que trabalha pelo lado do usuário).
+     * Só considera ids que existem E são REDATOR_CHEFE — nunca cria vínculo pra
+     * ADMIN nem pra id inventado num POST forjado — e só mexe em vínculos de
+     * Redator-Chefe. Devolve os ids RECÉM vinculados (pra notificar só eles).
+     *
+     * @param list<int> $userIds
+     * @return list<int>
+     */
+    public function syncUsers(int $siteId, array $userIds): array
+    {
+        $pdo = Connection::get();
+        $before = $this->userIdsFor($siteId);
+
+        $valid = [];
+        $wanted = array_values(array_unique(array_map('intval', $userIds)));
+        if ($wanted !== []) {
+            $in = implode(',', array_fill(0, count($wanted), '?'));
+            $stmt = $pdo->prepare("SELECT id FROM users WHERE role = 'REDATOR_CHEFE' AND id IN ({$in})");
+            $stmt->execute($wanted);
+            $valid = array_map('intval', $stmt->fetchAll(\PDO::FETCH_COLUMN));
+        }
+
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare(
+                "DELETE us FROM user_site us JOIN users u ON u.id = us.user_id
+                 WHERE us.site_id = :s AND u.role = 'REDATOR_CHEFE'"
+            )->execute(['s' => $siteId]);
+
+            $insert = $pdo->prepare('INSERT INTO user_site (user_id, site_id) VALUES (:u, :s)');
+            foreach ($valid as $userId) {
+                $insert->execute(['u' => $userId, 's' => $siteId]);
+            }
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+
+        return array_values(array_diff($valid, $before));
+    }
+
     /** @param array<string, mixed> $data */
     public function create(array $data): int
     {

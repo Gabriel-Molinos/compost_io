@@ -15,6 +15,12 @@ use App\View;
  */
 final class Avatar
 {
+    /** Existe imagem de verdade pra esse caminho? (a mesma checagem que `html()` faz antes de escolher <img> ou iniciais). */
+    public static function hasImage(?string $path): bool
+    {
+        return $path !== null && $path !== '' && is_file(dirname(__DIR__, 2) . '/public/' . $path);
+    }
+
     public static function html(
         ?string $path,
         string $label,
@@ -24,7 +30,7 @@ final class Avatar
         string $fit = 'cover',
         string $bg = 'bg-surface-2',
     ): string {
-        if ($path !== null && $path !== '' && is_file(dirname(__DIR__, 2) . '/public/' . $path)) {
+        if (self::hasImage($path)) {
             $src = View::e(View::asset($path));
 
             return "<img src=\"{$src}\" alt=\"\" class=\"" . self::imgClass($size, $radius, $fit, $bg) . "\">";

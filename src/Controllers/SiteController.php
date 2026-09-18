@@ -10,9 +10,12 @@ use App\Services\CategoryService;
 use App\Services\CostBudgetService;
 use App\Services\EditorialRuleService;
 use App\Services\GoalService;
+use App\Services\NotificationService;
 use App\Services\ReportService;
 use App\Services\SiteLogoLibraryService;
 use App\Services\SiteService;
+use App\Services\UserService;
+use App\Services\WordPressConnectionService;
 use App\Support\Csrf;
 use App\Support\Http;
 use App\Support\Session;
@@ -29,9 +32,11 @@ final class SiteController extends Controller
     private ReportService $reports;
     private CostBudgetService $costBudget;
     private ArticleService $articles;
+    private UserService $users;
 
     public function __construct()
     {
+        $this->users = new UserService();
         $this->sites = new SiteService();
         $this->categories = new CategoryService();
         $this->rules = new EditorialRuleService();
@@ -93,8 +98,7 @@ final class SiteController extends Controller
             'site'        => ['language' => 'pt-BR', 'is_active' => 1],
             'action'      => '/sites',
             'errors'      => [],
-            'logoLibrary' => $this->availableLogoLibrary(null),
-        ]);
+        ] + $this->formExtras(null));
     }
 
     public function store(): void
@@ -106,12 +110,13 @@ final class SiteController extends Controller
             http_response_code(422);
             View::render('sites/form', [
                 'title' => 'Novo site', 'site' => $_POST, 'action' => '/sites', 'errors' => $errors,
-                'logoLibrary' => $this->availableLogoLibrary(null),
-            ]);
+            ] + $this->formExtras(null, $this->postedUserIds()));
             return;
         }
 
         $newId = $this->sites->create($_POST);
+        // Vínculo dos redatores antes da logo: se a logo falhar (redirect abaixo), o vínculo já foi salvo.
+        $this->syncEditors($newId, (string) $_POST['name']);
 
         try {
             $logo = $this->resolveLogo($newId, null, $_FILES['logo'] ?? null, (string) ($_POST['library_logo'] ?? ''), (string) ($_POST['wordpress_url'] ?? ''), allowAutoMatch: true);
@@ -137,8 +142,7 @@ final class SiteController extends Controller
             'site'        => $site,
             'action'      => '/sites/' . $site['id'],
             'errors'      => [],
-            'logoLibrary' => $this->availableLogoLibrary((int) $site['id']),
-        ]);
+        ] + $this->formExtras((int) $site['id']));
     }
 
     public function update(string $id): void
@@ -151,15 +155,20 @@ final class SiteController extends Controller
             http_response_code(422);
             View::render('sites/form', [
                 'title'  => 'Editar site',
-                'site'   => $_POST + ['id' => $site['id']],
+                // A logo atual continua aparecendo no cabeçalho mesmo com erro de validação.
+                'site'   => $_POST + [
+                    'id' => $site['id'],
+                    'logo_path' => $site['logo_path'] ?? null,
+                    'logo_library_filename' => $site['logo_library_filename'] ?? null,
+                ],
                 'action' => '/sites/' . $site['id'],
                 'errors' => $errors,
-                'logoLibrary' => $this->availableLogoLibrary((int) $site['id']),
-            ]);
+            ] + $this->formExtras((int) $site['id'], $this->postedUserIds()));
             return;
         }
 
         $this->sites->update((int) $site['id'], $_POST);
+        $this->syncEditors((int) $site['id'], (string) $_POST['name']);
 
         if (!empty($_POST['remove_logo'])) {
             Uploads::delete($site['logo_path'] ?? null);
@@ -217,6 +226,40 @@ final class SiteController extends Controller
 
         Session::flash('success', 'Site "' . $site['name'] . '" excluído, com todo o conteúdo ligado a ele.');
         Http::redirect('/sites');
+    }
+
+    /**
+     * Dados extras que a tela do site precisa (biblioteca de logos, estado da
+     * conexão WordPress, lista de Redatores-Chefe e quem já está vinculado).
+     * `$assignedUserIds` explícito = re-render de um POST com erro (mantém o que
+     * o admin tinha marcado); nulo = lê do banco.
+     *
+     * @param list<int>|null $assignedUserIds
+     * @return array<string, mixed>
+     */
+    private function formExtras(?int $siteId, ?array $assignedUserIds = null): array
+    {
+        return [
+            'logoLibrary'     => $this->availableLogoLibrary($siteId),
+            'connection'      => $siteId !== null ? (new WordPressConnectionService())->forSite($siteId) : null,
+            'editors'         => array_values(array_filter($this->users->all(), static fn (array $u): bool => $u['role'] === 'REDATOR_CHEFE')),
+            'assignedUserIds' => $assignedUserIds ?? ($siteId !== null ? $this->sites->userIdsFor($siteId) : []),
+        ];
+    }
+
+    /** @return list<int> */
+    private function postedUserIds(): array
+    {
+        return array_map('intval', (array) ($_POST['user_ids'] ?? []));
+    }
+
+    /** Grava os Redatores-Chefe marcados e avisa só os que acabaram de ser vinculados. */
+    private function syncEditors(int $siteId, string $siteName): void
+    {
+        $notifications = new NotificationService();
+        foreach ($this->sites->syncUsers($siteId, $this->postedUserIds()) as $userId) {
+            $notifications->notifySiteAssigned($userId, $siteId, $siteName);
+        }
     }
 
     /**

@@ -199,14 +199,7 @@ final class UserController
             if ($site === null) {
                 continue;
             }
-            $this->notifications->notify(
-                $userId,
-                NotificationService::TYPE_SITE_ASSIGNED,
-                'Você foi vinculado a um site',
-                'Um administrador te deu acesso a "' . $site['name'] . '".',
-                $siteId,
-                '/sites/' . $siteId,
-            );
+            $this->notifications->notifySiteAssigned($userId, $siteId, (string) $site['name']);
         }
     }
 

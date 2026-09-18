@@ -41,6 +41,23 @@ final class NotificationService
         }
     }
 
+    /**
+     * Avisa um Redator-Chefe que ganhou acesso a um site — usado tanto quando o
+     * admin vincula pela tela do usuário quanto pela tela do site (mesma
+     * mensagem, um lugar só).
+     */
+    public function notifySiteAssigned(int $userId, int $siteId, string $siteName): void
+    {
+        $this->notify(
+            $userId,
+            self::TYPE_SITE_ASSIGNED,
+            'Você foi vinculado a um site',
+            'Um administrador te deu acesso a "' . $siteName . '".',
+            $siteId,
+            '/sites/' . $siteId,
+        );
+    }
+
     /** Avisa todo ADMIN ativo — usado pelo feedback geral sobre a plataforma (não é de um site específico). */
     public function notifyAdmins(string $type, string $title, string $message, ?string $link = null): void
     {

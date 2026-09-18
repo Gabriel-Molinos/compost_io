@@ -411,6 +411,41 @@
     .hover-card:hover { transform: none; }
   }
 
+  /* Troca de logo com transição (assets/js/avatar-preview.js, container com
+     data-avatar-transition — tela do site): a imagem nova entra por cima
+     (fade + "pop" + desfoque que some) enquanto a antiga sai, e a placa
+     branca ([data-swap-pulse]) dá um pulso de luz ciano. */
+  .avatar-swap-layer {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transform: scale(.9);
+    filter: blur(6px);
+    transition: opacity 380ms ease, transform 460ms cubic-bezier(.2, .9, .25, 1.15), filter 380ms ease;
+  }
+  .avatar-swap-layer.avatar-swap-in {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  .avatar-swap-out {
+    opacity: 0;
+    transform: scale(1.06);
+    filter: blur(4px);
+    transition: opacity 320ms ease, transform 380ms ease, filter 320ms ease;
+  }
+  .logo-pulse {
+    animation: logo-pulse 700ms ease-out;
+  }
+  @keyframes logo-pulse {
+    0%   { box-shadow: 0 0 0 0 rgb(0 208 240 / .55); }
+    100% { box-shadow: 0 0 0 22px rgb(0 208 240 / 0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .avatar-swap-layer, .avatar-swap-out { transition: none; }
+    .logo-pulse { animation: none; }
+  }
+
   /* Ícone da marca no header: leve brilho ao passar o mouse. */
   .brand-icon {
     transition: filter 200ms ease, transform 200ms ease;

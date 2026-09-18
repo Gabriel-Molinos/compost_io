@@ -411,6 +411,127 @@
     .hover-card:hover { transform: none; }
   }
 
+  /* Seleções (cards de radio/checkbox, chips, interruptores em cartão) — mesma
+     linguagem dos botões e dos cards clicáveis (pedido do responsável,
+     2026-09-18: "aquele efeito do hover em motion, não só nele mas nas seleções
+     em geral"): um holofote acompanha o mouse por dentro do item (--mx/--my,
+     assets/js/btn-fx.js), o item "puxa" ~2px na direção do cursor, a borda e o
+     fundo trocam pra cor do item com um brilho. Marcado = fica aceso.
+       .pick          o rosto do item; vem DEPOIS de <input class="peer sr-only">
+       .pick-chip     versão compacta pra <button aria-pressed> (chips)
+       .pick-light    item de fundo branco (logos): o fundo não muda
+       .pick-success  acende em verde quando marcado (interruptor "ativo")
+     O estado marcado sai de `input:checked + .pick` (CSS puro, sem JS) ou de
+     `[aria-pressed="true"]` (chips). Os utilitários de layout (flex, padding,
+     rounded-*) ficam na view; cor/borda/hover ficam só aqui. */
+  .pick {
+    --tone: 0 208 240;
+    --spot-r: 120px;
+    --pick-scale: 1;
+    --mx: 50%;
+    --my: 50%;
+    --dx: 0;
+    --dy: 0;
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    cursor: pointer;
+    border: 1px solid #3D5266;
+    background-color: #0A2647;
+    transform: translate(calc(var(--dx) * 2px), calc(var(--dy) * 1.5px)) scale(var(--pick-scale));
+    transition: transform 140ms ease-out, border-color 180ms ease, background-color 200ms ease,
+                box-shadow 250ms ease, color 180ms ease;
+  }
+  .pick::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(circle var(--spot-r) at var(--mx) var(--my), rgb(var(--tone) / .34), transparent 72%);
+    opacity: 0;
+    transition: opacity 220ms ease;
+  }
+  .pick:hover {
+    --pick-scale: 1.02;
+    border-color: rgb(var(--tone) / .8);
+    background-color: rgb(var(--tone) / .1);
+    box-shadow: 0 0 0 1px rgb(var(--tone) / .25), 0 10px 26px -12px rgb(var(--tone) / .7);
+  }
+  .pick:hover::after {
+    opacity: 1;
+  }
+  .pick:active {
+    --pick-scale: .98;
+    transition-duration: 80ms;
+  }
+  input:checked + .pick,
+  .pick[aria-pressed="true"] {
+    border-color: rgb(var(--tone));
+    background-color: rgb(var(--tone) / .12);
+    box-shadow: 0 0 0 1px rgb(var(--tone) / .4), 0 12px 28px -14px rgb(var(--tone) / .75);
+  }
+  input:checked + .pick:hover,
+  .pick[aria-pressed="true"]:hover {
+    background-color: rgb(var(--tone) / .2);
+  }
+  input:focus-visible + .pick,
+  .pick:focus-visible {
+    outline: 2px solid rgb(var(--tone) / .9);
+    outline-offset: 2px;
+  }
+  /* Interruptor em cartão: cinza quando desligado, verde aceso quando ligado. */
+  input:checked + .pick-success {
+    --tone: 61 240 122;
+  }
+  /* Fundo branco (logos da biblioteca): borda + holofote fazem o trabalho, o fundo fica. */
+  .pick-light,
+  .pick-light:hover,
+  input:checked + .pick-light {
+    background-color: #fff;
+  }
+  .pick-light {
+    border-color: rgb(0 0 0 / .1);
+    --spot-r: 90px;
+  }
+  .pick-light::after {
+    background: radial-gradient(circle var(--spot-r) at var(--mx) var(--my), rgb(var(--tone) / .3), transparent 72%);
+  }
+  input:checked + .pick-light {
+    --pick-scale: 1.05;
+    box-shadow: 0 0 0 2px rgb(var(--tone)), 0 0 24px -4px rgb(var(--tone) / .7);
+  }
+  input:checked + .pick-light:hover {
+    --pick-scale: 1.07;
+  }
+  /* Chip compacto (<button aria-pressed>): mesma coisa em escala pequena. */
+  .pick-chip {
+    --spot-r: 56px;
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    border-radius: 9999px;
+    padding: .25rem .75rem;
+    font-size: .75rem;
+    font-weight: 500;
+    line-height: 1rem;
+    color: #8FA6BC;
+  }
+  .pick-chip:hover {
+    --pick-scale: 1.05;
+    color: #F0F8FF;
+    box-shadow: 0 6px 14px -8px rgb(var(--tone) / .8);
+  }
+  .pick-chip[aria-pressed="true"] {
+    color: rgb(var(--tone));
+    box-shadow: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pick { --pick-scale: 1 !important; transform: none; }
+    .pick, .pick::after { transition: none; }
+  }
+
   /* Troca de logo com transição (assets/js/avatar-preview.js, container com
      data-avatar-transition — tela do site): a imagem nova entra por cima
      (fade + "pop" + desfoque que some) enquanto a antiga sai, e a placa

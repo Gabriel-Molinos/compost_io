@@ -147,7 +147,7 @@ $roleCards = [
                             <input type="radio" name="role" value="<?= $key ?>" data-role-radio class="peer sr-only"
                                    <?= $role === $key ? 'checked' : '' ?>
                                    <?= isset($errors['role']) ? 'aria-invalid="true" aria-describedby="f_role_err"' : '' ?>>
-                            <span class="flex items-start gap-3 rounded-lg border border-border bg-surface-2 p-3 pr-10 transition-colors hover:border-cyan/60 peer-checked:border-cyan peer-checked:bg-cyan/10 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan">
+                            <span class="pick flex items-start gap-3 rounded-lg p-3 pr-10">
                                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan"><?= Icon::nav($icon) ?></span>
                                 <span class="min-w-0">
                                     <span class="block text-sm font-semibold text-text-primary"><?= View::e($label) ?></span>
@@ -169,14 +169,16 @@ $roleCards = [
                 <?= Form::text('password', $requirePass ? 'Senha' : 'Nova senha (deixe em branco para manter)', [], $errors, type: 'password', required: $requirePass) ?>
             </div>
 
-            <label class="mt-5 flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-border bg-surface-2 p-3">
-                <span class="min-w-0">
-                    <span class="block text-sm font-semibold text-text-primary">Usuário ativo</span>
-                    <span class="mt-0.5 block text-xs text-text-secondary">Inativo não consegue entrar no COMPOST.</span>
-                </span>
+            <label class="group/act relative mt-5 block cursor-pointer">
                 <input type="checkbox" name="is_active" value="1" data-active-toggle class="peer sr-only" <?= $isActive ? 'checked' : '' ?>>
-                <span aria-hidden="true"
-                      class="relative h-6 w-11 shrink-0 rounded-full bg-border-strong transition-colors peer-checked:bg-success peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5"></span>
+                <span class="pick pick-success flex items-center justify-between gap-4 rounded-lg p-3">
+                    <span class="min-w-0">
+                        <span class="block text-sm font-semibold text-text-primary">Usuário ativo</span>
+                        <span class="mt-0.5 block text-xs text-text-secondary">Inativo não consegue entrar no COMPOST.</span>
+                    </span>
+                    <span aria-hidden="true"
+                          class="relative h-6 w-11 shrink-0 rounded-full bg-border-strong transition-colors group-has-[input:checked]/act:bg-success after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-transform group-has-[input:checked]/act:after:translate-x-5"></span>
+                </span>
             </label>
         </section>
 
@@ -214,7 +216,7 @@ $roleCards = [
                             <label data-site-item data-site-name="<?= View::e(mb_strtolower((string) $site['name'])) ?>" class="relative block cursor-pointer">
                                 <input type="checkbox" name="site_ids[]" value="<?= View::e($site['id']) ?>" class="peer sr-only"
                                        <?= in_array((int) $site['id'], $assignedIds, true) ? 'checked' : '' ?>>
-                                <span class="hover-card flex items-center gap-3 rounded-lg border border-border bg-surface-2 p-3 pr-11 transition-colors peer-checked:border-cyan peer-checked:bg-cyan/10 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan">
+                                <span class="pick flex items-center gap-3 rounded-lg p-3 pr-11">
                                     <?= Avatar::html($site['logo_path'] ?? null, (string) $site['name'], size: 'h-11 w-11', radius: 'rounded-md', textSize: 'text-base', fit: 'contain', bg: 'bg-white') ?>
                                     <span class="min-w-0 flex-1">
                                         <span class="block truncate text-sm font-semibold text-text-primary"><?= View::e($site['name']) ?></span>

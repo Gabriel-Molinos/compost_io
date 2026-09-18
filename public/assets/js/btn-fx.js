@@ -16,8 +16,9 @@
 (function () {
   'use strict';
 
-  // Botões e cards clicáveis (src/styles/input.css) compartilham as mesmas variáveis.
-  var TARGETS = '.btn, .hover-card';
+  // Botões, cards clicáveis e seleções (.pick — radios/checkboxes em cartão, chips)
+  // (src/styles/input.css) compartilham as mesmas variáveis.
+  var TARGETS = '.btn, .hover-card, .pick';
   var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var current = null;
   var lastEvent = null;

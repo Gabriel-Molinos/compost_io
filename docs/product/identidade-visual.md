@@ -244,6 +244,14 @@ fontFamily: {
   e um holofote que **acompanha o mouse** dentro do botão (`assets/js/btn-fx.js`). Os cards
   clicáveis (`.hover-card`: início, Visão Geral do site) seguem a mesma linguagem e deixam de
   ter o degradê do "sheen". O glow ciano de `.bg-cyan:hover` (item acima) foi aposentado.
+- **2026-09-18** — **seleções com o mesmo motion** (pedido do responsável: "aquele efeito do
+  hover em motion, não só nele mas nas seleções em geral"): `.pick` em `src/styles/input.css`
+  — cards de radio/checkbox (idioma, redatores, perfil, sites do usuário), interruptores em
+  cartão (`.pick-success`, acende verde), logos da biblioteca (`.pick-light`) e chips
+  (`.pick-chip`, `aria-pressed`). Holofote que segue o mouse (o `btn-fx.js` agora também
+  alimenta `.pick`), "puxão" de ~2px, borda/fundo trocando de cor e brilho; marcado =
+  aceso (CSS puro via `input:checked + .pick`). Seção Identidade do site refeita no padrão
+  da Voz editorial: passos numerados, contadores, barra de preenchimento, chips de nicho.
 
 ## Ver também
 

@@ -206,7 +206,7 @@ $editorsTotal = count($editors);
                         <label data-logo-item data-logo-domain="<?= View::e(mb_strtolower($l['domain'])) ?>" class="group relative block cursor-pointer" title="<?= View::e($l['domain']) ?>">
                             <input type="radio" name="library_logo" value="<?= View::e($l['filename']) ?>" class="peer sr-only"
                                    <?= ($site['library_logo'] ?? '') === $l['filename'] ? 'checked' : '' ?>>
-                            <span class="flex aspect-square items-center justify-center rounded-xl bg-white p-2 ring-1 ring-black/10 transition-all duration-300 ease-[cubic-bezier(.34,1.56,.64,1)] group-hover:-translate-y-0.5 group-hover:shadow-lg peer-checked:scale-105 peer-checked:ring-2 peer-checked:ring-cyan peer-checked:shadow-[0_0_24px_-4px_rgba(0,208,240,.7)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan">
+                            <span class="pick pick-light flex aspect-square items-center justify-center rounded-xl p-2">
                                 <?php // Só as primeiras trazem src; o resto (data-src) carrega conforme a grade rola — são ~90 imagens de até 350 KB. ?>
                                 <img <?= $i < 18 ? 'src' : 'data-src' ?>="<?= View::e($l['url']) ?>" alt="" class="h-full w-full object-contain">
                             </span>
@@ -226,48 +226,97 @@ $editorsTotal = count($editors);
     </div>
 
     <div class="mx-auto mt-8 max-w-3xl space-y-6">
-        <?php // ── Identidade: nome, nicho e situação ── ?>
-        <section class="rounded-2xl border border-border bg-surface p-6">
-            <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan/10 text-cyan"><?= Icon::nav('sites') ?></span>
-                <div>
-                    <h2 class="font-display text-lg font-semibold text-text-primary">Identidade</h2>
-                    <p class="mt-0.5 text-sm text-text-secondary">Como o site aparece no COMPOST e como a IA o enxerga.</p>
+        <?php // ── Identidade: nome, nicho e situação, com prévia de como o site aparece no COMPOST ── ?>
+        <?php
+        $nicheValue = trim((string) ($site['niche'] ?? ''));
+        $nicheChips = ['Viagens', 'Finanças', 'Tecnologia', 'Saúde e bem-estar', 'Educação', 'Marketing', 'Negócios', 'Gastronomia'];
+        $identityDone = count(array_filter([$siteName !== '', $nicheValue !== '']));
+        ?>
+        <section class="rounded-2xl border border-border bg-surface p-6" data-identity>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan/10 text-cyan"><?= Icon::nav('sites') ?></span>
+                    <div>
+                        <h2 class="font-display text-lg font-semibold text-text-primary">Identidade</h2>
+                        <p class="mt-0.5 text-sm text-text-secondary">Como o site aparece no COMPOST e como a IA o enxerga.</p>
+                    </div>
+                </div>
+                <div class="text-right" aria-live="polite">
+                    <div class="flex justify-end gap-1" aria-hidden="true">
+                        <?php for ($i = 0; $i < 2; $i++): ?>
+                            <span data-identity-seg class="h-1.5 w-7 rounded-full transition-colors duration-300 <?= $i < $identityDone ? 'bg-cyan' : 'bg-border-strong' ?>"></span>
+                        <?php endfor; ?>
+                    </div>
+                    <p class="mt-1.5 text-xs text-text-muted"><span data-identity-done><?= $identityDone ?></span> de 2 preenchidos</p>
                 </div>
             </div>
 
-            <div class="mt-5">
-                <label for="f_name" class="block text-sm font-medium text-text-secondary">Nome <span class="text-danger" aria-hidden="true">*</span></label>
-                <input type="text" id="f_name" name="name" value="<?= View::e($site['name'] ?? '') ?>" required placeholder="Ex.: Gavsy"
+            <?php // 1 — Nome ?>
+            <div class="mt-7">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-cyan/15 font-mono text-xs font-bold text-cyan">1</span>
+                    <label for="f_name" class="text-sm font-semibold text-text-primary">Nome do site <span class="text-danger" aria-hidden="true">*</span></label>
+                    <span class="ml-auto font-mono text-xs text-text-muted"><span data-count-for="#f_name"><?= mb_strlen((string) ($site['name'] ?? '')) ?></span> / 191</span>
+                </div>
+                <input type="text" id="f_name" name="name" value="<?= View::e($site['name'] ?? '') ?>" required maxlength="191" placeholder="Ex.: Gavsy"
                        <?= isset($errors['name']) ? 'aria-invalid="true" aria-describedby="f_name_err"' : '' ?>
-                       class="mt-1 w-full rounded-xl border bg-surface-2 px-4 py-3 font-display text-2xl font-bold text-text-primary placeholder:text-text-muted focus:outline-none <?= isset($errors['name']) ? 'border-danger' : 'border-border focus:border-cyan' ?>">
+                       class="mt-3 w-full rounded-xl border bg-surface-2 px-4 py-3 font-display text-2xl font-bold text-text-primary placeholder:text-text-muted focus:outline-none <?= isset($errors['name']) ? 'border-danger' : 'border-border focus:border-cyan' ?>">
                 <?php if (isset($errors['name'])): ?>
                     <p id="f_name_err" class="mt-1 text-sm text-danger"><?= View::e($errors['name']) ?></p>
                 <?php endif; ?>
             </div>
 
-            <div class="mt-5">
-                <label for="f_niche" class="block text-sm font-medium text-text-secondary">Nicho</label>
-                <div class="relative mt-1">
+            <?php // 2 — Nicho ?>
+            <div class="mt-8">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-cyan/15 font-mono text-xs font-bold text-cyan">2</span>
+                    <label for="f_niche" class="text-sm font-semibold text-text-primary">Nicho</label>
+                    <span class="ml-auto font-mono text-xs text-text-muted"><span data-count-for="#f_niche"><?= mb_strlen($nicheValue) ?></span> / 191</span>
+                </div>
+                <div class="relative mt-3">
                     <span aria-hidden="true" class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-cyan [&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('categories') ?></span>
-                    <input type="text" id="f_niche" name="niche" value="<?= View::e($site['niche'] ?? '') ?>" placeholder="Ex.: Digital nomadism"
+                    <input type="text" id="f_niche" name="niche" value="<?= View::e($nicheValue) ?>" maxlength="191" placeholder="Ex.: Digital nomadism"
                            <?= isset($errors['niche']) ? 'aria-invalid="true" aria-describedby="f_niche_err"' : '' ?>
                            class="w-full rounded-xl border bg-surface-2 py-2.5 pl-10 pr-4 text-text-primary placeholder:text-text-muted focus:outline-none <?= isset($errors['niche']) ? 'border-danger' : 'border-border focus:border-cyan' ?>">
                 </div>
                 <?php if (isset($errors['niche'])): ?>
                     <p id="f_niche_err" class="mt-1 text-sm text-danger"><?= View::e($errors['niche']) ?></p>
                 <?php endif; ?>
+                <div class="mt-3 flex flex-wrap gap-2" data-niche-chips role="group" aria-label="Sugestões de nicho">
+                    <?php foreach ($nicheChips as $chip): ?>
+                        <button type="button" data-niche-chip="<?= View::e($chip) ?>" aria-pressed="<?= mb_strtolower($nicheValue) === mb_strtolower($chip) ? 'true' : 'false' ?>"
+                                class="pick pick-chip">
+                            <?= View::e($chip) ?>
+                        </button>
+                    <?php endforeach; ?>
+                </div>
             </div>
 
-            <label class="mt-5 flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border bg-surface-2 p-4">
-                <span class="min-w-0">
-                    <span class="block text-sm font-semibold text-text-primary">Site ativo</span>
-                    <span class="mt-0.5 block text-xs text-text-secondary">Site ativo gera 1 rascunho novo por dia automaticamente. Inativo fica parado.</span>
-                </span>
-                <input type="checkbox" name="is_active" value="1" data-active-toggle class="peer sr-only" <?= $isActive ? 'checked' : '' ?>>
-                <span aria-hidden="true"
-                      class="relative h-6 w-11 shrink-0 rounded-full bg-border-strong transition-colors peer-checked:bg-success peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:after:translate-x-5"></span>
-            </label>
+            <?php // 3 — Situação: interruptor em cartão, acende em verde ?>
+            <div class="mt-8">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-cyan/15 font-mono text-xs font-bold text-cyan">3</span>
+                    <h3 class="text-sm font-semibold text-text-primary">Situação</h3>
+                </div>
+                <label class="group/act relative mt-3 block cursor-pointer">
+                    <input type="checkbox" name="is_active" value="1" data-active-toggle class="peer sr-only" <?= $isActive ? 'checked' : '' ?>>
+                    <span class="pick pick-success flex items-center gap-4 rounded-xl p-4">
+                        <span aria-hidden="true" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/5 text-text-muted transition-colors group-has-[input:checked]/act:bg-success/15 group-has-[input:checked]/act:text-success [&>svg]:h-5 [&>svg]:w-5"><?= Icon::nav('production') ?></span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-sm font-semibold text-text-primary">
+                                <span class="group-has-[input:checked]/act:hidden">Site inativo</span>
+                                <span class="hidden group-has-[input:checked]/act:inline">Site ativo</span>
+                            </span>
+                            <span class="mt-0.5 block text-xs text-text-secondary">
+                                <span class="group-has-[input:checked]/act:hidden">Parado: não gera rascunhos novos até você ativar.</span>
+                                <span class="hidden group-has-[input:checked]/act:inline">Gera 1 rascunho novo por dia automaticamente.</span>
+                            </span>
+                        </span>
+                        <span aria-hidden="true"
+                              class="relative h-6 w-11 shrink-0 rounded-full bg-border-strong transition-colors group-has-[input:checked]/act:bg-success after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition-transform group-has-[input:checked]/act:after:translate-x-5"></span>
+                    </span>
+                </label>
+            </div>
         </section>
 
         <?php // ── Redatores-Chefe vinculados ── ?>
@@ -310,7 +359,7 @@ $editorsTotal = count($editors);
                         <label class="relative block cursor-pointer">
                             <input type="checkbox" name="user_ids[]" value="<?= View::e($u['id']) ?>" data-editor-box class="peer sr-only"
                                    <?= in_array((int) $u['id'], $assignedUserIds, true) ? 'checked' : '' ?>>
-                            <span class="flex items-center gap-3 rounded-xl border border-border bg-surface-2 p-3 pr-12 transition-all duration-200 hover:border-cyan/60 peer-checked:border-cyan peer-checked:bg-cyan/10 peer-checked:shadow-[0_0_0_1px_rgba(0,208,240,.35)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan">
+                            <span class="pick flex items-center gap-3 rounded-xl p-3 pr-12">
                                 <?= Avatar::html($u['avatar_path'] ?? null, (string) $u['name'], size: 'h-12 w-12', radius: 'rounded-full', textSize: 'text-lg') ?>
                                 <span class="min-w-0 flex-1">
                                     <span class="block truncate text-sm font-semibold text-text-primary"><?= View::e($u['name']) ?></span>
@@ -377,7 +426,7 @@ $editorsTotal = count($editors);
                             <label class="relative block cursor-pointer">
                                 <input type="radio" name="language" value="<?= View::e($radioValue) ?>" data-lang-radio data-label="<?= View::e($radioLabel) ?>"
                                        class="peer sr-only" <?= $isThis ? 'checked' : '' ?>>
-                                <span class="flex h-full flex-col items-center gap-2.5 rounded-xl border border-border bg-surface-2 px-3 pb-3.5 pt-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan/60 peer-checked:border-cyan peer-checked:bg-cyan/10 peer-checked:shadow-[0_0_0_1px_rgba(0,208,240,.35),0_12px_28px_-14px_rgba(0,208,240,.6)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan">
+                                <span class="pick flex h-full flex-col items-center gap-2.5 rounded-xl px-3 pb-3.5 pt-4 text-center">
                                     <span class="block h-8 w-12 overflow-hidden rounded-[5px] shadow-[0_0_0_1px_rgba(255,255,255,.2),0_6px_12px_-4px_rgba(0,0,0,.6)]"><?= Flag::svg($preset['flag']) ?></span>
                                     <span>
                                         <span class="block text-sm font-semibold text-text-primary"><?= View::e($preset['label']) ?></span>
@@ -392,7 +441,7 @@ $editorsTotal = count($editors);
 
                         <label class="relative block cursor-pointer">
                             <input type="radio" name="language" value="other" data-lang-radio data-label="" class="peer sr-only" <?= $langOther ? 'checked' : '' ?>>
-                            <span class="flex h-full flex-col items-center gap-2.5 rounded-xl border border-dashed border-border-strong bg-surface-2 px-3 pb-3.5 pt-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan/60 peer-checked:border-solid peer-checked:border-cyan peer-checked:bg-cyan/10 peer-checked:shadow-[0_0_0_1px_rgba(0,208,240,.35),0_12px_28px_-14px_rgba(0,208,240,.6)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan">
+                            <span class="pick flex h-full flex-col items-center gap-2.5 rounded-xl border-dashed px-3 pb-3.5 pt-4 text-center peer-checked:border-solid">
                                 <span class="flex h-8 w-12 items-center justify-center rounded-[5px] bg-white/5 text-cyan [&>svg]:h-6 [&>svg]:w-6"><?= Icon::nav('globe') ?></span>
                                 <span>
                                     <span class="block text-sm font-semibold text-text-primary">Outro</span>
@@ -440,7 +489,7 @@ $editorsTotal = count($editors);
                 <div class="mt-3 flex flex-wrap gap-2" data-chips="#f_tone" data-max="100" role="group" aria-label="Sugestões de tom">
                     <?php foreach ($toneChips as $chip): ?>
                         <button type="button" data-chip="<?= View::e($chip) ?>" aria-pressed="<?= in_array(mb_strtolower($chip), $toneTokens, true) ? 'true' : 'false' ?>"
-                                class="rounded-full border border-border bg-surface-2 px-3 py-1 text-xs font-medium text-text-secondary transition-all duration-150 hover:-translate-y-px hover:border-cyan/60 hover:text-text-primary active:scale-95 aria-pressed:border-cyan aria-pressed:bg-cyan/15 aria-pressed:text-cyan">
+                                class="pick pick-chip">
                             <?= View::e($chip) ?>
                         </button>
                     <?php endforeach; ?>
@@ -464,7 +513,7 @@ $editorsTotal = count($editors);
                 <div class="mt-3 flex flex-wrap gap-2" data-chips="#f_target_audience" data-max="255" role="group" aria-label="Sugestões de público">
                     <?php foreach ($audienceChips as $chip): ?>
                         <button type="button" data-chip="<?= View::e($chip) ?>" aria-pressed="<?= in_array(mb_strtolower($chip), $audienceTokens, true) ? 'true' : 'false' ?>"
-                                class="rounded-full border border-border bg-surface-2 px-3 py-1 text-xs font-medium text-text-secondary transition-all duration-150 hover:-translate-y-px hover:border-cyan/60 hover:text-text-primary active:scale-95 aria-pressed:border-cyan aria-pressed:bg-cyan/15 aria-pressed:text-cyan">
+                                class="pick pick-chip">
                             <?= View::e($chip) ?>
                         </button>
                     <?php endforeach; ?>
@@ -750,6 +799,49 @@ $editorsTotal = count($editors);
                 if (r.value === 'other' && custom) custom.focus();
             });
         });
+        sync();
+    })();
+</script>
+
+<script>
+    // Identidade (melhoria progressiva): contadores, barra de preenchimento e chips de nicho.
+    (function () {
+        var root = document.querySelector('[data-identity]');
+        if (!root) return;
+
+        var name = root.querySelector('#f_name');
+        var niche = root.querySelector('#f_niche');
+        var segs = root.querySelectorAll('[data-identity-seg]');
+        var done = root.querySelector('[data-identity-done]');
+
+        function sync() {
+            var n = name.value.trim();
+            var v = niche.value.trim();
+            var filled = [n !== '', v !== ''].filter(Boolean).length;
+            if (done) done.textContent = String(filled);
+            segs.forEach(function (seg, i) {
+                seg.classList.toggle('bg-cyan', i < filled);
+                seg.classList.toggle('bg-border-strong', i >= filled);
+            });
+            root.querySelectorAll('[data-count-for]').forEach(function (el) {
+                var field = root.querySelector(el.getAttribute('data-count-for'));
+                if (field) el.textContent = String(field.value.length);
+            });
+            root.querySelectorAll('[data-niche-chip]').forEach(function (chip) {
+                chip.setAttribute('aria-pressed', chip.getAttribute('data-niche-chip').toLowerCase() === v.toLowerCase() ? 'true' : 'false');
+            });
+        }
+
+        // Nicho é um valor só: o chip preenche (ou limpa, se já era o escolhido).
+        root.querySelectorAll('[data-niche-chip]').forEach(function (chip) {
+            chip.addEventListener('click', function () {
+                var word = chip.getAttribute('data-niche-chip');
+                niche.value = niche.value.trim().toLowerCase() === word.toLowerCase() ? '' : word;
+                niche.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        });
+
+        [name, niche].forEach(function (el) { el.addEventListener('input', sync); });
         sync();
     })();
 </script>

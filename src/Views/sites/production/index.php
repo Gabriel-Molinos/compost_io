@@ -90,7 +90,7 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
                 <?php endforeach; ?>
             </select>
         </label>
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+        <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
             Gerar rascunho
         </button>
     </form>
@@ -186,9 +186,7 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
                    class="mt-1 w-full rounded-md border border-border bg-surface px-3 py-1.5 text-text-primary placeholder:text-text-muted focus:border-cyan focus:outline-none">
         </label>
         <button type="submit"
-                class="rounded-md border border-border px-3.5 py-1.5 text-sm font-medium text-text-secondary transition-all duration-150
-                       hover:border-cyan hover:bg-cyan/10 hover:text-text-primary active:scale-95
-                       focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan/60">
+                class="btn btn-secondary px-3.5 py-1.5 text-sm">
             Filtrar
         </button>
         <?php // Sempre no DOM (só `hidden` quando não há filtro) pro script poder mostrar/esconder sem recarregar a página. ?>
@@ -291,18 +289,18 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
     </ul>
 
     <?php if ($totalPages > 1): ?>
-        <?php $pagerBtn = 'rounded-md border border-border px-3 py-1.5 text-text-secondary transition-all duration-150 hover:border-cyan hover:bg-cyan/10 hover:text-text-primary active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan/60'; ?>
+        <?php $pagerBtn = 'btn btn-secondary px-3 py-1.5 text-sm'; ?>
         <nav class="mt-5 flex items-center justify-center gap-3 text-sm" aria-label="Paginação">
             <?php if ($page > 1): ?>
                 <a href="<?= View::e($pageUrl($page - 1)) ?>" class="<?= $pagerBtn ?>">← Anterior</a>
             <?php else: ?>
-                <span class="rounded-md border border-border px-3 py-1.5 text-text-muted opacity-40">← Anterior</span>
+                <span class="btn btn-secondary px-3 py-1.5 text-sm" aria-disabled="true">← Anterior</span>
             <?php endif; ?>
             <span class="text-text-secondary">Página <?= $page ?> de <?= $totalPages ?></span>
             <?php if ($page < $totalPages): ?>
                 <a href="<?= View::e($pageUrl($page + 1)) ?>" class="<?= $pagerBtn ?>">Próxima →</a>
             <?php else: ?>
-                <span class="rounded-md border border-border px-3 py-1.5 text-text-muted opacity-40">Próxima →</span>
+                <span class="btn btn-secondary px-3 py-1.5 text-sm" aria-disabled="true">Próxima →</span>
             <?php endif; ?>
         </nav>
     <?php endif; ?>

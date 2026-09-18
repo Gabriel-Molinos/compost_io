@@ -100,8 +100,7 @@ $firstName = $user !== null ? explode(' ', trim((string) $user['name']))[0] : nu
                 <?php foreach ($sites as $site): ?>
                     <?php $active = (int) $site['is_active'] === 1; ?>
                     <a href="/sites/<?= View::e($site['id']) ?>"
-                       class="group flex flex-col gap-2 rounded-lg border border-border bg-surface p-2
-                              transition-colors hover:border-border-strong">
+                       class="hover-card group flex flex-col gap-2 rounded-lg border border-border bg-surface p-2">
                         <?= Avatar::html($site['logo_path'] ?? null, (string) $site['name'], size: 'h-[150px] w-full', radius: 'rounded-md', textSize: 'text-2xl', fit: 'contain', bg: 'bg-white') ?>
                         <span class="flex items-start justify-between gap-2 px-1">
                             <span class="min-w-0 flex-1">

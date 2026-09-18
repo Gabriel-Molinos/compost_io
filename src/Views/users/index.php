@@ -14,7 +14,7 @@ $active = array_filter($users, static fn ($u) => (int) $u['is_active'] === 1);
 <div class="flex items-center justify-between">
     <h1 class="font-display text-2xl font-bold text-text-primary">Usuários</h1>
     <a href="/users/new"
-       class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+       class="btn btn-primary px-4 py-2 text-sm">
         Novo usuário
     </a>
 </div>

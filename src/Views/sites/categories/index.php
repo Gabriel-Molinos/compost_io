@@ -22,7 +22,7 @@ $syncedWithWp = array_filter($categories, static fn ($c) => !empty($c['wordpress
         <p class="mt-1 text-sm text-text-secondary">Organizam a produção e orientam a IA por tema.</p>
     </div>
     <a href="/sites/<?= View::e($site['id']) ?>/categories/new"
-       class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+       class="btn btn-primary px-4 py-2 text-sm">
         Nova categoria
     </a>
 </div>
@@ -71,7 +71,7 @@ $syncedWithWp = array_filter($categories, static fn ($c) => !empty($c['wordpress
 
                 <div class="mt-auto flex items-center gap-2 border-t border-border pt-3">
                     <a href="/sites/<?= View::e($site['id']) ?>/categories/<?= View::e($category['id']) ?>/edit"
-                       class="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-cyan hover:text-cyan">
+                       class="btn btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs">
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
                         </svg>
@@ -82,7 +82,7 @@ $syncedWithWp = array_filter($categories, static fn ($c) => !empty($c['wordpress
                           data-confirm="Remover esta categoria?">
                         <?= Csrf::field() ?>
                         <button type="submit"
-                                class="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-danger/50 hover:bg-danger/10 hover:text-danger">
+                                class="btn btn-secondary btn-hover-danger inline-flex items-center gap-1.5 px-3 py-1.5 text-xs">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M4 7h16" /><path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2" />
                                 <path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13" /><path d="M10 11v6" /><path d="M14 11v6" />

@@ -126,10 +126,10 @@ $role = $user['role'] ?? 'REDATOR_CHEFE';
     </fieldset>
 
     <div class="mt-6 flex gap-3">
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+        <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
             <?= $isEdit ? 'Salvar' : 'Criar usuário' ?>
         </button>
-        <a href="/users" class="rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
+        <a href="/users" class="btn btn-secondary px-4 py-2 text-sm">
             Cancelar
         </a>
     </div>

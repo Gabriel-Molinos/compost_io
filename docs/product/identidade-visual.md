@@ -235,6 +235,15 @@ fontFamily: {
   suave do conteúdo) — tudo aditivo sobre as classes Tailwind já usadas nas Views, sem duplicar
   componente por tela, e respeitando `prefers-reduced-motion`. Ver bloco `[Acabamento]` do
   `CHANGELOG.md`.
+- **2026-09-18** — **sistema de botões** (pedido do responsável: "esse degradê tá estranho,
+  deixa todos em uma cor sólida … o hover pode ser um motion que acompanha o movimento do
+  mouse e troca de cor com um brilho"): as ~5 receitas de classes Tailwind repetidas nas views
+  (cheio ciano, contorno ciano/vermelho/cinza) viraram `.btn` + variantes sólidas em
+  `src/styles/input.css` — `.btn-primary` (ciano), `.btn-secondary` (ardósia), `.btn-danger`,
+  `.btn-success`. Repouso 100% sólido; no hover a cor troca pra um tom mais claro, ganha brilho
+  e um holofote que **acompanha o mouse** dentro do botão (`assets/js/btn-fx.js`). Os cards
+  clicáveis (`.hover-card`: início, Visão Geral do site) seguem a mesma linguagem e deixam de
+  ter o degradê do "sheen". O glow ciano de `.bg-cyan:hover` (item acima) foi aposentado.
 
 ## Ver também
 

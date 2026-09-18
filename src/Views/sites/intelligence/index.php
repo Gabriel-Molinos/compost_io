@@ -59,7 +59,7 @@ $toneDot = static fn (string $t): string => match ($t) {
           onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Analisando… (pode levar 1 min)';">
         <?= Csrf::field() ?>
         <button type="submit"
-                class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+                class="btn btn-primary px-4 py-2 text-sm">
             <?= $insight === null ? 'Gerar análise' : 'Regenerar' ?>
         </button>
     </form>

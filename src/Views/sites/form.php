@@ -127,10 +127,10 @@ if ($isEdit) {
 
     <div class="mt-6 flex gap-3">
         <button type="submit"
-                class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+                class="btn btn-primary px-4 py-2 text-sm">
             <?= $isEdit ? 'Salvar' : 'Criar site' ?>
         </button>
-        <a href="<?= View::e($backHref) ?>" class="rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
+        <a href="<?= View::e($backHref) ?>" class="btn btn-secondary px-4 py-2 text-sm">
             Cancelar
         </a>
     </div>
@@ -153,7 +153,7 @@ if ($isEdit) {
                        class="mt-1.5 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-danger focus:outline-none">
             </label>
             <button type="submit" disabled data-delete-confirm-button
-                    class="mt-3 rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger transition-colors hover:bg-danger/10 disabled:cursor-not-allowed disabled:opacity-40">
+                    class="btn btn-danger mt-3 px-4 py-2 text-sm">
                 Excluir site permanentemente
             </button>
         </form>

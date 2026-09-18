@@ -13,7 +13,7 @@ use App\View;
     <h1 class="font-display text-2xl font-bold text-text-primary">Sites</h1>
     <?php if ($isAdmin): ?>
         <a href="/sites/new"
-           class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+           class="btn btn-primary px-4 py-2 text-sm">
             Novo site
         </a>
     <?php endif; ?>

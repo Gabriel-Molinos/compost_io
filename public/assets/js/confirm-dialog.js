@@ -27,8 +27,8 @@
         '</div>' +
         '<p class="confirm-dialog-message"></p>' +
         '<div class="confirm-dialog-actions">' +
-          '<button type="button" class="confirm-dialog-cancel">Cancelar</button>' +
-          '<button type="button" class="confirm-dialog-confirm">Confirmar</button>' +
+          '<button type="button" class="btn btn-secondary confirm-dialog-cancel">Cancelar</button>' +
+          '<button type="button" class="btn btn-danger confirm-dialog-confirm">Confirmar</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(dialog);

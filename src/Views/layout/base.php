@@ -105,6 +105,7 @@ if ($authUser !== null && !$hasSiteNav) {
     <link rel="stylesheet" href="<?= View::e(View::asset('assets/css/app.css')) ?>">
     <script src="<?= View::e(View::asset('assets/js/select-enhance.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/confirm-dialog.js')) ?>" defer></script>
+    <script src="<?= View::e(View::asset('assets/js/btn-fx.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/image-lightbox.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/image-carousel.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/avatar-preview.js')) ?>" defer></script>

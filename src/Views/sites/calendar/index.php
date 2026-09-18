@@ -63,7 +63,7 @@ $diasSemana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
     <div class="flex items-center gap-2">
         <?php if (!$isCurrentMonth): ?>
             <a href="?month=<?= View::e((new DateTimeImmutable($todayYmd))->format('Y-m')) ?>"
-               class="rounded-md border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
+               class="btn btn-secondary px-3 py-1.5 text-sm">
                 Hoje
             </a>
         <?php endif; ?>

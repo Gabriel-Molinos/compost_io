@@ -71,8 +71,7 @@ $describedBy = $error !== null ? 'login-error' : null;
     </div>
 
     <button type="submit"
-            class="w-full rounded-full bg-cyan px-4 py-3 text-sm font-bold text-[#050B0F] transition-colors
-                   hover:bg-cyan-bright focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">
+            class="btn btn-primary w-full rounded-full px-4 py-3 text-sm font-bold">
         Entrar
     </button>
 </form>

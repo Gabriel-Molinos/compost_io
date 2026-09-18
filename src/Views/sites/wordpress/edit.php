@@ -73,10 +73,10 @@ $formData = [
         </div>
 
         <div class="flex flex-wrap gap-3 pt-1">
-            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+            <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
                 Salvar
             </button>
-            <a href="/sites/<?= View::e($site['id']) ?>" class="rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
+            <a href="/sites/<?= View::e($site['id']) ?>" class="btn btn-secondary px-4 py-2 text-sm">
                 Voltar
             </a>
         </div>
@@ -86,14 +86,14 @@ $formData = [
         <div class="mt-6 flex flex-wrap items-center gap-3 border-t border-border pt-5">
             <form method="post" action="/sites/<?= View::e($site['id']) ?>/wordpress/test">
                 <?= Csrf::field() ?>
-                <button type="submit" class="rounded-md border border-cyan px-4 py-2 text-sm font-semibold text-cyan hover:bg-cyan/10">
+                <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
                     Testar conexão
                 </button>
             </form>
             <form method="post" action="/sites/<?= View::e($site['id']) ?>/wordpress/delete"
                   data-confirm="Remover a credencial WordPress deste site?">
                 <?= Csrf::field() ?>
-                <button type="submit" class="rounded-md border border-border px-4 py-2 text-sm text-text-muted hover:border-danger/50 hover:bg-danger/10 hover:text-danger">
+                <button type="submit" class="btn btn-secondary btn-hover-danger px-4 py-2 text-sm">
                     Remover credencial
                 </button>
             </form>
@@ -136,13 +136,13 @@ $formData = [
         <div class="mt-4 flex flex-wrap gap-3">
             <form method="post" action="/sites/<?= View::e($site['id']) ?>/wordpress/sync-authors">
                 <?= Csrf::field() ?>
-                <button type="submit" class="rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
+                <button type="submit" class="btn btn-secondary px-4 py-2 text-sm">
                     Sincronizar autores
                 </button>
             </form>
             <form method="post" action="/sites/<?= View::e($site['id']) ?>/wordpress/sync-categories">
                 <?= Csrf::field() ?>
-                <button type="submit" class="rounded-md border border-border px-4 py-2 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
+                <button type="submit" class="btn btn-secondary px-4 py-2 text-sm">
                     Sincronizar categorias agora
                 </button>
             </form>

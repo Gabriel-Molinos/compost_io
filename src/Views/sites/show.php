@@ -33,7 +33,7 @@ require __DIR__ . '/_tabs.php';
         </div>
     </div>
     <a href="/sites/<?= View::e($site['id']) ?>/production"
-       class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+       class="btn btn-primary px-4 py-2 text-sm">
         Ir pra Produção
     </a>
 </div>

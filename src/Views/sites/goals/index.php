@@ -36,7 +36,7 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
         <p class="mt-1 text-sm text-text-secondary">Cada meta cobre um mês e define quantos artigos produzir, no total e por categoria.</p>
     </div>
     <a href="<?= $base ?>/new" data-tour="new-goal"
-       class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+       class="btn btn-primary px-4 py-2 text-sm">
         Nova meta
     </a>
 </div>
@@ -87,14 +87,14 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
 
                 <div class="mt-auto flex items-center gap-1 border-t border-border pt-3">
                     <a href="<?= $base ?>/<?= View::e($goal['id']) ?>/edit"
-                       class="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:border-cyan hover:text-cyan">
+                       class="btn btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-xs">
                         <?= $editIcon ?> Editar
                     </a>
                     <form method="post" action="<?= $base ?>/<?= View::e($goal['id']) ?>/delete"
                           data-confirm="Remover a meta de <?= View::e($periodLabel($goal['period'])) ?>?">
                         <?= Csrf::field() ?>
                         <button type="submit"
-                                class="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:border-danger/50 hover:bg-danger/10 hover:text-danger">
+                                class="btn btn-secondary btn-hover-danger inline-flex items-center gap-1.5 px-3 py-1.5 text-xs">
                             <?= $deleteIcon ?> Remover
                         </button>
                     </form>

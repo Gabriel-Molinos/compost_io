@@ -82,7 +82,7 @@ $totalNonInterest = count($grouped['NON_INTEREST']);
                 Interesses
             </h3>
             <a href="<?= $base ?>/new?type=INTEREST"
-               class="rounded-md bg-cyan px-3 py-1.5 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+               class="btn btn-primary px-3 py-1.5 text-sm">
                 Adicionar
             </a>
         </div>
@@ -96,7 +96,7 @@ $totalNonInterest = count($grouped['NON_INTEREST']);
                 Não-interesses
             </h3>
             <a href="<?= $base ?>/new?type=NON_INTEREST"
-               class="rounded-md border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
+               class="btn btn-secondary px-3 py-1.5 text-sm">
                 Adicionar
             </a>
         </div>

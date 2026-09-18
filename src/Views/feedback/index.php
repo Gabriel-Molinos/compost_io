@@ -67,7 +67,7 @@ $star = static fn (bool $filled): string => $filled
                       class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-cyan focus:outline-none"></textarea>
         </div>
 
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+        <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
             Enviar feedback
         </button>
     </form>
@@ -116,7 +116,7 @@ $star = static fn (bool $filled): string => $filled
                             <?php else: ?>
                                 <form method="post" action="/feedback/<?= View::e($entry['id']) ?>/review">
                                     <?= Csrf::field() ?>
-                                    <button type="submit" class="shrink-0 rounded-md border border-border px-2.5 py-1 text-xs text-text-secondary hover:border-cyan hover:text-text-primary">
+                                    <button type="submit" class="btn btn-secondary shrink-0 px-2.5 py-1 text-xs">
                                         Marcar como visto
                                     </button>
                                 </form>

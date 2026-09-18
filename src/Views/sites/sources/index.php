@@ -55,7 +55,7 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
                    class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary
                           placeholder:text-text-muted focus:border-cyan focus:outline-none">
         </label>
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+        <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
             Adicionar
         </button>
     </form>

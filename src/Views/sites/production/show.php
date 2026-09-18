@@ -179,7 +179,7 @@ $alertIcon = static function (string $kind): string {
                       data-confirm="Aprovar este artigo? Ele libera pra agendamento de publicação.">
                     <?= Csrf::field() ?>
                     <button type="submit" <?= $checklistPassed ? '' : 'disabled title="Checklist de pré-aprovação não passou"' ?>
-                            class="rounded-md bg-success/90 px-4 py-2 text-sm font-semibold text-[#04210F] hover:bg-success disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-success/90">
+                            class="btn btn-success px-4 py-2 text-sm">
                         Aprovar artigo
                     </button>
                 </form>
@@ -194,7 +194,7 @@ $alertIcon = static function (string $kind): string {
                 </div>
                 <p class="mt-2 text-sm text-text-secondary">Registra o motivo e permite regenerar.</p>
                 <details class="mt-3">
-                    <summary class="cursor-pointer rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
+                    <summary class="btn btn-danger px-4 py-2 text-sm">
                         Rejeitar artigo
                     </summary>
                     <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/reject"
@@ -216,7 +216,7 @@ $alertIcon = static function (string $kind): string {
                                       class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none"
                                       placeholder="O que está errado e o que a regeneração precisa corrigir."></textarea>
                         </label>
-                        <button type="submit" class="self-start rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
+                        <button type="submit" class="btn btn-danger self-start px-4 py-2 text-sm">
                             Confirmar rejeição
                         </button>
                     </form>
@@ -306,7 +306,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
                         <?= $authorOptions($authors, 0) ?>
                     </select>
                 </label>
-                <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+                <button type="submit" class="btn btn-primary justify-self-start px-4 py-2 text-sm">
                     Agendar
                 </button>
             </form>
@@ -328,7 +328,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
         <form method="post" action="<?= $scheduleBase ?>/schedule/publish" class="mt-4"
               onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Enviando…';">
             <?= Csrf::field() ?>
-            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+            <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
                 <?= $whenTs > time() ? 'Enviar ao WordPress (agenda para a data)' : 'Publicar no WordPress agora' ?>
             </button>
             <p class="mt-1 text-xs text-text-muted">
@@ -356,7 +356,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
                                value="<?= View::e(date('Y-m-d\TH:i', strtotime((string) $schedule['scheduled_date']))) ?>"
                                class="mt-1 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-text-primary focus:border-cyan focus:outline-none">
                     </label>
-                    <button type="submit" class="justify-self-start rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+                    <button type="submit" class="btn btn-primary justify-self-start px-4 py-2 text-sm">
                         Salvar
                     </button>
                 </form>
@@ -364,7 +364,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
             <form method="post" action="<?= $scheduleBase ?>/schedule/cancel"
                   data-confirm="Cancelar o agendamento? O artigo volta para aprovado.">
                 <?= Csrf::field() ?>
-                <button type="submit" class="rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
+                <button type="submit" class="btn btn-danger px-4 py-2 text-sm">
                     Cancelar agendamento
                 </button>
             </form>
@@ -386,7 +386,7 @@ $authorOptions = static function (array $authors, int $selectedId): string {
         <form method="post" action="<?= $scheduleBase ?>/schedule/cancel" class="mt-3"
               data-confirm="Cancelar o agendamento? O artigo volta para aprovado.">
             <?= Csrf::field() ?>
-            <button type="submit" class="rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
+            <button type="submit" class="btn btn-danger px-4 py-2 text-sm">
                 Cancelar agendamento
             </button>
         </form>
@@ -409,14 +409,14 @@ $authorOptions = static function (array $authors, int $selectedId): string {
             <form method="post" action="<?= $scheduleBase ?>/schedule/republish"
                   data-confirm="Reenviar título, corpo e imagens deste artigo para o post no WordPress? Isso sobrescreve edições feitas direto lá.">
                 <?= Csrf::field() ?>
-                <button type="submit" class="rounded-md border border-cyan px-4 py-2 text-sm font-semibold text-cyan hover:bg-cyan/10">
+                <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
                     Atualizar no WordPress
                 </button>
             </form>
             <form method="post" action="<?= $scheduleBase ?>/schedule/retract"
                   data-confirm="Retirar o post do WordPress (vai para a lixeira lá) e voltar o artigo para aprovado?">
                 <?= Csrf::field() ?>
-                <button type="submit" class="rounded-md border border-danger/50 px-4 py-2 text-sm font-semibold text-danger hover:bg-danger/10">
+                <button type="submit" class="btn btn-danger px-4 py-2 text-sm">
                     Retirar do WordPress
                 </button>
             </form>
@@ -447,7 +447,7 @@ $maxAttempts = 3;
               class="mt-3"
               onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Iniciando…';">
             <?= Csrf::field() ?>
-            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+            <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
                 Regenerar artigo
             </button>
         </form>
@@ -468,7 +468,7 @@ $maxAttempts = 3;
               class="mt-3"
               onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Iniciando…';">
             <?= Csrf::field() ?>
-            <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+            <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
                 Tentar de novo
             </button>
         </form>
@@ -563,7 +563,7 @@ $execStatusBadge = static function (string $status): string {
         echo '<form method="post" action="' . $base . '/images/' . View::e($img['id']) . '/delete"'
             . ' data-confirm="Remover esta imagem?" class="mt-3">';
         echo Csrf::field();
-        echo '<button type="submit" class="flex w-full items-center justify-center gap-1.5 rounded-md border border-danger/40 px-3 py-1.5 text-xs font-medium text-danger transition hover:border-danger hover:bg-danger/10">'
+        echo '<button type="submit" class="btn btn-danger flex w-full items-center justify-center gap-1.5 px-3 py-1.5 text-xs">'
             . '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
             . '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>'
             . '</svg>Remover imagem</button>';
@@ -650,7 +650,7 @@ $execStatusBadge = static function (string $status): string {
                         </div>
                     <?php endforeach; ?>
                 </div>
-                <button type="submit" class="mt-3 rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+                <button type="submit" class="btn btn-primary mt-3 px-4 py-2 text-sm">
                     Salvar imagem destacada
                 </button>
             </form>
@@ -823,7 +823,7 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                                           onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Analisando…';">
                                         <?= Csrf::field() ?>
                                         <button type="submit"
-                                                class="shrink-0 whitespace-nowrap rounded-md border border-cyan/50 px-2.5 py-1.5 text-[11px] font-semibold text-cyan hover:bg-cyan/10">
+                                                class="btn btn-primary shrink-0 whitespace-nowrap px-2.5 py-1.5 text-[11px]">
                                             <?= $internalSuggestions !== [] ? 'Atualizar sugestões' : 'Sugerir por relevância' ?>
                                         </button>
                                     </form>
@@ -842,7 +842,7 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                                                 <div class="mt-2 flex items-center gap-2">
                                                     <code class="min-w-0 flex-1 truncate rounded bg-surface-2 px-2 py-1.5 text-[11px] text-text-secondary"><?= View::e($snippet) ?></code>
                                                     <button type="button" data-insert-link="<?= View::e($snippet) ?>"
-                                                            class="shrink-0 rounded-md border border-cyan/50 px-2.5 py-1.5 text-[11px] font-semibold text-cyan hover:bg-cyan/10">
+                                                            class="btn btn-secondary shrink-0 px-2.5 py-1.5 text-[11px]">
                                                         Inserir
                                                     </button>
                                                 </div>
@@ -861,7 +861,7 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                                                 <div class="mt-2 flex items-center gap-2">
                                                     <code class="min-w-0 flex-1 truncate rounded bg-surface-2 px-2 py-1.5 text-[11px] text-text-secondary"><?= View::e($snippet) ?></code>
                                                     <button type="button" data-insert-link="<?= View::e($snippet) ?>"
-                                                            class="shrink-0 rounded-md border border-cyan/50 px-2.5 py-1.5 text-[11px] font-semibold text-cyan hover:bg-cyan/10">
+                                                            class="btn btn-secondary shrink-0 px-2.5 py-1.5 text-[11px]">
                                                         Inserir
                                                     </button>
                                                 </div>
@@ -881,7 +881,7 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                                           onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Gerando…';">
                                         <?= Csrf::field() ?>
                                         <button type="submit"
-                                                class="shrink-0 whitespace-nowrap rounded-md border border-cyan/50 px-2.5 py-1.5 text-[11px] font-semibold text-cyan hover:bg-cyan/10">
+                                                class="btn btn-primary shrink-0 whitespace-nowrap px-2.5 py-1.5 text-[11px]">
                                             Gerar mais
                                         </button>
                                     </form>
@@ -902,7 +902,7 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                                                 <div class="mt-2 flex items-center gap-2">
                                                     <code class="min-w-0 flex-1 truncate rounded bg-surface-2 px-2 py-1.5 text-[11px] text-text-secondary"><?= View::e($snippet) ?></code>
                                                     <button type="button" data-insert-link="<?= View::e($snippet) ?>"
-                                                            class="shrink-0 rounded-md border border-cyan/50 px-2.5 py-1.5 text-[11px] font-semibold text-cyan hover:bg-cyan/10">
+                                                            class="btn btn-secondary shrink-0 px-2.5 py-1.5 text-[11px]">
                                                         Inserir
                                                     </button>
                                                 </div>
@@ -921,7 +921,7 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                                 URL de destino.
                             </p>
                             <button type="button" data-open-link-dialog
-                                    class="mt-3 shrink-0 rounded-md border border-cyan/50 px-2.5 py-1.5 text-[11px] font-semibold text-cyan hover:bg-cyan/10">
+                                    class="btn btn-primary mt-3 shrink-0 px-2.5 py-1.5 text-[11px]">
                                 Inserir link personalizado
                             </button>
                         </div>
@@ -940,7 +940,7 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                                 anterior fica preservada no histórico.
                             </p>
 
-                            <button type="submit" class="mt-4 rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+                            <button type="submit" class="btn btn-primary mt-4 px-4 py-2 text-sm">
                                 Salvar corpo
                             </button>
                         </form>

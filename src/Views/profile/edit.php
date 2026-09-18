@@ -33,7 +33,7 @@ use App\View;
     <form method="post" action="/profile/name" class="mt-4">
         <?= Csrf::field() ?>
         <?= Form::text('name', 'Nome', $user, $nameErrors, required: true) ?>
-        <button type="submit" class="mt-3 rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+        <button type="submit" class="btn btn-primary mt-3 px-4 py-2 text-sm">
             Salvar nome
         </button>
     </form>
@@ -54,7 +54,7 @@ use App\View;
         <form method="post" action="/profile/avatar" enctype="multipart/form-data" class="flex-1">
             <?= Csrf::field() ?>
             <?= Form::file('avatar', 'Trocar foto') ?>
-            <button type="submit" class="mt-3 rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+            <button type="submit" class="btn btn-primary mt-3 px-4 py-2 text-sm">
                 Salvar foto
             </button>
         </form>

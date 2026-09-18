@@ -60,14 +60,14 @@ foreach ($flagged as $f) {
                                 <form method="post" action="<?= $base ?>/links/<?= $f['article_id'] ?>/confirm">
                                     <?= Csrf::field() ?>
                                     <input type="hidden" name="url" value="<?= View::e($url) ?>">
-                                    <button type="submit" class="rounded-md border border-success/50 px-3 py-1.5 text-xs font-medium text-success hover:bg-success/10">
+                                    <button type="submit" class="btn btn-success px-3 py-1.5 text-xs">
                                         Confirmar que está ok
                                     </button>
                                 </form>
                                 <form method="post" action="<?= $base ?>/links/<?= $f['article_id'] ?>/remove" data-confirm="Remover este link? O texto continua, só deixa de ser um link.">
                                     <?= Csrf::field() ?>
                                     <input type="hidden" name="url" value="<?= View::e($url) ?>">
-                                    <button type="submit" class="rounded-md border border-danger/50 px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger/10">
+                                    <button type="submit" class="btn btn-danger px-3 py-1.5 text-xs">
                                         Remover link
                                     </button>
                                 </form>
@@ -80,7 +80,7 @@ foreach ($flagged as $f) {
                                         <input type="hidden" name="old_url" value="<?= View::e($url) ?>">
                                         <input type="url" name="new_url" required placeholder="https://..."
                                                class="min-w-[16rem] flex-1 rounded-md border border-border bg-surface-2 px-3 py-1.5 text-text-primary focus:border-cyan focus:outline-none">
-                                        <button type="submit" class="rounded-md bg-cyan px-3 py-1.5 font-semibold text-[#050B0F] hover:bg-cyan-bright">Salvar</button>
+                                        <button type="submit" class="btn btn-primary px-3 py-1.5">Salvar</button>
                                     </form>
                                 </details>
                             </div>
@@ -99,7 +99,7 @@ foreach ($flagged as $f) {
                                 <form method="post" action="<?= $base ?>/links/<?= $f['article_id'] ?>/remove" data-confirm="Remover este link? O texto continua, só deixa de ser um link.">
                                     <?= Csrf::field() ?>
                                     <input type="hidden" name="url" value="<?= View::e($url) ?>">
-                                    <button type="submit" class="rounded-md border border-danger/50 px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger/10">
+                                    <button type="submit" class="btn btn-danger px-3 py-1.5 text-xs">
                                         Remover link
                                     </button>
                                 </form>
@@ -112,7 +112,7 @@ foreach ($flagged as $f) {
                                         <input type="hidden" name="old_url" value="<?= View::e($url) ?>">
                                         <input type="url" name="new_url" required placeholder="https://..."
                                                class="min-w-[16rem] flex-1 rounded-md border border-border bg-surface-2 px-3 py-1.5 text-text-primary focus:border-cyan focus:outline-none">
-                                        <button type="submit" class="rounded-md bg-cyan px-3 py-1.5 font-semibold text-[#050B0F] hover:bg-cyan-bright">Salvar</button>
+                                        <button type="submit" class="btn btn-primary px-3 py-1.5">Salvar</button>
                                     </form>
                                 </details>
                                 <?php if ($isPublished): ?>
@@ -136,7 +136,7 @@ foreach ($flagged as $f) {
                                     <?= Csrf::field() ?>
                                     <input type="hidden" name="anchor_text" value="<?= View::e($anchor) ?>">
                                     <input type="hidden" name="url" value="<?= View::e($url) ?>">
-                                    <button type="submit" class="rounded-md border border-cyan/50 px-3 py-1.5 text-xs font-medium text-cyan hover:bg-cyan/10">
+                                    <button type="submit" class="btn btn-primary px-3 py-1.5 text-xs">
                                         Aplicar
                                     </button>
                                 </form>
@@ -144,7 +144,7 @@ foreach ($flagged as $f) {
                                     <?= Csrf::field() ?>
                                     <input type="hidden" name="anchor_text" value="<?= View::e($anchor) ?>">
                                     <input type="hidden" name="url" value="<?= View::e($url) ?>">
-                                    <button type="submit" class="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-text-secondary hover:border-danger hover:text-danger">
+                                    <button type="submit" class="btn btn-secondary btn-hover-danger px-3 py-1.5 text-xs">
                                         Dispensar
                                     </button>
                                 </form>

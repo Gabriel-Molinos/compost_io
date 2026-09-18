@@ -28,7 +28,7 @@ $toneBorder = static fn (string $tone): string => match ($tone) {
     <?php if ($unread !== []): ?>
         <form method="post" action="/notifications/read-all">
             <?= Csrf::field() ?>
-            <button type="submit" class="rounded-md border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-cyan hover:text-text-primary">
+            <button type="submit" class="btn btn-secondary px-3 py-1.5 text-sm">
                 Marcar todas como lidas
             </button>
         </form>

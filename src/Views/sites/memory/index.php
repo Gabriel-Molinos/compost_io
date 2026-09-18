@@ -58,7 +58,7 @@ $toggleIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
                              placeholder:text-text-muted focus:border-cyan focus:outline-none"></textarea>
             <p class="mt-1.5 text-right text-xs text-text-muted"><span data-char-count>0</span>/500</p>
         </label>
-        <button type="submit" class="rounded-md bg-cyan px-4 py-2 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+        <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
             Adicionar à memória
         </button>
     </form>
@@ -90,7 +90,7 @@ $toggleIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
                             <form method="post" action="<?= $base ?>/promote" class="shrink-0">
                                 <?= Csrf::field() ?>
                                 <input type="hidden" name="feedback_id" value="<?= View::e($f['id']) ?>">
-                                <button type="submit" class="rounded-md border border-cyan px-3 py-1.5 text-sm font-semibold text-cyan hover:bg-cyan/10">
+                                <button type="submit" class="btn btn-primary px-3 py-1.5 text-sm">
                                     Promover
                                 </button>
                             </form>
@@ -161,11 +161,11 @@ $toggleIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
                             ><?= View::e($l['lesson']) ?></textarea>
                         </label>
                         <div class="mt-2 flex gap-2">
-                            <button type="submit" class="rounded-md bg-cyan px-3 py-1.5 text-sm font-semibold text-[#050B0F] hover:bg-cyan-bright">
+                            <button type="submit" class="btn btn-primary px-3 py-1.5 text-sm">
                                 Salvar
                             </button>
                             <button type="button" data-edit-cancel
-                                    class="rounded-md border border-border px-3 py-1.5 text-sm text-text-secondary hover:border-border-strong hover:text-text-primary">
+                                    class="btn btn-secondary px-3 py-1.5 text-sm">
                                 Cancelar
                             </button>
                         </div>

@@ -317,7 +317,7 @@
             + '<div class="tour-tooltip-actions">'
             + '<button type="button" class="tour-skip">Pular tutorial</button>'
             + '<div class="tour-tooltip-actions-right">' + backHtml
-            + '<button type="button" class="tour-next">' + ctaLabel + '</button>'
+            + '<button type="button" class="btn btn-primary tour-next">' + ctaLabel + '</button>'
             + '</div></div>';
 
         tooltipEl.querySelector('.tour-skip').addEventListener('click', skip);

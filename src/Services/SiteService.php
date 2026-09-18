@@ -8,6 +8,49 @@ use App\Database\Connection;
 
 final class SiteService
 {
+    /**
+     * Listagem de /sites: cada site com o estado da conexão WordPress e contagens
+     * de artigos, tudo em UMA consulta (com ~60 sites, um `forSite()`/`attentionCounts()`
+     * por card seria 120+ idas ao banco). Admin vê todos; Redator-Chefe (`$userId`)
+     * só os vinculados. Contagens ignoram artigo apagado (`deleted_at`).
+     *
+     * @return list<array<string, mixed>> + wp_configured/wp_status/last_verified_at e
+     *         in_review/attention/done/total (inteiros)
+     */
+    public function overview(?int $userId = null): array
+    {
+        $join = $userId !== null ? 'JOIN user_site us ON us.site_id = s.id AND us.user_id = :user' : '';
+        $stmt = Connection::get()->prepare(
+            "SELECT s.id, s.name, s.logo_path, s.niche, s.language, s.target_audience, s.tone,
+                    s.wordpress_url, s.is_active, s.created_at,
+                    (c.id IS NOT NULL) AS wp_configured, c.status AS wp_status, c.last_verified_at,
+                    COALESCE(st.in_review, 0) AS in_review, COALESCE(st.attention, 0) AS attention,
+                    COALESCE(st.done, 0) AS done, COALESCE(st.total, 0) AS total
+             FROM sites s
+             {$join}
+             LEFT JOIN site_wordpress_connections c ON c.site_id = s.id
+             LEFT JOIN (
+                 SELECT site_id,
+                        SUM(status = 'IN_REVIEW') AS in_review,
+                        SUM(status IN ('BLOCKED', 'ERROR')) AS attention,
+                        SUM(status IN ('APPROVED', 'SCHEDULED', 'PUBLISHED')) AS done,
+                        COUNT(*) AS total
+                 FROM articles WHERE deleted_at IS NULL GROUP BY site_id
+             ) st ON st.site_id = s.id
+             ORDER BY s.name"
+        );
+        $stmt->execute($userId !== null ? ['user' => $userId] : []);
+
+        return array_map(static function (array $row): array {
+            foreach (['in_review', 'attention', 'done', 'total'] as $k) {
+                $row[$k] = (int) $row[$k];
+            }
+            $row['wp_configured'] = (int) $row['wp_configured'] === 1;
+
+            return $row;
+        }, $stmt->fetchAll());
+    }
+
     /** @return list<array<string, mixed>> */
     public function all(): array
     {

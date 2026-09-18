@@ -252,6 +252,16 @@ fontFamily: {
   alimenta `.pick`), "puxão" de ~2px, borda/fundo trocando de cor e brilho; marcado =
   aceso (CSS puro via `input:checked + .pick`). Seção Identidade do site refeita no padrão
   da Voz editorial: passos numerados, contadores, barra de preenchimento, chips de nicho.
+- **2026-09-18** — **/sites redesenhada** (pedido do responsável: logo em header, tags na borda,
+  destaques, botão de abrir mais bonito, busca e filtros): cada site é um card largo no mesmo
+  sistema dos cards de artigo (`.article-card` — tom por situação, animação, tag sobre a borda) +
+  `.hover-card` (holofote que segue o mouse). Tom: inativo = cinza, com problema (artigo
+  travado/erro ou WordPress falhou) = vermelho, rascunho em revisão = ciano animado, WordPress sem
+  conexão válida = âmbar, tudo em ordem = verde. Logo numa placa branca à esquerda, tags
+  (Ativo + estado do WordPress) no canto de cima da borda, contadores Em revisão/Aprovados/Com
+  problema e botão "Abrir site". Busca + chips de Situação/WordPress + idioma + ordenação, todos
+  GET reais com filtro em tempo real (mesma técnica da Produção). Regras em `SiteListing`
+  (testadas); dados em `SiteService::overview()` (1 consulta pra todos os sites).
 
 ## Ver também
 

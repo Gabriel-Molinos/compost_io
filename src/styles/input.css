@@ -505,6 +505,9 @@
   input:checked + .pick-light:hover {
     --pick-scale: 1.07;
   }
+  /* Chip de filtro com cor própria (sempre nesse tom, não só marcado). */
+  .pick-danger { --tone: 255 92 122; }
+  .pick-green  { --tone: 61 240 122; }
   /* Chip compacto (<button aria-pressed>): mesma coisa em escala pequena. */
   .pick-chip {
     --spot-r: 56px;
@@ -523,7 +526,8 @@
     color: #F0F8FF;
     box-shadow: 0 6px 14px -8px rgb(var(--tone) / .8);
   }
-  .pick-chip[aria-pressed="true"] {
+  .pick-chip[aria-pressed="true"],
+  input:checked + .pick-chip {
     color: rgb(var(--tone));
     box-shadow: none;
   }
@@ -1053,6 +1057,28 @@
     white-space: nowrap;
     box-shadow: 0 0 0 3px #04090D, 0 4px 14px -4px rgb(var(--tone) / .75);
   }
+
+  /* Várias tags lado a lado no canto de cima (card de site: situação + WordPress).
+     Cada tag leva o próprio tom (--success/--danger/…), independente do tom do card. */
+  .article-card-tags {
+    position: absolute;
+    top: 0;
+    right: 1.25rem;
+    z-index: 2;
+    display: flex;
+    gap: .625rem;
+    transform: translateY(-50%);
+  }
+  .article-card-tags .article-card-tag {
+    position: static;
+    transform: none;
+  }
+  .article-card-tag--success { --tone: 61 240 122; }
+  .article-card-tag--danger  { --tone: 255 92 122; }
+  .article-card-tag--warning { --tone: 255 197 61; }
+  .article-card-tag--cyan    { --tone: 0 208 240; }
+  .article-card-tag--muted   { --tone: 143 166 188; }
+  .article-card-tag svg { width: 12px; height: 12px; }
 
   /* Título: no hover do card (ou do link) assume a cor do estado. */
   .article-card-title {

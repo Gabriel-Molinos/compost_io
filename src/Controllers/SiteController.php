@@ -18,7 +18,9 @@ use App\Services\UserService;
 use App\Services\WordPressConnectionService;
 use App\Support\Csrf;
 use App\Support\Http;
+use App\Support\Languages;
 use App\Support\Session;
+use App\Support\SiteListing;
 use App\Support\Uploads;
 use App\Support\Validator;
 use App\View;
@@ -50,14 +52,43 @@ final class SiteController extends Controller
     public function index(): void
     {
         $user = AuthService::user();
-        $sites = ($user !== null && $user['role'] === 'ADMIN')
-            ? $this->sites->all()
-            : $this->sites->forUser((int) $user['id']);
+        $all = $this->sites->overview(AuthService::isAdmin() ? null : (int) $user['id']);
+
+        // Filtros da querystring (GET de verdade — compartilhável e atualizável com F5;
+        // o filtro em tempo real da tela só troca as regiões de resultado). Valor
+        // desconhecido vira "sem filtro", nunca erro.
+        $q      = mb_substr(trim((string) ($_GET['q'] ?? '')), 0, 100);
+        $status = in_array($_GET['status'] ?? '', SiteListing::STATUS, true) ? (string) $_GET['status'] : '';
+        $wp     = in_array($_GET['wp'] ?? '', SiteListing::WP, true) ? (string) $_GET['wp'] : '';
+        $lang   = mb_substr(trim((string) ($_GET['lang'] ?? '')), 0, 20);
+        $order  = in_array($_GET['order'] ?? '', SiteListing::ORDER, true) ? (string) $_GET['order'] : 'name';
+
+        // Contagens dos chips e opções de idioma saem da lista COMPLETA (não mudam conforme o filtro).
+        $counts = [
+            'all'       => count($all),
+            'active'    => count(array_filter($all, static fn (array $s): bool => (int) $s['is_active'] === 1)),
+            'inactive'  => count(array_filter($all, static fn (array $s): bool => (int) $s['is_active'] !== 1)),
+            'attention' => count(array_filter($all, static fn (array $s): bool => SiteListing::needsAttention($s))),
+            'ok'        => 0, 'issue' => 0, 'none' => 0,
+        ];
+        $languages = [];
+        $presets = Languages::presets();
+        foreach ($all as $s) {
+            $counts[SiteListing::wpBucket($s)]++;
+            $key = SiteListing::languageKey($s);
+            $languages[$key] ??= ['label' => ($presets[$key]['label'] ?? trim((string) $s['language'])), 'count' => 0];
+            $languages[$key]['count']++;
+        }
+        ksort($languages);
 
         View::render('sites/index', [
-            'title'   => 'Sites',
-            'sites'   => $sites,
-            'isAdmin' => AuthService::isAdmin(),
+            'title'         => 'Sites',
+            'sites'         => SiteListing::sort(SiteListing::filter($all, $q, $status, $wp, $lang), $order),
+            'isAdmin'       => AuthService::isAdmin(),
+            'counts'        => $counts,
+            'languages'     => $languages,
+            'filters'       => ['q' => $q, 'status' => $status, 'wp' => $wp, 'lang' => $lang, 'order' => $order],
+            'filtersActive' => $q !== '' || $status !== '' || $wp !== '' || $lang !== '' || $order !== 'name',
         ]);
     }
 

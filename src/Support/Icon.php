@@ -63,6 +63,9 @@ final class Icon
         'check'        => '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
         'globe'        => '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.4 3.8 5.3 3.8 8.5s-1.3 6.1-3.8 8.5c-2.5-2.4-3.8-5.3-3.8-8.5S9.5 5.9 12 3.5Z"/>',
         'search'       => '<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/>',
+        'plus'         => '<path d="M12 5v14M5 12h14"/>',
+        'arrow'        => '<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>',
+        'clock'        => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
     ];
 
     /** SVG inline (18×18) do ícone `$key`, ou um círculo vazio genérico se a chave não existir. */

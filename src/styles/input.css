@@ -720,11 +720,14 @@
   }
 
   /* ---- Itens do anel ---- */
-  .nav-tone-cyan    { --tone: 0 208 240; }
-  .nav-tone-success { --tone: 61 240 122; }
-  .nav-tone-warning { --tone: 255 197 61; }
-  .nav-tone-danger  { --tone: 255 92 122; }
-  .nav-tone-info    { --tone: 111 207 255; }
+  /* Tom do item/atalho. Seletor com 2 classes de propósito: `.dial-item`/`.dial-btn` declaram um --tone
+     padrão mais abaixo e, com 1 classe só, ele venceria por vir depois. */
+  .nav-tone-cyan, .dial-item.nav-tone-cyan, .dial-btn.nav-tone-cyan { --tone: 0 208 240; }
+  .nav-tone-success, .dial-item.nav-tone-success, .dial-btn.nav-tone-success { --tone: 61 240 122; }
+  .nav-tone-warning, .dial-item.nav-tone-warning, .dial-btn.nav-tone-warning { --tone: 255 197 61; }
+  .nav-tone-danger, .dial-item.nav-tone-danger, .dial-btn.nav-tone-danger { --tone: 255 92 122; }
+  .nav-tone-info, .dial-item.nav-tone-info, .dial-btn.nav-tone-info { --tone: 111 207 255; }
+  .nav-tone-violet, .dial-item.nav-tone-violet, .dial-btn.nav-tone-violet { --tone: 167 139 250; }
 
   .dial-ring {
     position: absolute;
@@ -801,8 +804,9 @@
   }
   .dial-sep::after { background: linear-gradient(90deg, currentColor, transparent); }
   .dial-sep > span { min-width: 0; }
-  .dial-sep[data-scope="site"] { color: #00D0F0; }
-  .dial-sep[data-scope="sites"] { color: #6FCFFF; }
+  .dial-sep[data-scope="main"] { color: #00D0F0; }
+  .dial-sep[data-scope="site"],
+  .dial-sep[data-scope="sites"] { color: #A78BFA; }
   .dial-ring.is-live .dial-sep {
     position: absolute;
     left: 0;

@@ -65,20 +65,19 @@ $ago = static function (int $ts): string {
     <?php endif; ?>
 
     <div class="relative flex flex-col items-center gap-5 px-6 py-12 text-center sm:py-16">
-        <span class="relative inline-block">
-            <img src="/assets/brand/icon-512.png" alt="COMPOST" aria-hidden="true"
-                 class="h-28 w-28 rounded-full shadow-[0_0_0_2px_rgba(0,208,240,.5),0_0_60px_-10px_rgba(0,208,240,.65)] sm:h-36 sm:w-36">
-            <?php if ($user !== null): ?>
-                <a href="/profile" title="Meu perfil"
-                   class="hover-card absolute -bottom-1 -right-1 block h-11 w-11 rounded-full ring-4 ring-void sm:h-14 sm:w-14">
-                    <?= Avatar::html($user['avatar_path'] ?? null, $user['name'], size: 'h-full w-full', radius: 'rounded-full', textSize: 'text-base') ?>
-                </a>
-            <?php endif; ?>
-        </span>
+        <img src="/assets/brand/icon-512.png" alt="COMPOST" aria-hidden="true"
+             class="h-28 w-28 rounded-full shadow-[0_0_0_2px_rgba(0,208,240,.5),0_0_60px_-10px_rgba(0,208,240,.65)] sm:h-36 sm:w-36">
         <div class="max-w-lg">
-            <h1 class="font-display text-3xl font-bold text-text-primary sm:text-4xl">
-                <?= View::e($greeting) ?><?= $firstName !== null ? ', ' . View::e($firstName) : '' ?>
-            </h1>
+            <div class="flex items-center justify-center gap-3">
+                <?php if ($user !== null): ?>
+                    <a href="/profile" title="Trocar sua foto" class="hover-card block h-12 w-12 shrink-0 overflow-hidden rounded-full sm:h-14 sm:w-14">
+                        <?= Avatar::html($user['avatar_path'] ?? null, $user['name'], size: 'h-full w-full', radius: 'rounded-full', textSize: 'text-lg') ?>
+                    </a>
+                <?php endif; ?>
+                <h1 class="font-display text-3xl font-bold text-text-primary sm:text-4xl">
+                    <?= View::e($greeting) ?><?= $firstName !== null ? ', ' . View::e($firstName) : '' ?>
+                </h1>
+            </div>
             <p class="mt-3 text-sm text-text-secondary sm:text-base">
                 <?php if ($user !== null): ?>
                     Você está conectado(a) como <span class="text-text-primary"><?= View::e(Labels::role($user['role'])) ?></span>.

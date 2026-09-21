@@ -82,6 +82,7 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
               class="mt-4 flex flex-wrap items-end gap-3"
               onsubmit="this.querySelector('#generate-submit').disabled=true;
                         this.querySelector('#generate-spin').classList.remove('hidden');
+                        this.querySelector('#generate-icon').classList.add('hidden');
                         this.querySelector('#generate-label').textContent='Gerando… (pode levar 1–2 min)';">
             <?= Csrf::field() ?>
             <label class="min-w-[11rem] text-sm">
@@ -108,7 +109,8 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
             </label>
             <button type="submit" id="generate-submit" class="btn btn-primary relative z-10 px-4 py-2 text-sm">
                 <span id="generate-spin" class="btn-spin hidden h-4 w-4" aria-hidden="true"></span>
-                <span id="generate-label" class="[&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('ai') ?> Gerar rascunho</span>
+                <span id="generate-icon" class="[&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('ai') ?></span>
+                <span id="generate-label">Gerar rascunho</span>
             </button>
         </form>
     </div>

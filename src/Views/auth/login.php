@@ -13,7 +13,7 @@ use App\View;
 
 $describedBy = $error !== null ? 'login-error' : null;
 ?>
-<h1 class="font-display text-xl font-bold text-text-primary">Entrar</h1>
+<h1 class="font-display text-2xl font-bold text-text-primary">Entrar</h1>
 <p class="mt-1 text-sm text-text-secondary">Acesse com seu e-mail e senha.</p>
 
 <?php if ($flash !== null): ?>
@@ -37,24 +37,28 @@ $describedBy = $error !== null ? 'login-error' : null;
     <div>
         <label for="email" class="sr-only">E-mail</label>
         <div class="relative">
-            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-text-muted"><?= Icon::nav('mail') ?></span>
+            <span class="pointer-events-none absolute inset-y-0 left-2.5 flex items-center">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full <?= $error !== null ? 'bg-danger/10 text-danger' : 'bg-cyan/10 text-cyan' ?> [&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('mail') ?></span>
+            </span>
             <input type="email" id="email" name="email" required autocomplete="username" autofocus
                    placeholder="E-mail" value="<?= View::e($email) ?>"
                    <?php if ($describedBy): ?>aria-describedby="<?= $describedBy ?>" aria-invalid="true"<?php endif; ?>
-                   class="w-full rounded-full border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-[#0A3247] py-3 pl-11 pr-4 text-text-primary
-                          placeholder:text-text-muted focus:outline-none">
+                   class="w-full rounded-full border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-[#0A3247] py-3.5 pl-12 pr-4 text-text-primary
+                          shadow-[inset_0_1px_3px_rgba(0,0,0,.35)] placeholder:text-text-muted focus:outline-none">
         </div>
     </div>
 
     <div>
         <label for="password" class="sr-only">Senha</label>
         <div class="relative">
-            <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-text-muted"><?= Icon::nav('lock') ?></span>
+            <span class="pointer-events-none absolute inset-y-0 left-2.5 flex items-center">
+                <span class="flex h-7 w-7 items-center justify-center rounded-full <?= $error !== null ? 'bg-danger/10 text-danger' : 'bg-cyan/10 text-cyan' ?> [&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('lock') ?></span>
+            </span>
             <input type="password" id="password" name="password" required autocomplete="current-password"
                    placeholder="Senha"
                    <?php if ($describedBy): ?>aria-describedby="<?= $describedBy ?>" aria-invalid="true"<?php endif; ?>
-                   class="w-full rounded-full border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-[#0A3247] py-3 pl-11 pr-11 text-text-primary
-                          focus:outline-none">
+                   class="w-full rounded-full border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-[#0A3247] py-3.5 pl-12 pr-11 text-text-primary
+                          shadow-[inset_0_1px_3px_rgba(0,0,0,.35)] focus:outline-none">
             <button type="button" id="toggle-password" aria-label="Mostrar senha" aria-pressed="false"
                     class="absolute inset-y-0 right-0 flex items-center px-4 text-text-muted hover:text-text-primary">
                 <svg data-icon="show" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
@@ -70,9 +74,12 @@ $describedBy = $error !== null ? 'login-error' : null;
         </div>
     </div>
 
-    <button type="submit"
+    <?php // Estado de carregando no clique (assets/js/login.js): feedback na hora, antes do véu global
+           // (assets/js/veil.js) cobrir a tela — pedido do responsável, 2026-09-21: "transição ao logar". ?>
+    <button type="submit" id="login-submit"
             class="btn btn-primary w-full rounded-full px-4 py-3 text-sm font-bold">
-        Entrar
+        <span id="login-submit-spin" class="btn-spin hidden h-4 w-4" aria-hidden="true"></span>
+        <span id="login-submit-label">Entrar</span>
     </button>
 </form>
 
@@ -139,6 +146,24 @@ $loginUri = rtrim((string) Env::get('APP_URL', ''), '/') . '/oauth/callback';
             btn.querySelector('[data-icon=show]').classList.toggle('hidden', reveal);
             btn.querySelector('[data-icon=hide]').classList.toggle('hidden', !reveal);
             input.focus();
+        });
+    })();
+
+    (function () {
+        // Feedback na hora do clique em "Entrar" — spinner + "Entrando…" — antes do véu global
+        // (assets/js/veil.js) cobrir a tela na troca de página (pedido do responsável, 2026-09-21:
+        // "colocar uma transição ao logar"). `novalidate` no form: o navegador nunca bloqueia o
+        // envio aqui, então o evento sempre dispara de verdade.
+        var form = document.querySelector('form[action="/login"]');
+        var btn = document.getElementById('login-submit');
+        var spin = document.getElementById('login-submit-spin');
+        var label = document.getElementById('login-submit-label');
+        if (!form || !btn || !spin || !label) { return; }
+
+        form.addEventListener('submit', function () {
+            btn.disabled = true;
+            spin.classList.remove('hidden');
+            label.textContent = 'Entrando…';
         });
     })();
 </script>

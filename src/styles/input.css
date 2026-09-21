@@ -2042,6 +2042,37 @@
       content: none;
     }
   }
+
+  /* =====================================================================
+     Tela de login (pedido do responsável, 2026-09-21: "mais bonito") — o
+     fundo ganha duas manchas de luz respirando atrás do card (só opacity,
+     compositor), reaproveitando `article-breathe` (já usada no brilho dos
+     cards). O botão de entrar ganha um estado de carregando (spinner +
+     "Entrando…") — a transição de verdade entre telas já é o véu global
+     (assets/js/veil.js, dispara sozinho em qualquer submit); isso aqui é
+     só o feedback imediato de "recebi o clique", antes do véu cobrir.
+     ===================================================================== */
+  .auth-glow {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+    pointer-events: none;
+    animation: article-breathe 7s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .auth-glow { animation: none; opacity: .45; }
+  }
+
+  .btn-spin {
+    display: inline-block;
+    border: 2px solid rgb(5 11 15 / .35);
+    border-top-color: #050B0F;
+    border-radius: 999px;
+    animation: dial-ring-spin .7s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .btn-spin { animation: none; }
+  }
 }
 
 @property --angle {

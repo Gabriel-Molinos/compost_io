@@ -324,6 +324,14 @@ fontFamily: {
   miniaturas por linhas no mesmo header de `/sites` (placa de logo, nome grande, "Abrir site"), com
   o nicho como tag no canto de cima — uma versão mais simples (sem os fatos e estatísticas da tela
   cheia, que não cabem numa prévia).
+- **2026-09-21** — **`/login` redesenhado** (pedido do responsável: "mais bonito" + "colocar uma
+  transição ao logar"). Fundo com duas manchas de luz respirando nos cantos (`.auth-glow`, só
+  `opacity`, reaproveita `article-breathe`) e a logo com um brilho pulsando atrás (`animate-pulse`
+  do Tailwind). Os ícones de e-mail/senha viraram selos redondos tingidos (ciano, ou vermelho junto
+  com a borda do campo quando dá erro), campos com mais respiro e uma sombra interna sutil. O botão
+  "Entrar" ganha um estado de carregando (spinner + "Entrando…") na hora do clique, síncrono com o
+  evento `submit` — feedback imediato antes do véu global (`assets/js/veil.js`, já dispara em
+  qualquer envio de formulário) cobrir a tela na troca pra Início.
 
 ## Ver também
 

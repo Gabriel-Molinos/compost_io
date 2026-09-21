@@ -38,11 +38,19 @@ use App\View;
         }
     </style>
 </head>
-<body class="app-bg flex min-h-screen flex-col items-center justify-center px-6 py-12 font-sans text-text-primary antialiased">
+<body class="app-bg relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-12 font-sans text-text-primary antialiased">
     <div class="page-veil" aria-hidden="true"></div>
+
+    <?php // Brilho ambiente atrás do card — só opacity (compositor), duas manchas respirando fora de fase. ?>
+    <span class="auth-glow -left-24 -top-32 h-80 w-80 bg-cyan/20" aria-hidden="true"></span>
+    <span class="auth-glow -bottom-32 -right-20 h-96 w-96 bg-cyan/10" aria-hidden="true" style="animation-delay: 3.2s"></span>
+
     <main id="conteudo" class="relative z-10 w-full max-w-sm">
-        <img src="/assets/brand/logo-lockup.webp" alt="COMPOST — Editorial Dashboard"
-             class="mx-auto mb-8 h-auto w-56 drop-shadow-[0_0_30px_rgba(0,208,240,0.25)]">
+        <div class="relative mx-auto mb-8 w-56">
+            <span class="pointer-events-none absolute inset-0 -z-10 animate-pulse rounded-full bg-cyan/20 blur-2xl" aria-hidden="true"></span>
+            <img src="/assets/brand/logo-lockup.webp" alt="COMPOST — Editorial Dashboard"
+                 class="h-auto w-full drop-shadow-[0_0_30px_rgba(0,208,240,0.25)]">
+        </div>
 
         <div class="auth-card relative rounded-3xl border border-border bg-surface p-7 shadow-2xl shadow-black/40 sm:p-8">
             <?= $content ?>

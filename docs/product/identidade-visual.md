@@ -301,6 +301,15 @@ fontFamily: {
   nasce tingido pelo tom do escopo (ciano/violeta), sempre visível — não só no hover/ativo como
   antes (só o ícone carregava cor). Pedido do responsável: "preciso que tenha uma diferença mais
   óbvia entre navegação e sites".
+- **2026-09-21** — **degradê animado, seta por escopo, navegar só de scroll** (mesmo pedido, num
+  fôlego só): a região preta atrás dos itens do anel (`.dial-band`) deixou de ser um preto parado
+  — agora tem um degradê que gira sozinho, bem devagar (36s por volta, só `transform`/compositor,
+  a mesma técnica do anel tracejado do avatar — nunca recalcula o degradê em si, mesmo o círculo
+  sendo enorme). A seta fixa (`.dial-marker`) troca de cor sozinha conforme o item mais perto do
+  centro: ciano na navegação, violeta dentro do site (`assets/js/dial.js` decide a cada quadro,
+  classe `.dial.scope-site`). E a roda do mouse ganhou navegação: continua girando o mostrador,
+  mas se parar de rolar num item diferente da página atual (550ms de pausa), navega sozinha pra
+  ele — o clique continua indo direto, sem mudar.
 
 ## Ver também
 

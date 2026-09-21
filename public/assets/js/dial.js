@@ -12,8 +12,14 @@
  *   - ao carregar uma página, o dial NASCE na posição da página anterior
  *     (sessionStorage) e ROLA até o item da página nova;
  *   - clicar num item fora do centro rola até ele e só então navega;
- *   - arrastar (mouse/toque), roda do mouse, setas ↑/↓ e Tab giram o dial; parado
- *     ~2,6 s ele volta pro item da página atual;
+ *   - arrastar (mouse/toque), setas ↑/↓ e Tab giram o dial; parado ~2,6 s ele volta
+ *     pro item da página atual;
+ *   - a roda do mouse também gira o dial, mas ela NAVEGA sozinha: ~550ms depois do
+ *     último giro, se o item no centro for diferente da página atual, vai pra ele
+ *     (pedido do responsável, 2026-09-21: "mudar a página só com o scroll" — o clique
+ *     continua funcionando igual, direto, sem esperar);
+ *   - a seta fixa (`.dial-marker`) muda de cor com o escopo do item mais perto do
+ *     centro — ciano na navegação, violeta dentro do site (`.dial.scope-site`);
  *   - com poucos itens cabendo no arco a lista não dá a volta (sem repetição);
  *   - no celular o dial é uma gaveta (botão redondo abre, × / Esc / toque fora fecham);
  *     no desktop ele é fixo.
@@ -110,10 +116,12 @@
 
     function render(p) {
       if (!g.Rm) { return; }
+      var bestI = -1, bestA = Infinity; // item real mais perto do centro — decide a cor da seta
       for (var i = 0; i < n; i++) {
         var d = loop ? wrap(i - p, n) : i - p;
         var a = Math.abs(d);
         var el = links[i];
+        if (!isSep(i) && a < bestA) { bestA = a; bestI = i; }
         if (a > g.half + 0.5) {
           if (el.style.opacity !== '0') { el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.removeAttribute('data-center'); }
           continue;
@@ -134,7 +142,12 @@
         var center = a < 0.5 && !isSep(i);
         if (center !== el.hasAttribute('data-center')) { el.toggleAttribute('data-center', center); }
       }
-      // As marcas do mostrador giram junto com a seleção (mesmo passo angular).
+      // A seta (.dial-marker) muda de cor com o escopo do item mais perto do centro — ciano na
+      // navegação, violeta dentro do site (pedido do responsável, 2026-09-21).
+      if (bestI >= 0) {
+        var wantSite = links[bestI].dataset.scope !== 'main';
+        if (dial.classList.contains('scope-site') !== wantSite) { dial.classList.toggle('scope-site', wantSite); }
+      }
     }
 
     function stop() { if (raf) { window.cancelAnimationFrame(raf); raf = 0; } }
@@ -266,8 +279,11 @@
       if (justDragged) { e.preventDefault(); e.stopImmediatePropagation(); }
     }, true);
 
-    // Roda do mouse gira o dial.
+    // Roda do mouse gira o dial e, ao parar de rolar num item diferente da página atual, navega
+    // até ele sozinho — não precisa clicar (pedido do responsável, 2026-09-21: "tem que ter como
+    // ir mudando a página só com o scroll"). O clique continua funcionando igual, pra ir direto.
     var lastWheel = 0;
+    var wheelNav = 0;
     panel.addEventListener('wheel', function (e) {
       if (Math.abs(e.deltaY) < 4) { return; }
       e.preventDefault();
@@ -275,8 +291,16 @@
       if (now - lastWheel < 130) { return; }
       lastWheel = now;
       var dir = e.deltaY > 0 ? 1 : -1;
-      rollTo(real(Math.round(pos) + dir, dir), 260);
-      scheduleReturn(2600);
+      var target = real(Math.round(pos) + dir, dir);
+      rollTo(target, 260);
+      window.clearTimeout(wheelNav);
+      wheelNav = window.setTimeout(function () {
+        var i = Math.round(pos);
+        var a = links[i];
+        if (!a || isSep(i) || i === activeIdx || !a.href) { return; }
+        storage(key, i);
+        veil.go(a.href);
+      }, 550); // pausa curta: dá pra passear por vários itens antes de soltar e ir
     }, { passive: false });
 
     // Foco (Tab) e setas: o dial acompanha.

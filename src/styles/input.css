@@ -667,9 +667,33 @@
     height: calc(var(--ro) * 2);
     left: calc(var(--dial-w) - var(--ro) * 2);
     top: calc(50% - var(--ro));
-    background: radial-gradient(circle closest-side, #0A2647 0%, #07182A 72%, #050B0F 100%);
+    overflow: hidden;
+    background: #050B0F; /* preto de base — o degradê animado (::before) desenha por cima */
+  }
+  /* Degradê animado, não mais um fundo preto parado (pedido do responsável, 2026-09-21). Gira por
+     `transform` (compositor, barato mesmo num círculo enorme — mesma técnica do anel tracejado do
+     avatar, `dial-ring-spin`), nunca recalculando o degradê em si: maior que o círculo (inset
+     negativo) pra nunca mostrar canto vazio ao girar, bem devagar (40s) pra ser ambiente, não chamar
+     atenção. */
+  .dial-band::before {
+    content: '';
+    position: absolute;
+    inset: -25%;
+    /* `repeating-` fecha o ciclo sozinho (sem costura no encontro 0°/360°) e repete o padrão a
+       cada 90° — a região atrás dos itens (a mais "preta", perto da borda externa do círculo)
+       respira em vez de ficar parada, sem virar um efeito chamativo. */
+    background: repeating-conic-gradient(#050B0F 0deg, #0A2647 20deg, #050B0F 45deg, #07182A 65deg, #050B0F 90deg);
+    animation: dial-band-drift 36s linear infinite;
+  }
+  /* Brilho ciano da borda, por cima do degradê animado. */
+  .dial-band::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
     box-shadow: inset 0 0 0 1px rgba(0, 208, 240, .32), inset 0 0 46px rgba(0, 208, 240, .1);
   }
+  @keyframes dial-band-drift { to { transform: rotate(360deg); } }
   .dial-disc {
     width: calc(var(--ri) * 2);
     height: calc(var(--ri) * 2);
@@ -689,7 +713,9 @@
     border-radius: 50%;
     background: repeating-radial-gradient(circle at 50% 50%, rgba(240, 248, 255, .045) 0 1px, transparent 1px 38px);
   }
-  /* Ponteiro fixo no meio da borda: aponta o item selecionado. */
+  /* Ponteiro fixo no meio da borda: aponta o item selecionado. Cor por escopo — ciano na
+     navegação, violeta dentro do site (`.dial.scope-site`, alternada por assets/js/dial.js a
+     cada quadro, conforme o item mais perto do centro; pedido do responsável, 2026-09-21). */
   .dial-marker {
     position: absolute;
     right: 0;
@@ -702,6 +728,11 @@
     filter: drop-shadow(0 0 6px #00D0F0);
     z-index: 70;
     pointer-events: none;
+    transition: background-color 240ms ease, filter 240ms ease;
+  }
+  .dial.scope-site .dial-marker {
+    background: #A78BFA;
+    filter: drop-shadow(0 0 6px #A78BFA);
   }
 
   /* ---- Itens do anel ---- */
@@ -1124,9 +1155,10 @@
 
   @media (prefers-reduced-motion: reduce) {
     .dial, .dial-panel { transition: none; }
-    .dial-avatar::before, .nav-badge::after, .clock-colon { animation: none; }
+    .dial-avatar::before, .nav-badge::after, .clock-colon, .dial-band::before { animation: none; }
     .dial-btn, .dial-btn:hover { transform: none; }
     .dial-avatar:hover { transform: none; }
+    .dial-marker { transition: none; }
   }
 
   /* Véu de transição de página (assets/js/dial.js) — pedido do responsável,

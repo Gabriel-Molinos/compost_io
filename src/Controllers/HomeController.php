@@ -6,6 +6,8 @@ namespace App\Controllers;
 
 use App\Database\Connection;
 use App\Services\AuthService;
+use App\Services\NotificationService;
+use App\Services\PlatformFeedbackService;
 use App\Services\SiteService;
 use App\View;
 
@@ -17,19 +19,35 @@ final class HomeController
 
         $sites = [];
         $sitesTotal = 0;
+        $notifications = [];
+        $unreadNotifications = 0;
+        $pendingFeedback = 0;
         if ($user !== null) {
             $isAdmin = $user['role'] === 'ADMIN';
             $siteService = new SiteService();
             $all = $isAdmin ? $siteService->all() : $siteService->forUser((int) $user['id']);
             $sitesTotal = count($all);
             $sites = array_slice($all, 0, 6); // cartão-grid embaixo, cap visual — "ver todos" cobre o resto
+
+            // Prévia da tela de Início (pedido do responsável, 2026-09-21: "adiciona os botões de
+            // feedback e uma sessão de notificações"). Só as 4 mais recentes — a lista completa é
+            // em /notifications; o pendente de feedback só importa pro ADMIN (é quem revisa).
+            $notificationService = new NotificationService();
+            $notifications = $notificationService->listForUser((int) $user['id'], 4);
+            $unreadNotifications = $notificationService->unreadCount((int) $user['id']);
+            if ($isAdmin) {
+                $pendingFeedback = (new PlatformFeedbackService())->countPending();
+            }
         }
 
         View::render('home/index', [
-            'title'      => 'Início',
-            'user'       => $user,
-            'sites'      => $sites,
-            'sitesTotal' => $sitesTotal,
+            'title'               => 'Início',
+            'user'                => $user,
+            'sites'               => $sites,
+            'sitesTotal'          => $sitesTotal,
+            'notifications'       => $notifications,
+            'unreadNotifications' => $unreadNotifications,
+            'pendingFeedback'     => $pendingFeedback,
         ]);
     }
 

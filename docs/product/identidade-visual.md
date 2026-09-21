@@ -310,6 +310,20 @@ fontFamily: {
   classe `.dial.scope-site`). E a roda do mouse ganhou navegação: continua girando o mostrador,
   mas se parar de rolar num item diferente da página atual (550ms de pausa), navega sozinha pra
   ele — o clique continua indo direto, sem mudar.
+- **2026-09-21** — **`/` (Início) redesenhada** (pedido do responsável: "imagem grande no centro,
+  texto embaixo, mais parecida com as páginas atualizadas"): o cabeçalho virou um `.article-card`
+  grande com a marca da COMPOST em destaque no centro (o ícone redondo, com o mesmo brilho ciano
+  usado no logo do login) e a saudação embaixo dela, em vez da linha avatar+texto de antes. Duas
+  seções novas: **Feedback**, sempre visível pra qualquer usuário, com dois botões ("Dar feedback"
+  e "Ver feedback recebido"/"Ver meu histórico", conforme o papel) e o número de pendentes pro
+  ADMIN; e **Notificações**, prévia das 4 mais recentes no mesmo sistema de card das notificações
+  (tom pelo tipo, apagado se já lida), clicar marca como lida e abre — a lista cheia continua em
+  `/notifications`. `HomeController` ganhou as consultas de `NotificationService` e
+  `PlatformFeedbackService` pra isso. A foto do usuário (que tinha saído da tela) voltou como um
+  selo pequeno sobre o canto da marca, linkando pro perfil. E "Meus sites"/"Sites" trocou a grade de
+  miniaturas por linhas no mesmo header de `/sites` (placa de logo, nome grande, "Abrir site"), com
+  o nicho como tag no canto de cima — uma versão mais simples (sem os fatos e estatísticas da tela
+  cheia, que não cabem numa prévia).
 
 ## Ver também
 

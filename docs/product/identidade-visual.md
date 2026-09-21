@@ -357,6 +357,13 @@ fontFamily: {
   "Sem diretrizes"), entrada animada em cascata. Estado vazio ganhou o mesmo bloco tracejado com
   ícone + CTA usado em notificações/sites. Botões Editar/Remover continuam os mesmos (mesma ação,
   mesmo `data-confirm`) — só o card ao redor mudou.
+- **2026-09-21** — **`/rules` (Interesses e não-interesses) redesenhada** (pedido do responsável:
+  "muda tudo, deixa melhor e mais atualizado"). Os dois painéis (Interesses/Não-interesses) viraram
+  `.article-card` (ciano/âmbar) com tag do total de regras no canto, mais 2 cartões de estatística
+  no topo. Cada regra é uma linha com os pontinhos de intensidade maiores + o rótulo por extenso
+  ("muito alta"…) ao lado, entrada em cascata, botões de editar/remover redondos. Estado vazio por
+  painel ganhou ícone + texto (era só uma frase solta). O seletor do tour guiado
+  (`[data-tour="rules-panels"]`) continua no mesmo lugar — o tutorial não quebrou.
 
 ## Ver também
 

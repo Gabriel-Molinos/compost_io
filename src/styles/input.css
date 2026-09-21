@@ -594,8 +594,8 @@
        .dial            a coluna (encolhe a 0 quando recolhida no desktop;
                         vira gaveta por cima da página no celular)
        .dial-band       o círculo externo (anel escuro + fio de luz)
-       .dial-ticks      marcas de mostrador na borda do anel — giram com a seleção
        .dial-disc       o disco interno, com varredura de radar
+       .dial-marker     seta fixa que aponta o item selecionado (o único "ponteiro" que fica)
        .dial-ring       camada dos itens; cada .dial-item recebe transform (posição no
                         arco) do JS a cada quadro
        .dial-btn        atalhos redondos (notificações, feedback, sair)
@@ -657,8 +657,7 @@
   @media (min-width: 1024px) { .dial-backdrop { display: none; } }
 
   .dial-band,
-  .dial-disc,
-  .dial-ticks {
+  .dial-disc {
     position: absolute;
     border-radius: 50%;
     pointer-events: none;
@@ -670,20 +669,6 @@
     top: calc(50% - var(--ro));
     background: radial-gradient(circle closest-side, #0A2647 0%, #07182A 72%, #050B0F 100%);
     box-shadow: inset 0 0 0 1px rgba(0, 208, 240, .32), inset 0 0 46px rgba(0, 208, 240, .1);
-  }
-  /* Marcas do mostrador: ficam na borda de fora do anel e giram com a seleção (o JS gira por transform). */
-  .dial-ticks {
-    --tick-r: calc(var(--ro) - .45rem);
-    width: calc(var(--tick-r) * 2);
-    height: calc(var(--tick-r) * 2);
-    left: calc(var(--dial-w) - var(--ro) - var(--tick-r));
-    top: calc(50% - var(--tick-r));
-    background:
-      repeating-conic-gradient(from -.14deg, rgba(0, 208, 240, .9) 0 .28deg, transparent .28deg 6deg),
-      repeating-conic-gradient(from -.07deg, rgba(143, 166, 188, .42) 0 .14deg, transparent .14deg 2deg);
-    -webkit-mask-image: radial-gradient(circle closest-side, transparent calc(100% - .7rem), #000 calc(100% - .7rem), #000 calc(100% - .22rem), transparent calc(100% - .22rem));
-    mask-image: radial-gradient(circle closest-side, transparent calc(100% - .7rem), #000 calc(100% - .7rem), #000 calc(100% - .22rem), transparent calc(100% - .22rem));
-    will-change: transform; /* o dial.js gira por transform direto (sem variável CSS: nada de recalcular estilo por quadro) */
   }
   .dial-disc {
     width: calc(var(--ri) * 2);

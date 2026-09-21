@@ -292,6 +292,9 @@ fontFamily: {
   `assets/js/dial.js`. Títulos de seção ("Navegação", "Meus sites", "Site · X") maiores
   (`.58rem` → `.62rem`) e ganharam um ícone (casa / grade), reforçando de relance o que é
   navegação geral e o que é "meus sites".
+- **2026-09-21** — **sem marcas de mostrador**: as marcas tipo ponteiro de relógio na borda do
+  disco (`.dial-ticks`, giravam com a seleção) saíram — pedido do responsável, "deixa só a seta
+  indicando onde é a página atual". Fica só a `.dial-marker`, fixa, apontando o item selecionado.
 
 ## Ver também
 

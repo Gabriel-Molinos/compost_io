@@ -82,7 +82,6 @@ if ($showFeedback) {
 <aside class="dial" data-dial aria-label="Navegação principal">
     <div class="dial-panel">
         <span class="dial-band" aria-hidden="true"></span>
-        <span class="dial-ticks" data-dial-ticks aria-hidden="true"></span>
         <span class="dial-disc" aria-hidden="true"></span>
         <span class="dial-marker" aria-hidden="true"></span>
 

@@ -67,7 +67,6 @@
   function init(dial) {
     var panel = dial.querySelector('.dial-panel');
     var ring = dial.querySelector('[data-ring]');
-    var ticks = dial.querySelector('[data-dial-ticks]');
     if (!panel || !ring) { return; }
     // `links` traz os itens E os divisores de grupo (`.dial-sep`), na ordem do DOM: os divisores ocupam
     // uma posição no arco como qualquer item, mas nunca são selecionados (real()/nearestReal() pulam).
@@ -136,7 +135,6 @@
         if (center !== el.hasAttribute('data-center')) { el.toggleAttribute('data-center', center); }
       }
       // As marcas do mostrador giram junto com a seleção (mesmo passo angular).
-      if (ticks) { ticks.style.transform = 'rotate(' + (-p * g.step * 180 / Math.PI).toFixed(3) + 'deg)'; }
     }
 
     function stop() { if (raf) { window.cancelAnimationFrame(raf); raf = 0; } }

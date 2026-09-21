@@ -1562,6 +1562,22 @@
     }
   }
 
+  /* Barra de progresso DETERMINADA (a % é real — Views/sites/goals/index.php: artigos aprovados
+     ÷ meta do mês). `width` já vem certa via `style`; só o preenchimento "cresce" da esquerda na
+     entrada — por `transform: scaleX` (compositor), nunca animando `width` em si. */
+  .goal-bar-fill {
+    transform-origin: left;
+    animation: goal-bar-grow 700ms cubic-bezier(.22, 1, .36, 1) backwards;
+    animation-delay: var(--card-enter, 0ms);
+  }
+  @keyframes goal-bar-grow {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .goal-bar-fill { animation: none; }
+  }
+
   /* =====================================================================
      Card de rascunho na lista de Produção (pedido do responsável,
      2026-09-18: "o background dos posts na produção podia ser de acordo

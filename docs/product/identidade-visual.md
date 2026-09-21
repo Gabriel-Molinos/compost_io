@@ -374,6 +374,13 @@ fontFamily: {
   antes (editar sem recarregar, desativar, remover com confirmação, contador de caracteres) segue
   funcionando igual — só o card ao redor mudou. Testado de ponta a ponta (criar → editar →
   desativar → remover) numa lição de teste, removida depois.
+- **2026-09-21** — **`/goals` (Metas editoriais) redesenhada** (pedido do responsável: "mais
+  bonita"). Cada meta vira `.article-card` — tom por estado (verde = meta batida, ciano = mês
+  atual, cinza = mês passado sem bater a meta) — com tags no canto ("Mês atual", "Meta batida",
+  "Passou do total"). A barra de progresso (artigos aprovados ÷ total da meta, dado que já existia
+  mas não tinha destaque nenhum) agora cresce da esquerda ao entrar na tela (`.goal-bar-fill`, novo,
+  só `transform: scaleX` — mesma regra do resto do app de só animar transform/opacity). Estado vazio
+  com ícone + CTA. O gancho do tour guiado (`[data-tour="new-goal"]`) continua no mesmo botão.
 
 ## Ver também
 

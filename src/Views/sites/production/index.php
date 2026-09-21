@@ -55,6 +55,15 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
     . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/>'
     . '<path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/>'
     . '<path d="M10 11v6"/><path d="M14 11v6"/></svg>';
+
+// Tag "de qual meta é" no card do rascunho (pedido do responsável, 2026-09-21) — período abreviado
+// (mesma abreviação do gráfico de Produção em sites/show.php), pra caber numa tag pequena.
+$mesesAbrev = ['01' => 'jan', '02' => 'fev', '03' => 'mar', '04' => 'abr', '05' => 'mai', '06' => 'jun',
+    '07' => 'jul', '08' => 'ago', '09' => 'set', '10' => 'out', '11' => 'nov', '12' => 'dez'];
+$goalTagLabel = static function (string $period) use ($mesesAbrev): string {
+    [$y, $m] = explode('-', $period);
+    return 'Meta ' . ($mesesAbrev[$m] ?? $m) . '/' . substr($y, 2);
+};
 ?>
 <div class="flex items-center gap-3">
     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan/10 text-cyan"><?= Icon::nav('production') ?></span>
@@ -259,6 +268,12 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
                     <?php if ($isGenerating): ?><span class="status-dot h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true"></span><?php endif; ?>
                     <?= View::e(Labels::articleStatus((string) $a['status'])) ?>
                 </span>
+                <?php if (!empty($a['goal_period'])): ?>
+                    <?php // Tag da meta, no canto oposto ao da situação — de qual meta (mês) este rascunho é. ?>
+                    <span class="article-card-tags">
+                        <span class="article-card-tag article-card-tag--cyan"><?= Icon::nav('goals') ?><?= View::e($goalTagLabel((string) $a['goal_period'])) ?></span>
+                    </span>
+                <?php endif; ?>
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
                         <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>"

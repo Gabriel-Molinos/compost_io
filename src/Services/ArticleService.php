@@ -81,10 +81,12 @@ final class ArticleService
             "SELECT a.id, a.title, a.status, a.focus_keyword, a.category_id, a.created_at,
                     a.attempt_number, a.lineage_id, a.source,
                     c.name AS category_name,
+                    g.period AS goal_period,
                     COALESCE((SELECT SUM(cost) FROM ai_executions e WHERE e.article_id = a.id), 0) AS ai_cost,
                     (SELECT MAX(word_count) FROM article_versions v WHERE v.article_id = a.id) AS word_count
              FROM articles a
              LEFT JOIN categories c ON c.id = a.category_id
+             LEFT JOIN goals g ON g.id = a.goal_id
              WHERE {$where}
              ORDER BY a.created_at DESC
              LIMIT :lim OFFSET :off"

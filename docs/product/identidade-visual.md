@@ -387,6 +387,10 @@ fontFamily: {
   "Gerando…" na hora do clique (reaproveita `.btn-spin`, criado pro `/login`). A lista de
   rascunhos, filtros e paginação abaixo não mudaram — fora do pedido desta vez. O gancho do tour
   (`[data-tour="generate-form"]`) continua no mesmo lugar.
+- **2026-09-21** — **tag de meta nos rascunhos de `/production`** (pedido do responsável): cada
+  card mostra de qual meta (mês) ele é, ex. "Meta set/26", no canto oposto ao da tag de situação.
+  `ArticleService::allForSite()` ganhou `LEFT JOIN goals` + `g.period AS goal_period` (rascunho sem
+  meta — `goal_id` nulo — simplesmente não mostra a tag).
 
 ## Ver também
 

@@ -336,6 +336,20 @@ fontFamily: {
   longe demais do card pra dar pra notar. Manchas presas ao PRÓPRIO wrapper do card agora, bem mais
   fortes e coladas nele, e o card trocou o fundo chapado por um degradê (`#0C3B58` → `#071E2E`) —
   diferença óbvia de cara, não só no detalhe.
+- **2026-09-21** — **Visão geral do site redesenhada** (pedido do responsável: "mais bonita, mais
+  atualizada, mais profissional, com tags, botões, animações"). Card-herói no sistema
+  `.article-card`: logo grande e centralizada como header (mesma linguagem da Início), tom do card
+  pelo pior sinal do site (ativo/atenção/custo alto), tags no canto (Ativo/Inativo, "Precisa de
+  atenção", "Rascunhos parados", custo). "Identidade editorial" virou 4 cartões com ícone
+  (nicho/idioma/tom/público) em vez de uma tabela `dl` — idioma mostra a bandeira do preset. Os
+  atalhos de "Configuração editorial" ganharam a setinha "→" no hover, igual aos outros cards
+  clicáveis do app. O gráfico de produção ganhou um degradê ciano → violeta (mesmo par de cores da
+  navegação dentro do site) e cada barra cresce ao entrar (`SvgChart::bars()`, novos parâmetros
+  opcionais `colorEnd`/`animated` — não mudam quem já chama sem eles).
+- **2026-09-21** — **bandeira do inglês: Canadá → Estados Unidos** (pedido do responsável). Cor
+  central em `Languages::presets()['en']` — vale em toda tela que mostra a bandeira do idioma
+  (Visão geral, `/sites`, formulário do site), não só uma tela. `Flag::PARTS` ganhou `'us'`
+  (listras + cantão azul simplificados, mesmo estilo das outras bandeiras autorais do arquivo).
 
 ## Ver também
 

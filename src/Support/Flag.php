@@ -25,6 +25,14 @@ final class Flag
             . '<path fill="#D80621" d="M12 2.6l1 2 1.2-.5-.5 3.1 1.7-1.5.4.9 2.2-.4-.8 2.2.7.4-2.9 2.6.3 1-3-.4V14h-.6v-2.4l-3 .4.3-1-2.9-2.6.7-.4-.8-2.2 2.2.4.4-.9 1.7 1.5-.5-3.1 1.2.5Z"/>',
         'es' => '<rect width="24" height="16" fill="#AA151B"/>'
             . '<rect y="4" width="24" height="8" fill="#F1BF00"/>',
+        'us' => '<rect width="24" height="16" fill="#B22234"/>'
+            . '<rect y="1.23" width="24" height="1.23" fill="#fff"/>'
+            . '<rect y="3.69" width="24" height="1.23" fill="#fff"/>'
+            . '<rect y="6.15" width="24" height="1.23" fill="#fff"/>'
+            . '<rect y="8.61" width="24" height="1.23" fill="#fff"/>'
+            . '<rect y="11.08" width="24" height="1.23" fill="#fff"/>'
+            . '<rect y="13.54" width="24" height="1.23" fill="#fff"/>'
+            . '<rect width="10" height="8.6" fill="#3C3B6E"/>',
     ];
 
     public static function svg(string $code): string

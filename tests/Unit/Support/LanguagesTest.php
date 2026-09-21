@@ -16,7 +16,7 @@ final class LanguagesTest extends TestCase
 
         $this->assertSame(['pt', 'en', 'es'], array_keys($presets));
         $this->assertSame('br', $presets['pt']['flag']);
-        $this->assertSame('ca', $presets['en']['flag']);
+        $this->assertSame('us', $presets['en']['flag']); // era 'ca' (Canadá) — trocada pra EUA, 2026-09-21
         $this->assertSame('es', $presets['es']['flag']);
         // Valor gravado cabe no limite de 20 caracteres do campo (SiteController::validate).
         foreach ($presets as $preset) {
@@ -53,7 +53,7 @@ final class LanguagesTest extends TestCase
 
     public function testFlagRendersSvgAndFallsBackForUnknownCode(): void
     {
-        foreach (['br', 'ca', 'es'] as $code) {
+        foreach (['br', 'us', 'es'] as $code) {
             $this->assertStringStartsWith('<svg', Flag::svg($code));
         }
         $this->assertStringContainsString('#8FA6BC', Flag::svg('xx'));

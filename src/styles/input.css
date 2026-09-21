@@ -605,7 +605,7 @@
      ===================================================================== */
   .dial {
     --dial-w: 23rem;
-    --band: 9rem;
+    --band: 9.5rem; /* pedido do responsável (2026-09-21): itens maiores/mais legíveis pra quem não é da área de tecnologia */
     --H: 100vh;
     --ro: calc(var(--H) * 1.1017);
     --ri: calc(var(--ro) - var(--band));
@@ -758,15 +758,15 @@
     isolation: isolate;
     display: flex;
     align-items: center;
-    gap: .5rem;
-    height: 2.7rem;
-    padding: 0 .55rem 0 .4rem;
+    gap: .55rem;
+    height: 2.95rem;
+    padding: 0 .6rem 0 .45rem;
     border: 1px solid transparent;
     border-radius: 9999px;
-    color: #8FA6BC;
-    font-size: .82rem;
-    font-weight: 500;
-    line-height: 1.1;
+    color: #B9CADA; /* mais claro que antes: legível mesmo fora do centro (pedido: navegação óbvia p/ qualquer usuário) */
+    font-size: .92rem;
+    font-weight: 600;
+    line-height: 1.15;
     pointer-events: auto;
     transition: color 180ms ease, background-color 220ms ease, border-color 220ms ease, box-shadow 260ms ease;
   }
@@ -783,17 +783,20 @@
   .dial-sep {
     display: flex;
     align-items: center;
-    gap: .45rem;
-    height: 1.4rem;
+    gap: .32rem;
+    height: 1.5rem;
     padding: 0 .4rem;
     color: #7B8FA1;
-    font-size: .58rem;
-    font-weight: 700;
-    letter-spacing: .18em;
+    font-size: .62rem; /* maior que antes (.58rem): título de seção bem legível (pedido: "mais óbvio") */
+    font-weight: 800;
+    letter-spacing: .1em;
     text-transform: uppercase;
     white-space: nowrap;
     pointer-events: none;
   }
+  .dial-sep > span.truncate { min-width: 0; }
+  .dial-sep-icon { flex-shrink: 0; opacity: .9; }
+  .dial-sep-icon svg { display: block; width: 11px; height: 11px; }
   .dial-sep::before,
   .dial-sep::after {
     content: '';
@@ -856,14 +859,14 @@
     display: grid;
     flex-shrink: 0;
     place-items: center;
-    width: 1.65rem;
-    height: 1.65rem;
+    width: 1.9rem;
+    height: 1.9rem;
     border-radius: 50%;
-    background: rgb(var(--tone) / .16);
+    background: rgb(var(--tone) / .2);
     color: rgb(var(--tone));
     transition: transform 240ms cubic-bezier(.34, 1.56, .64, 1), background-color 200ms ease, color 200ms ease, box-shadow 250ms ease;
   }
-  .dial-icon svg { width: 15px; height: 15px; }
+  .dial-icon svg { width: 17px; height: 17px; }
   .dial-item:hover .dial-icon { transform: scale(1.12) rotate(-8deg); background: rgb(var(--tone) / .3); }
   .dial-text { position: relative; min-width: 0; flex: 1; }
   .dial-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: transform 240ms ease; }

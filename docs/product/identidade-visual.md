@@ -283,6 +283,15 @@ fontFamily: {
   tipo enquanto não lida, apagado depois de lida. Interação sem recarregar: marcar UMA como
   lida/não lida e "marcar todas" (fetch → JSON), atualizando contador, selo do sino na sidebar e
   cor do card; clicar no card abre. Endpoints novos: `POST /notifications/{id}/read|unread`.
+- **2026-09-21** — **sidebar mais óbvia** (pedido do responsável: quem usa não é da área de
+  tecnologia, os botões de navegação e "Meus sites" precisam ser óbvios pra qualquer pessoa
+  entender de cara). Itens do anel maiores e mais legíveis: fonte `.82rem` → `.92rem` e peso 500 →
+  600, ícone `1.65rem` → `1.9rem`, cor do texto mais clara (`#8FA6BC` → `#B9CADA`), faixa do disco
+  `--band` `9rem` → `9.5rem` pra caber o texto maior sem cortar. Itens fora do centro (que antes
+  quase desapareciam) ficam bem mais legíveis: piso de opacidade `.38` → `.62` em
+  `assets/js/dial.js`. Títulos de seção ("Navegação", "Meus sites", "Site · X") maiores
+  (`.58rem` → `.62rem`) e ganharam um ícone (casa / grade), reforçando de relance o que é
+  navegação geral e o que é "meus sites".
 
 ## Ver também
 

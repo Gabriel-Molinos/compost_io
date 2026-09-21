@@ -41,14 +41,14 @@ $toneFor = static fn (string $scope): string => $scope === 'main' ? 'nav-tone-cy
 // (Início, Sites…) do que é de DENTRO do site atual (ou dos atalhos de sites). Os itens levam `scope`
 // (main | site | sites): os do site têm o ícone quadrado, os principais são redondos.
 /** @var list<array<string,mixed>> $ring */
-$ring = [['sep' => 'Navegação', 'scope' => 'main']];
+$ring = [['sep' => 'Navegação', 'scope' => 'main', 'sepIcon' => 'home']];
 foreach ($globalNav as [$href, $label, $icon]) {
     $ring[] = ['href' => $href, 'label' => $label, 'icon' => $icon, 'active' => $isActive($href), 'group' => 'Navegação', 'scope' => 'main', 'tour' => null, 'letter' => null, 'inactive' => false];
 }
 $ringTour = null;
 if ($hasSiteNav) {
     $ringTour = 'site-tabs';
-    $ring[] = ['sep' => 'Site · ' . $site['name'], 'scope' => 'site'];
+    $ring[] = ['sep' => 'Site · ' . $site['name'], 'scope' => 'site', 'sepIcon' => 'sites'];
     foreach ($tabs as [$key, $label, $href, $visible]) {
         if (!$visible) {
             continue;
@@ -57,7 +57,7 @@ if ($hasSiteNav) {
     }
 } elseif ($quickSites !== []) {
     $ringTour = 'quick-sites';
-    $ring[] = ['sep' => 'Meus sites', 'scope' => 'sites'];
+    $ring[] = ['sep' => 'Meus sites', 'scope' => 'sites', 'sepIcon' => 'sites'];
     foreach ($quickSites as $s) {
         $ring[] = [
             'href' => '/sites/' . $s['id'], 'label' => (string) $s['name'], 'icon' => 'sites', 'active' => false, 'group' => 'Meus sites', 'scope' => 'sites',
@@ -131,7 +131,10 @@ if ($showFeedback) {
         <nav class="dial-ring" data-ring aria-label="Principal"<?= $ringTour !== null ? ' data-tour="' . $ringTour . '"' : '' ?>>
             <?php foreach ($ring as $it): ?>
                 <?php if (isset($it['sep'])): ?>
-                    <span class="dial-sep" data-scope="<?= $it['scope'] ?>" aria-hidden="true"><span class="truncate"><?= View::e($it['sep']) ?></span></span>
+                    <span class="dial-sep" data-scope="<?= $it['scope'] ?>" aria-hidden="true">
+                        <span class="dial-sep-icon"><?= Icon::nav($it['sepIcon'] ?? 'sites') ?></span>
+                        <span class="truncate"><?= View::e($it['sep']) ?></span>
+                    </span>
                     <?php continue; ?>
                 <?php endif; ?>
                 <a href="<?= View::e($it['href']) ?>"<?= $it['tour'] !== null ? ' data-tour="' . View::e($it['tour']) . '"' : '' ?><?= $it['active'] ? ' aria-current="page"' : '' ?>

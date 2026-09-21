@@ -95,7 +95,7 @@
       var s = 0.12 * H;
       g.H = H;
       g.W = W;
-      g.band = 9 * em;                                    // --band
+      g.band = 9.5 * em;                                  // --band (itens maiores — mesmo valor do CSS)
       g.Ro = ((H / 2) * (H / 2) + s * s) / (2 * s);
       g.Rm = g.Ro - g.band / 2;                              // raio da linha dos itens (meio do anel)
       g.cx = W - g.Ro;                                       // centro do círculo (fora da tela)
@@ -123,8 +123,10 @@
         var xm = g.cx + g.Rm * Math.cos(th);                 // ponto no meio do anel
         var ym = g.H / 2 + g.Rm * Math.sin(th);
         var left = xm - g.itemW / 2;
-        var sc = 0.88 - 0.02 * Math.min(a, 4) + 0.2 * Math.max(0, 1 - a);
-        var op = clamp(1 - 0.075 * a, 0.38, 1) * clamp(g.half + 0.5 - a, 0, 1);
+        var sc = 0.92 - 0.015 * Math.min(a, 4) + 0.16 * Math.max(0, 1 - a);
+        // Piso de opacidade mais alto (era .38): dá pra ler os itens ao redor do centro, não só o ativo — mais
+        // óbvio pra quem não conhece o app (pedido do responsável, 2026-09-21).
+        var op = clamp(1 - 0.05 * a, 0.62, 1) * clamp(g.half + 0.5 - a, 0, 1);
         el.style.transform = 'translate3d(' + left.toFixed(1) + 'px,' + ym.toFixed(1) + 'px,0) scale(' + sc.toFixed(3) + ')';
         el.style.opacity = op.toFixed(3);
         var z = String(100 - Math.round(a * 10));

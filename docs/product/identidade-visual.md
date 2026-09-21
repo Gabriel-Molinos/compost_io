@@ -364,6 +364,16 @@ fontFamily: {
   ("muito alta"…) ao lado, entrada em cascata, botões de editar/remover redondos. Estado vazio por
   painel ganhou ícone + texto (era só uma frase solta). O seletor do tour guiado
   (`[data-tour="rules-panels"]`) continua no mesmo lugar — o tutorial não quebrou.
+- **2026-09-21** — **`/memory` (Memória editorial) redesenhada** (pedido do responsável: "mais
+  bonita e mais entendível"). "Nova lição" e "Promover de rejeições recentes" viraram
+  `.article-card` (ciano/âmbar) — o segundo continua um `<details>` recolhível, agora usando o
+  marcador "▸" padrão do app (`summary::before`, já usado no editor de corpo e em "reagendar") em
+  vez de inventar um indicador novo. Cada lição vira um card com tag (Ativa/Inativa, e "Promovida de
+  rejeição" quando veio de um feedback) — antes essa origem não aparecia em lugar nenhum, então
+  "mais entendível" incluiu deixar isso visível. Estado vazio com ícone + CTA. Toda a interação de
+  antes (editar sem recarregar, desativar, remover com confirmação, contador de caracteres) segue
+  funcionando igual — só o card ao redor mudou. Testado de ponta a ponta (criar → editar →
+  desativar → remover) numa lição de teste, removida depois.
 
 ## Ver também
 

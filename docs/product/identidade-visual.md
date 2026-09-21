@@ -331,7 +331,11 @@ fontFamily: {
   com a borda do campo quando dá erro), campos com mais respiro e uma sombra interna sutil. O botão
   "Entrar" ganha um estado de carregando (spinner + "Entrando…") na hora do clique, síncrono com o
   evento `submit` — feedback imediato antes do véu global (`assets/js/veil.js`, já dispara em
-  qualquer envio de formulário) cobrir a tela na troca pra Início.
+  qualquer envio de formulário) cobrir a tela na troca pra Início. **Ajuste (mesmo dia):** a
+  primeira versão do brilho ambiente ficava presa aos cantos da JANELA inteira — num monitor largo,
+  longe demais do card pra dar pra notar. Manchas presas ao PRÓPRIO wrapper do card agora, bem mais
+  fortes e coladas nele, e o card trocou o fundo chapado por um degradê (`#0C3B58` → `#071E2E`) —
+  diferença óbvia de cara, não só no detalhe.
 
 ## Ver também
 

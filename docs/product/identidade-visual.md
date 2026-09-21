@@ -350,6 +350,13 @@ fontFamily: {
   central em `Languages::presets()['en']` — vale em toda tela que mostra a bandeira do idioma
   (Visão geral, `/sites`, formulário do site), não só uma tela. `Flag::PARTS` ganhou `'us'`
   (listras + cantão azul simplificados, mesmo estilo das outras bandeiras autorais do arquivo).
+- **2026-09-21** — **`/categories` redesenhada** (pedido do responsável: "mais bonita e
+  atualizada"). Cabeçalho com ícone, 3 cartões de estatística (total, vinculadas ao WordPress, sem
+  diretrizes) e os cards de categoria entraram no sistema `.article-card`: tom por estado
+  (verde = sincronizada, âmbar = sem diretrizes, ciano = normal), tags no canto ("Sincronizada",
+  "Sem diretrizes"), entrada animada em cascata. Estado vazio ganhou o mesmo bloco tracejado com
+  ícone + CTA usado em notificações/sites. Botões Editar/Remover continuam os mesmos (mesma ação,
+  mesmo `data-confirm`) — só o card ao redor mudou.
 
 ## Ver também
 

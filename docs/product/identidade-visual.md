@@ -381,6 +381,12 @@ fontFamily: {
   mas não tinha destaque nenhum) agora cresce da esquerda ao entrar na tela (`.goal-bar-fill`, novo,
   só `transform: scaleX` — mesma regra do resto do app de só animar transform/opacity). Estado vazio
   com ícone + CTA. O gancho do tour guiado (`[data-tour="new-goal"]`) continua no mesmo botão.
+- **2026-09-21** — **cabeçalho de `/production` (só ele — pedido "deixa essa header mais bonita,
+  essa parte de gerar novo rascunho")**: "Produção" ganha ícone + título maior; "Gerar novo
+  rascunho" vira `.article-card` ciano com ícones em "Meta"/"Categoria" e o botão ganha spinner +
+  "Gerando…" na hora do clique (reaproveita `.btn-spin`, criado pro `/login`). A lista de
+  rascunhos, filtros e paginação abaixo não mudaram — fora do pedido desta vez. O gancho do tour
+  (`[data-tour="generate-form"]`) continua no mesmo lugar.
 
 ## Ver também
 

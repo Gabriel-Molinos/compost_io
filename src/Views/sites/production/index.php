@@ -56,44 +56,62 @@ $deleteIcon = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" strok
     . '<path d="M6 7V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/><path d="M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/>'
     . '<path d="M10 11v6"/><path d="M14 11v6"/></svg>';
 ?>
-<h2 class="font-display text-lg font-semibold text-text-primary">Produção</h2>
-<p class="mt-1 text-sm text-text-secondary">
-    Todo dia, 1 rascunho novo é gerado automaticamente por este site (se estiver ativo) —
-    marcado como <span class="text-cyan">automático</span> na lista abaixo. Cada geração faz
-    várias chamadas ao Gemini e <strong>tem custo</strong>. Use o formulário abaixo pra gerar
-    um extra quando quiser.
-</p>
-
-<section data-tour="generate-form" class="mt-5 overflow-hidden rounded-lg border border-border bg-surface">
-    <div class="border-b border-border bg-surface-2/40 px-5 py-3">
-        <h3 class="font-display text-base font-semibold text-text-primary">Gerar novo rascunho</h3>
+<div class="flex items-center gap-3">
+    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan/10 text-cyan"><?= Icon::nav('production') ?></span>
+    <div>
+        <h1 class="font-display text-2xl font-bold text-text-primary">Produção</h1>
+        <p class="mt-1 max-w-2xl text-sm text-text-secondary">
+            Todo dia, 1 rascunho novo é gerado automaticamente por este site (se estiver ativo) —
+            marcado como <span class="font-medium text-cyan">automático</span> na lista abaixo. Cada geração faz
+            várias chamadas ao Gemini e <strong>tem custo</strong>.
+        </p>
     </div>
-    <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/generate"
-          class="flex flex-wrap items-end gap-3 p-5"
-          onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Gerando… (pode levar 1–2 min)';">
-        <?= Csrf::field() ?>
-        <label class="min-w-[11rem] text-sm">
-            <span class="block font-medium text-text-secondary">Meta</span>
-            <select name="goal_id" class="mt-1 w-full">
-                <option value="">— (sem meta)</option>
-                <?php foreach ($goals as $g): ?>
-                    <option value="<?= View::e($g['id']) ?>"><?= View::e($g['period']) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-        <label class="min-w-[11rem] text-sm">
-            <span class="block font-medium text-text-secondary">Categoria</span>
-            <select name="category_id" class="mt-1 w-full">
-                <option value="">— (a IA escolhe)</option>
-                <?php foreach ($categories as $c): ?>
-                    <option value="<?= View::e($c['id']) ?>"><?= View::e($c['name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-        </label>
-        <button type="submit" class="btn btn-primary px-4 py-2 text-sm">
-            Gerar rascunho
-        </button>
-    </form>
+</div>
+
+<?php // ── Gerar novo rascunho: pedido do responsável, 2026-09-21 — "deixa essa header mais bonita" ── ?>
+<section data-tour="generate-form" class="article-card article-card--cyan hover-card mt-6 rounded-2xl">
+    <span class="article-card-fx" aria-hidden="true"></span>
+    <div class="p-5">
+        <h2 class="flex items-center gap-2 font-display text-base font-semibold text-text-primary">
+            <span class="flex h-8 w-8 items-center justify-center rounded-md bg-cyan/10 text-cyan"><?= Icon::nav('plus') ?></span>
+            Gerar novo rascunho
+        </h2>
+        <p class="mt-1 text-xs text-text-muted">Um extra além do automático de hoje — escolha meta e categoria, ou deixe a IA decidir.</p>
+
+        <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/generate"
+              class="mt-4 flex flex-wrap items-end gap-3"
+              onsubmit="this.querySelector('#generate-submit').disabled=true;
+                        this.querySelector('#generate-spin').classList.remove('hidden');
+                        this.querySelector('#generate-label').textContent='Gerando… (pode levar 1–2 min)';">
+            <?= Csrf::field() ?>
+            <label class="min-w-[11rem] text-sm">
+                <span class="flex items-center gap-1.5 font-medium text-text-secondary">
+                    <span class="[&>svg]:h-3.5 [&>svg]:w-3.5"><?= Icon::nav('goals') ?></span> Meta
+                </span>
+                <select name="goal_id" class="mt-1 w-full">
+                    <option value="">— (sem meta)</option>
+                    <?php foreach ($goals as $g): ?>
+                        <option value="<?= View::e($g['id']) ?>"><?= View::e($g['period']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <label class="min-w-[11rem] text-sm">
+                <span class="flex items-center gap-1.5 font-medium text-text-secondary">
+                    <span class="[&>svg]:h-3.5 [&>svg]:w-3.5"><?= Icon::nav('categories') ?></span> Categoria
+                </span>
+                <select name="category_id" class="mt-1 w-full">
+                    <option value="">— (a IA escolhe)</option>
+                    <?php foreach ($categories as $c): ?>
+                        <option value="<?= View::e($c['id']) ?>"><?= View::e($c['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <button type="submit" id="generate-submit" class="btn btn-primary relative z-10 px-4 py-2 text-sm">
+                <span id="generate-spin" class="btn-spin hidden h-4 w-4" aria-hidden="true"></span>
+                <span id="generate-label" class="[&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('ai') ?> Gerar rascunho</span>
+            </button>
+        </form>
+    </div>
 </section>
 
 <?php if ($counts['all'] === 0 && !$filtersActive): ?>

@@ -747,8 +747,10 @@
     height: 2.95rem;
     padding: 0 .6rem 0 .45rem;
     border: 1px solid transparent;
+    border-left: 3px solid rgb(var(--tone) / .55); /* trilho colorido por escopo — sempre visível, não só no hover/ativo */
     border-radius: 9999px;
-    color: #B9CADA; /* mais claro que antes: legível mesmo fora do centro (pedido: navegação óbvia p/ qualquer usuário) */
+    padding-left: calc(.45rem - 2px); /* compensa a borda maior à esquerda, mantendo o alinhamento do ícone */
+    color: rgb(var(--tone) / .82); /* texto já tingido pelo tom do escopo (ciano/violeta): diferença óbvia mesmo sem interação */
     font-size: .92rem;
     font-weight: 600;
     line-height: 1.15;
@@ -764,37 +766,34 @@
     transform-origin: 50% 50%;
     will-change: transform, opacity;
   }
-  /* Divisor de grupo no anel: rótulo com fios dos dois lados. */
+  /* Divisor de grupo no anel: virou um "crachá" preenchido (não só um fio fraco) — pra marcar
+     de forma óbvia onde uma zona (navegação/site) começa. Cor por --sep-tone (main=ciano,
+     site/sites=violeta), a mesma lógica de --tone dos itens. */
   .dial-sep {
+    --sep-tone: 0 208 240;
     display: flex;
     align-items: center;
-    gap: .32rem;
-    height: 1.5rem;
-    padding: 0 .4rem;
-    color: #7B8FA1;
+    justify-content: center;
+    gap: .3rem;
+    height: 1.6rem;
+    margin: .2rem 0;
+    padding: 0 .55rem;
+    border-radius: 9999px;
+    background: rgb(var(--sep-tone) / .16);
+    border: 1px solid rgb(var(--sep-tone) / .5);
+    color: rgb(var(--sep-tone));
     font-size: .62rem; /* maior que antes (.58rem): título de seção bem legível (pedido: "mais óbvio") */
     font-weight: 800;
-    letter-spacing: .1em;
+    letter-spacing: .09em;
     text-transform: uppercase;
     white-space: nowrap;
     pointer-events: none;
   }
   .dial-sep > span.truncate { min-width: 0; }
-  .dial-sep-icon { flex-shrink: 0; opacity: .9; }
+  .dial-sep-icon { flex-shrink: 0; opacity: .95; }
   .dial-sep-icon svg { display: block; width: 11px; height: 11px; }
-  .dial-sep::before,
-  .dial-sep::after {
-    content: '';
-    flex: 1 0 .6rem;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, currentColor);
-    opacity: .55;
-  }
-  .dial-sep::after { background: linear-gradient(90deg, currentColor, transparent); }
-  .dial-sep > span { min-width: 0; }
-  .dial-sep[data-scope="main"] { color: #00D0F0; }
   .dial-sep[data-scope="site"],
-  .dial-sep[data-scope="sites"] { color: #A78BFA; }
+  .dial-sep[data-scope="sites"] { --sep-tone: 167 139 250; }
   .dial-ring.is-live .dial-sep {
     position: absolute;
     left: 0;
@@ -822,6 +821,7 @@
     color: #F0F8FF;
     background-color: rgb(var(--tone) / .1);
     border-color: rgb(var(--tone) / .4);
+    border-left-color: rgb(var(--tone) / .9);
     box-shadow: 0 6px 18px -8px rgb(var(--tone) / .8);
   }
   .dial-item:hover::before { opacity: 1; }
@@ -831,10 +831,11 @@
     color: #F0F8FF;
     background-color: rgb(var(--tone) / .17);
     border-color: rgb(var(--tone) / .6);
+    border-left-color: rgb(var(--tone));
     box-shadow: 0 0 0 1px rgb(var(--tone) / .2), 0 10px 26px -10px rgb(var(--tone) / .9), inset 0 0 18px rgb(var(--tone) / .12);
     font-weight: 600;
   }
-  .dial-item[aria-current="page"] { color: rgb(var(--tone)); }
+  .dial-item[aria-current="page"] { color: rgb(var(--tone)); border-left-color: rgb(var(--tone)); }
   .dial-item[aria-current="page"] .dial-icon {
     background: rgb(var(--tone));
     color: #050B0F;

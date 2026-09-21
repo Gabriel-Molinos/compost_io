@@ -295,6 +295,12 @@ fontFamily: {
 - **2026-09-21** — **sem marcas de mostrador**: as marcas tipo ponteiro de relógio na borda do
   disco (`.dial-ticks`, giravam com a seleção) saíram — pedido do responsável, "deixa só a seta
   indicando onde é a página atual". Fica só a `.dial-marker`, fixa, apontando o item selecionado.
+- **2026-09-21** — **navegação x site, diferença óbvia**: os separadores de grupo ("Navegação",
+  "Meus sites", "Site · X") viraram um crachá preenchido (fundo + borda na cor do escopo), não só
+  um fio fraco. Cada item do anel ganhou um trilho colorido fixo na borda esquerda e o texto já
+  nasce tingido pelo tom do escopo (ciano/violeta), sempre visível — não só no hover/ativo como
+  antes (só o ícone carregava cor). Pedido do responsável: "preciso que tenha uma diferença mais
+  óbvia entre navegação e sites".
 
 ## Ver também
 

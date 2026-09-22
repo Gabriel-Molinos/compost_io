@@ -25,7 +25,12 @@ $tabs = [
     ['calendar',   'Calendário',  '/sites/' . $site['id'] . '/calendar',   true],
     ['reports',    'Relatórios',  '/sites/' . $site['id'] . '/reports',    true],
     ['intelligence', 'Inteligência', '/sites/' . $site['id'] . '/intelligence', true],
-    ['config',     'Configuração', '/sites/' . $site['id'] . '/edit',      AuthService::isAdmin()],
+    // Editar configurações do site é liberado pro Redator-Chefe também
+    // (pedido do responsável, 2026-09-22) — só criar/excluir site continua
+    // exclusivo do admin. Quem está vendo esta aba já passou por
+    // requireSite() na página atual, então canAccessSite() aqui só reforça
+    // a mesma checagem que a rota /edit faz de novo por conta própria.
+    ['config',     'Configuração', '/sites/' . $site['id'] . '/edit',      AuthService::canAccessSite((int) $site['id'])],
     ['wordpress',  'WordPress',   '/sites/' . $site['id'] . '/wordpress', AuthService::isAdmin()],
     ['ai',         'IA (teste)',  '/sites/' . $site['id'] . '/ai-playground', AuthService::isAdmin()],
 ];

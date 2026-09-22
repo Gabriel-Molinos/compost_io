@@ -109,7 +109,11 @@ final class SiteController extends Controller
             'categories'  => $this->categories->allForSite((int) $site['id']),
             'ruleCounts'  => $this->rules->countsForSite((int) $site['id']),
             'goalCount'   => $this->goals->countForSite((int) $site['id']),
-            'canEditSite' => AuthService::isAdmin(),
+            // Não usado em sites/show.php hoje (a aba "Configuração" de
+            // _tabs.php é quem realmente controla o acesso à tela de
+            // edição) — mantido coerente com a mesma regra mesmo assim,
+            // pra não ficar um valor errado à espera de alguém usar.
+            'canEditSite' => AuthService::canAccessSite((int) $site['id']),
             'costBudget'  => $this->costBudget->evaluate($spend),
             'attention'   => $this->articles->attentionCounts((int) $site['id']),
             'staleCount'  => $this->articles->staleGeneratingCount((int) $site['id']),
@@ -167,7 +171,12 @@ final class SiteController extends Controller
 
     public function edit(string $id): void
     {
-        $site = $this->sites->find((int) $id) ?? $this->notFound();
+        // requireSite(), não sites->find() direto: agora que Redator-Chefe
+        // também acessa esta tela (rota virou auth: true, pedido do
+        // responsável 2026-09-22 — "pode mudar configurações, só não pode
+        // criar/excluir"), precisa checar que o site é um dos dele. Admin
+        // continua vendo qualquer um, como sempre.
+        $site = $this->requireSite($id);
 
         View::render('sites/form', [
             'title'       => 'Editar site',
@@ -181,7 +190,7 @@ final class SiteController extends Controller
     {
         Csrf::verify();
         $this->applyLanguageChoice();
-        $site = $this->sites->find((int) $id) ?? $this->notFound();
+        $site = $this->requireSite($id); // ver comentário em edit()
 
         $errors = $this->validate($_POST);
         if ($errors !== []) {
@@ -201,7 +210,13 @@ final class SiteController extends Controller
         }
 
         $this->sites->update((int) $site['id'], $_POST);
-        $this->syncEditors((int) $site['id'], (string) $_POST['name']);
+        // Só ADMIN mexe em quem é Redator-Chefe do site (a seção nem aparece
+        // pro Redator-Chefe na View — ver sites/form.php) — sem esta guarda,
+        // o POST dele não traria nenhum `user_ids[]` (seção ausente do HTML)
+        // e syncEditors() DESVINCULARIA todo mundo do site a cada salvamento.
+        if (AuthService::isAdmin()) {
+            $this->syncEditors((int) $site['id'], (string) $_POST['name']);
+        }
 
         if (!empty($_POST['remove_logo'])) {
             Uploads::delete($site['logo_path'] ?? null);

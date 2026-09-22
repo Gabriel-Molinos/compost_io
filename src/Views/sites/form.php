@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Services\AuthService;
 use App\Support\Avatar;
 use App\Support\Csrf;
 use App\Support\Flag;
@@ -91,6 +92,16 @@ $clip = static function (string $t, int $n): string {
 // ── Redatores ─────────────────────────────────────────────────────────────
 $assignedCount = count(array_filter($editors, static fn (array $u): bool => in_array((int) $u['id'], $assignedUserIds, true)));
 $editorsTotal = count($editors);
+
+// Redator-Chefe agora edita as configurações do site (pedido do responsável,
+// 2026-09-22) — mas só ADMIN cria/exclui site e decide QUEM é Redator-Chefe
+// dele. As duas seções abaixo (Redatores vinculados, Zona de perigo) ficam
+// escondidas pro Redator-Chefe — não é só visual: SiteController::update()
+// também ignora `user_ids[]` de quem não é admin (essencial: se a seção
+// sumisse do HTML mas o controller continuasse lendo o POST, um redator
+// salvando o form desvincularia todo mundo do site sem querer, já que
+// checkbox ausente = desmarcado).
+$isAdminUser = AuthService::isAdmin();
 ?>
 <a href="<?= View::e($backHref) ?>" class="text-sm text-text-secondary hover:text-text-primary">← <?= $isEdit ? View::e($site['name']) : 'Sites' ?></a>
 
@@ -319,7 +330,8 @@ $editorsTotal = count($editors);
             </div>
         </section>
 
-        <?php // ── Redatores-Chefe vinculados ── ?>
+        <?php // ── Redatores-Chefe vinculados — só ADMIN decide quem tem acesso a qual site ── ?>
+        <?php if ($isAdminUser): ?>
         <section class="rounded-2xl border border-border bg-surface p-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="flex items-start gap-3">
@@ -377,6 +389,7 @@ $editorsTotal = count($editors);
                 </div>
             <?php endif; ?>
         </section>
+        <?php endif; ?>
 
         <?php // ── Voz editorial: idioma (bandeiras), tom, público e identidade, com resumo ao vivo ── ?>
         <section class="rounded-2xl border border-border bg-surface p-6" data-voice>
@@ -573,7 +586,7 @@ $editorsTotal = count($editors);
     </div>
 </form>
 
-<?php if ($isEdit): ?>
+<?php if ($isEdit && $isAdminUser): ?>
     <section class="mx-auto mt-8 max-w-3xl rounded-2xl border border-danger/40 bg-danger/5 p-6">
         <h2 class="font-display text-base font-semibold text-danger">Zona de perigo</h2>
         <p class="mt-1 text-sm text-text-secondary">
@@ -846,7 +859,7 @@ $editorsTotal = count($editors);
     })();
 </script>
 
-<?php if ($isEdit): ?>
+<?php if ($isEdit && $isAdminUser): ?>
     <script>
         // Botão só habilita com o nome exato digitado
         // — o servidor confere de novo (SiteController::destroy() nunca confia só no JS).

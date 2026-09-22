@@ -75,8 +75,12 @@ return static function (Router $router): void {
     $router->add('GET',  '/sites',           [SiteController::class, 'index'],  auth: true);
     $router->add('GET',  '/sites/new',       [SiteController::class, 'create'], admin: true);
     $router->add('POST', '/sites',           [SiteController::class, 'store'],  admin: true);
-    $router->add('GET',  '/sites/{id}/edit', [SiteController::class, 'edit'],   admin: true);
-    $router->add('POST', '/sites/{id}',        [SiteController::class, 'update'],  admin: true);
+    // Editar (não criar/excluir) é liberado pro Redator-Chefe também (pedido
+    // do responsável, 2026-09-22) — restrito ao(s) site(s) dele via
+    // requireSite() dentro do Controller, não pela rota (auth: true só
+    // exige sessão, qualquer perfil).
+    $router->add('GET',  '/sites/{id}/edit', [SiteController::class, 'edit'],   auth: true);
+    $router->add('POST', '/sites/{id}',        [SiteController::class, 'update'],  auth: true);
     $router->add('POST', '/sites/{id}/delete', [SiteController::class, 'destroy'], admin: true);
     $router->add('GET',  '/sites/{id}',      [SiteController::class, 'show'],   auth: true);
 

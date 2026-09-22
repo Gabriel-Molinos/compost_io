@@ -82,11 +82,22 @@ final class GoalService
 
     /**
      * Categoria mais atrasada em relação ao alvo do mês (maior `target - realizado`),
-     * pra geração automática escolher sozinha (bin/worker.php) — mesma ideia do
-     * relatório "Por categoria" (ReportService::monthly()), só que devolvendo 1 id
-     * em vez da tabela inteira. `null` se a meta não tem distribuição por categoria
-     * ou se todo mundo já bateu o alvo (a geração segue sem categoria, como já
-     * acontece quando o campo fica em branco na geração manual).
+     * pra geração automática escolher sozinha (bin/worker.php).
+     *
+     * Achado real (2026-09-21, pedido do responsável: "acho que bugou, a geração só
+     * tá indo pra uma categoria"): a versão original só contava como "já feito"
+     * artigo APPROVED/SCHEDULED/PUBLISHED — a mesma contagem do relatório "Por
+     * categoria" (ReportService::monthly()), mas ali faz sentido (é uma métrica de
+     * "produção aprovada") e aqui não: a revisão humana demora, então uma categoria
+     * com vários rascunhos represados em "Em revisão" (IN_REVIEW) continuava
+     * parecendo "atrasada" pro algoritmo — ele escolhia ela de novo todo dia,
+     * empilhando tudo na mesma categoria em vez de espalhar. Agora conta qualquer
+     * artigo do período que NÃO foi descartado (é o que sinaliza "esse slot não
+     * rendeu nada, ainda vale gerar de novo" — os outros estados, mesmo em
+     * andamento/revisão, já ocupam o lugar de um artigo daquela categoria).
+     * `null` se a meta não tem distribuição por categoria ou se todo mundo já
+     * bateu o alvo (a geração segue sem categoria, como já acontece quando o
+     * campo fica em branco na geração manual).
      */
     public function mostUnderTargetCategory(int $siteId, int $goalId, string $period): ?int
     {
@@ -100,7 +111,7 @@ final class GoalService
              FROM articles
              WHERE site_id = :s AND category_id IS NOT NULL AND deleted_at IS NULL
                AND DATE_FORMAT(created_at, '%Y-%m') = :p
-               AND status IN ('APPROVED','SCHEDULED','PUBLISHED')
+               AND status != 'DISCARDED'
              GROUP BY category_id"
         );
         $stmt->execute(['s' => $siteId, 'p' => $period]);

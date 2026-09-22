@@ -39,9 +39,12 @@ $formData = [
     </div>
 </div>
 
-<section class="mt-6 rounded-lg border border-border bg-surface p-5">
+<section class="mt-6 rounded-xl border border-border bg-surface p-5">
     <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="font-display text-base font-semibold text-text-primary">Credenciais</h2>
+        <h2 class="flex items-center gap-2 font-display text-base font-semibold text-text-primary">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan [&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('lock') ?></span>
+            Credenciais
+        </h2>
         <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium <?= Labels::toneClasses($statusTone) ?>">
             <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full bg-current"></span>
             <?= View::e($statusLabel) ?>
@@ -103,8 +106,11 @@ $formData = [
 </section>
 
 <?php if ($connection['configured']): ?>
-    <section class="mt-6 rounded-lg border border-border bg-surface p-5">
-        <h2 class="font-display text-base font-semibold text-text-primary">Autores e categorias</h2>
+    <section class="mt-6 rounded-xl border border-border bg-surface p-5">
+        <h2 class="flex items-center gap-2 font-display text-base font-semibold text-text-primary">
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan [&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('users') ?></span>
+            Autores e categorias
+        </h2>
         <p class="mt-1 text-sm text-text-secondary">
             Na primeira conexão bem-sucedida, as categorias do WordPress são importadas
             automaticamente (casadas por nome com as que já existirem). Depois disso você
@@ -114,7 +120,7 @@ $formData = [
         </p>
 
         <?php if ($syncCounts !== null): ?>
-            <dl class="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
+            <dl class="mt-4 grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2">
                 <div class="bg-surface p-4">
                     <dt class="text-xs font-semibold uppercase tracking-wide text-text-muted">Autores</dt>
                     <dd class="mt-1 font-mono text-2xl font-semibold text-text-primary">

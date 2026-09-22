@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Services\ArticleReviewService;
+use App\Support\Icon;
 use App\Support\SvgChart;
 use App\View;
 
@@ -19,11 +20,22 @@ $activeTab = 'reports';
 require __DIR__ . '/../_tabs.php';
 
 $n = static fn ($v): string => $v === null ? '—' : (string) $v;
+$sectionTitle = static function (string $icon, string $title, ?string $subtitle = null): void {
+    echo '<div class="flex items-center gap-2">'
+        . '<span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan [&>svg]:h-4 [&>svg]:w-4">' . $icon . '</span>'
+        . '<h2 class="font-display text-base font-semibold text-text-primary">' . $title . '</h2></div>';
+    if ($subtitle !== null) {
+        echo '<p class="mt-1 text-sm text-text-secondary">' . View::e($subtitle) . '</p>';
+    }
+};
 ?>
 <div class="flex flex-wrap items-start justify-between gap-4">
-    <div>
-        <h1 class="font-display text-2xl font-bold text-text-primary">Relatório mensal</h1>
-        <p class="mt-1 text-sm text-text-secondary"><?= View::e($monthName) ?> · desempenho editorial do site</p>
+    <div class="flex items-start gap-3">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan/10 text-cyan"><?= Icon::nav('reports') ?></span>
+        <div>
+            <h1 class="font-display text-2xl font-bold text-text-primary">Relatório mensal</h1>
+            <p class="mt-1 text-sm text-text-secondary"><?= View::e($monthName) ?> · desempenho editorial do site</p>
+        </div>
     </div>
     <div class="flex items-center overflow-hidden rounded-md border border-border">
         <a href="?month=<?= View::e($prevMonth) ?>" aria-label="Mês anterior"
@@ -76,10 +88,8 @@ $statBar = static function (array $cols, string $gridCols): void {
 </div>
 
 <div class="mt-8 grid gap-5 lg:grid-cols-2">
-    <section class="flex flex-col rounded-lg border border-border bg-surface p-5">
-        <h2 class="font-display text-base font-semibold text-text-primary">
-            Comparado com <?= View::e($prevMonthName) ?>
-        </h2>
+    <section class="flex flex-col rounded-xl border border-border bg-surface p-5">
+        <?php $sectionTitle(Icon::nav('reports'), 'Comparado com ' . View::e($prevMonthName)); ?>
         <?php if (!$comparison['had_data']): ?>
             <p class="flex flex-1 items-center justify-center py-8 text-center text-sm text-text-secondary">
                 Sem dados no mês anterior — nada para comparar.
@@ -143,10 +153,8 @@ $statBar = static function (array $cols, string $gridCols): void {
         <?php endif; ?>
     </section>
 
-    <section class="rounded-lg border border-border bg-surface p-5">
-        <h2 class="font-display text-base font-semibold text-text-primary">
-            Tendência <span class="font-sans text-sm font-normal text-text-muted">· últimos <?= count($trend['periods']) ?> meses</span>
-        </h2>
+    <section class="rounded-xl border border-border bg-surface p-5">
+        <?php $sectionTitle(Icon::nav('reports'), 'Tendência <span class="font-sans text-sm font-normal text-text-muted">· últimos ' . count($trend['periods']) . ' meses</span>'); ?>
         <?php
         $mesesAbrev = ['01' => 'jan', '02' => 'fev', '03' => 'mar', '04' => 'abr', '05' => 'mai', '06' => 'jun',
             '07' => 'jul', '08' => 'ago', '09' => 'set', '10' => 'out', '11' => 'nov', '12' => 'dez'];
@@ -181,9 +189,8 @@ $statBar = static function (array $cols, string $gridCols): void {
 </div>
 
 <div class="mt-5 grid gap-5 lg:grid-cols-2">
-    <section class="rounded-lg border border-border bg-surface p-5">
-        <h2 class="font-display text-base font-semibold text-text-primary">Por categoria</h2>
-        <p class="mt-1 text-sm text-text-secondary">Meta × realizado no mês.</p>
+    <section class="rounded-xl border border-border bg-surface p-5">
+        <?php $sectionTitle(Icon::nav('categories'), 'Por categoria', 'Meta × realizado no mês.'); ?>
         <?php if ($report['categories'] === []): ?>
             <p class="mt-3 text-sm text-text-secondary">Nenhuma categoria cadastrada.</p>
         <?php else: ?>
@@ -215,9 +222,8 @@ $statBar = static function (array $cols, string $gridCols): void {
         <?php endif; ?>
     </section>
 
-    <section class="rounded-lg border border-border bg-surface p-5">
-        <h2 class="font-display text-base font-semibold text-text-primary">Motivos de rejeição</h2>
-        <p class="mt-1 text-sm text-text-secondary">Por que artigos foram rejeitados este mês.</p>
+    <section class="rounded-xl border border-border bg-surface p-5">
+        <?php $sectionTitle(Icon::nav('close'), 'Motivos de rejeição', 'Por que artigos foram rejeitados este mês.'); ?>
         <?php if ($report['reject_reasons'] === []): ?>
             <p class="mt-3 text-sm text-text-secondary">Nenhuma rejeição neste mês.</p>
         <?php else: ?>

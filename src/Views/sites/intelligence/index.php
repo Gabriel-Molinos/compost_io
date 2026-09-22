@@ -66,7 +66,7 @@ $toneDot = static fn (string $t): string => match ($t) {
 </div>
 
 <?php if ($insight === null): ?>
-    <div class="mt-8 flex flex-col items-center gap-3 rounded-lg border border-dashed border-border bg-surface p-10 text-center">
+    <div class="mt-8 flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-surface p-10 text-center">
         <span class="flex h-12 w-12 items-center justify-center rounded-full bg-cyan/10 text-cyan"><?= Icon::nav('intelligence') ?></span>
         <p class="max-w-md text-sm text-text-secondary">
             Nenhuma análise ainda. Clique em <strong class="text-text-primary">Gerar análise</strong> pra IA responder:
@@ -87,7 +87,7 @@ $toneDot = static fn (string $t): string => match ($t) {
     <div class="mt-5 grid gap-4 lg:grid-cols-2">
         <?php foreach (IntelligenceService::QUESTIONS as $key => $label): ?>
             <?php $t = $tone[$key] ?? 'cyan'; ?>
-            <section class="rounded-lg border-l-2 <?= $toneBorder($t) ?> border-y border-r border-border bg-surface p-5">
+            <section class="rounded-xl border-l-2 <?= $toneBorder($t) ?> border-y border-r border-border bg-surface p-5">
                 <h2 class="flex items-center gap-2 font-display text-sm font-semibold text-text-primary">
                     <span aria-hidden="true" class="h-1.5 w-1.5 shrink-0 rounded-full <?= $toneDot($t) ?>"></span>
                     <?= View::e($label) ?>

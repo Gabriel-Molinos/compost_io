@@ -54,7 +54,7 @@ use App\View;
     ?>
     <div class="relative z-10 grid min-h-screen lg:grid-cols-[1.3fr_1fr]">
 
-        <aside class="relative hidden flex-col justify-between overflow-hidden border-r border-border/50 px-14 py-12 lg:flex" aria-hidden="true">
+        <aside class="relative hidden flex-col justify-between overflow-hidden px-14 py-12 lg:flex" aria-hidden="true">
             <div>
                 <div class="inline-flex items-center gap-2.5">
                     <img src="/assets/brand/icon.webp" alt="" class="h-7 w-7">
@@ -86,8 +86,8 @@ use App\View;
             </div>
         </aside>
 
-        <main id="conteudo" class="relative flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-16 lg:py-12">
-            <div class="mx-auto w-full max-w-sm lg:mx-0">
+        <main id="conteudo" class="relative flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-14 lg:py-12">
+            <div class="mx-auto w-full max-w-lg lg:mx-0">
                 <?php // Cabeçalho compacto — só < lg. É a composição PRÓPRIA do mobile
                       // (não o estágio desktop encolhido): marca + descritor numa
                       // linha, versão pequena do mesmo portal (mesma classe,
@@ -105,7 +105,7 @@ use App\View;
                     </div>
                 </div>
 
-                <div class="auth-card relative rounded-3xl border border-border bg-gradient-to-b from-[#0C3B58] to-[#071E2E] p-7 shadow-2xl shadow-black/50 sm:p-8">
+                <div class="auth-card relative rounded-3xl border border-border bg-gradient-to-b from-[#0C3B58] to-[#071E2E] p-8 shadow-2xl shadow-black/50 sm:p-10">
                     <?= $content ?>
                 </div>
             </div>

@@ -124,9 +124,9 @@ $loginUri = rtrim((string) Env::get('APP_URL', ''), '/') . '/oauth/callback';
 // data-width tem que ser um pixel fixo (o Google não aceita "100%"), por
 // isso o wrapper também é de largura fixa, do mesmo tamanho do card.
 ?>
-<div class="group relative mx-auto mt-4 h-11 w-[320px] max-w-full">
+<div class="group relative mx-auto mt-4 h-11 w-[400px] max-w-full">
     <div class="g_id_signin absolute inset-0 z-10 overflow-hidden opacity-0"
-         data-type="standard" data-size="large" data-width="320"></div>
+         data-type="standard" data-size="large" data-width="400"></div>
 
     <div class="pointer-events-none absolute inset-0 flex items-center justify-center gap-2.5 rounded-full
                 border border-border bg-[#0A3247] text-sm font-semibold text-text-primary transition-colors

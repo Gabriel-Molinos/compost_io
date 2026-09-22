@@ -258,4 +258,30 @@ final class StepSchemas
             'required' => ['suggestions'],
         ];
     }
+
+    /** Não é um passo do pipeline de geração — usado por `ResearchGapHintService` (página Fontes). */
+    public static function researchGapHints(): array
+    {
+        return [
+            'type'       => 'object',
+            'properties' => [
+                'queries' => [
+                    'type'        => 'array',
+                    'description' => 'Buscas prontas pra colar num buscador (aspas, operadores site:/filetype: quando fizer sentido).',
+                    'items'       => ['type' => 'string'],
+                ],
+                'keywords' => [
+                    'type'        => 'array',
+                    'description' => 'Termos/expressões-chave soltos, pra variar a busca além das queries prontas.',
+                    'items'       => ['type' => 'string'],
+                ],
+                'source_types' => [
+                    'type'        => 'array',
+                    'description' => 'Tipos de fonte que provavelmente têm esse dado (ex.: "órgão estatístico oficial", "estudo acadêmico revisado por pares").',
+                    'items'       => ['type' => 'string'],
+                ],
+            ],
+            'required' => ['queries', 'keywords', 'source_types'],
+        ];
+    }
 }

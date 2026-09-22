@@ -99,15 +99,51 @@ final class ArticleNoteService
             if ($gaps === []) {
                 continue;
             }
+            // Dicas já geradas (botão "Sugerir buscas", ResearchGapHintService)
+            // ficam guardadas no mesmo payload, por índice — sobrevivem entre
+            // visitas à página sem precisar gerar de novo a cada carregamento.
+            $hints = is_array($payload) ? (array) ($payload['research_gap_hints'] ?? []) : [];
             $out[] = [
                 'article_id' => (int) $row['article_id'],
                 'title'      => (string) $row['title'],
                 'updated_at' => (string) $row['updated_at'],
                 'gaps'       => array_values(array_map('strval', $gaps)),
+                'hints'      => $hints, // chave = índice do gap (string), valor = {queries, keywords, source_types}
             ];
         }
 
         return $out;
+    }
+
+    /**
+     * Grava as dicas de busca (queries/keywords/tipos de fonte) de UMA lacuna
+     * específica dentro do payload já existente do passo `pipeline` — sem
+     * apagar `research_gaps`/`warnings`/o resto do payload, e sem exigir uma
+     * tabela nova só pra isto (mesmo princípio do resto do projeto: reaproveitar
+     * `article_ai_notes` antes de criar estrutura nova). `$gapIndex` é a
+     * posição do gap dentro da lista `research_gaps` do MESMO payload —
+     * estável enquanto o artigo não for regenerado (regeneração reescreve os
+     * dois juntos, então nunca ficam dessincronizados).
+     *
+     * @param array{queries:list<string>, keywords:list<string>, source_types:list<string>} $hint
+     */
+    public function saveResearchGapHint(int $articleId, int $gapIndex, array $hint): void
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT payload FROM article_ai_notes WHERE article_id = :a AND step = 'pipeline' LIMIT 1"
+        );
+        $stmt->execute(['a' => $articleId]);
+        $raw = $stmt->fetchColumn();
+        $payload = $raw !== false ? json_decode((string) $raw, true) : null;
+        if (!is_array($payload)) {
+            $payload = [];
+        }
+
+        $hints = is_array($payload['research_gap_hints'] ?? null) ? $payload['research_gap_hints'] : [];
+        $hints[(string) $gapIndex] = $hint;
+        $payload['research_gap_hints'] = $hints;
+
+        $this->save($articleId, 'pipeline', $payload);
     }
 
     /** @return array<string, array<string, mixed>> passo => payload decodificado */

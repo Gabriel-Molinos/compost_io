@@ -170,4 +170,5 @@ return static function (Router $router): void {
     $router->add('GET',  '/sites/{id}/sources',              [SiteSourceController::class, 'index'],   auth: true);
     $router->add('POST', '/sites/{id}/sources',              [SiteSourceController::class, 'store'],   auth: true);
     $router->add('POST', '/sites/{id}/sources/{sid}/delete', [SiteSourceController::class, 'destroy'], auth: true);
+    $router->add('POST', '/sites/{id}/sources/gaps/{aid}/{gidx}/suggest', [SiteSourceController::class, 'suggestGapHints'], auth: true);
 };

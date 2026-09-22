@@ -32,7 +32,8 @@
         "css:watch": "tools/tailwindcss -i src/styles/input.css -o public/assets/css/app.css --watch",
         "test": "phpunit",
         "test:unit": "phpunit --testsuite Unit",
-        "test:integration": "phpunit --testsuite Integration"
+        "test:integration": "phpunit --testsuite Integration",
+        "lint": "php bin/lint.php"
     },
     "require-dev": {
         "phpunit/phpunit": "^10"

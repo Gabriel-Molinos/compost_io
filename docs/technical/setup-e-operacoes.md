@@ -52,9 +52,13 @@ Branches planejadas:
 - `feature/*`
 - `fix/*`
 
-### 78.1 CI/deploy `[PROPOSTA]`
+### 78.1 CI/deploy
 
-> **Precisa aprovação.** GitHub Actions no free tier (lint + PHPUnit em cada PR, ver [seção 91](padroes-de-codigo.md#91-padrão-de-branches-detalhamento)) — sem serviço pago. Deploy segue manual (`git pull` + restart) por enquanto; nada mais elaborado se justifica no tamanho atual do projeto.
+> **CI implementado (2026-09-22).** `.github/workflows/ci.yml` — GitHub Actions no free tier, sem serviço pago: em todo push/PR pras branches `main`/`develop`, instala as dependências (`composer install`), roda o lint (`composer lint` → `bin/lint.php`, `php -l` em todo arquivo `.php` do projeto, sem depender de `find`/`xargs` de shell — portátil entre o Windows de dev e o runner Linux do CI) e a suíte **Unit** (`composer test:unit`).
+>
+> Só a suíte Unit roda no CI de propósito — a suíte **Integration** espera dados fixos que só existem no banco de dev real (site "Gavsy" id 2, categorias, usuário admin — ver [testes-e-observabilidade.md](testes-e-observabilidade.md#92-estratégia-de-testes)), não um banco vazio recém-migrado; rodar ali reprovaria por falta de dado, não por regressão de código. Integration continua rodando só local (`composer test:integration`), contra o banco de dev de verdade.
+>
+> Deploy segue manual (`git pull` + restart) — nada mais elaborado se justifica no tamanho atual do projeto, e ainda não há hospedagem de produção decidida.
 
 ---
 

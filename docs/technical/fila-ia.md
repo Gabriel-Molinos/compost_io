@@ -124,8 +124,28 @@ que não deve aparecer).
 
 ## Próximo (não implementado)
 
-- Redis gerenciado em produção (hoje só há instância local de dev) +
-  `bin/worker.php` rodando sob `supervisor`.
+- **Redis gerenciado em produção** (hoje só há instância local — Memurai no
+  Windows de dev). O código já está pronto pra isso, sem mudança nenhuma
+  necessária: `RedisConfig::fromEnv()` só lê `REDIS_URL` do `.env` e
+  repassa pro Predis, que já suporta `rediss://` (TLS) nativamente — o
+  mesmo padrão do `DATABASE_SSL` do MySQL gerenciado (`Connection.php`).
+  Falta só a hospedagem de produção ser decidida (não está — ver
+  `README.md`). Runbook de quando isso acontecer:
+  1. Provisionar o Redis/Valkey gerenciado no provedor escolhido.
+  2. Colocar a URL de conexão em `REDIS_URL` no `.env` de produção (nunca
+     commitar — `docs/technical/credenciais-privadas.md`, mesmo tratamento
+     das credenciais de banco/WordPress).
+  3. Validar a conexão de ponta a ponta com `php bin/queue_smoke.php`
+     (mesmo smoke test já usado em dev — dispara um job e confirma
+     push→reserve→execute contra a URL que estiver no `.env` na hora).
+  4. Configurar `bin/worker.php` pra rodar sob `supervisor` (Linux) —
+     reinicia sozinho se cair, liga sozinho no boot do servidor. O
+     equivalente usado hoje em dev (`bin/worker_supervisor.ps1` +
+     `bin/worker_start.cmd`, registrado no Agendador de Tarefas do
+     Windows) é só pra manter o worker vivo NESTA máquina de
+     desenvolvimento — não serve de deploy de produção, é outro SO e
+     outro mecanismo (Task Scheduler do Windows vs. `supervisor`/systemd
+     do Linux).
 - Timeout/lease automático pra jobs presos em `processingKey` — hoje a
   recuperação é manual (`bin/queue_requeue_stuck.php`), decisão de escopo
   registrada ao abrir o retry/dead-letter de job.

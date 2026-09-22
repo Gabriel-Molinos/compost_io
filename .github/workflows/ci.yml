@@ -1,0 +1,38 @@
+name: CI
+
+# GitHub Actions no free tier (sem serviço pago) — lint + PHPUnit em cada PR,
+# ver docs/technical/setup-e-operacoes.md §78.1. Só a suíte Unit roda aqui
+# de propósito: Integration bate no banco de dev de verdade e espera dados
+# fixos que já existem lá (site "Gavsy" id 2, categorias, usuário admin —
+# ver docs/technical/testes-e-observabilidade.md), não um banco vazio
+# recém-migrado — rodar Integration aqui reprovaria por falta de dado, não
+# por regressão de código. Continua rodando local, contra o banco de dev
+# real (composer test:integration).
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: mbstring, openssl, pdo, pdo_mysql, curl, sodium, gd
+          coverage: none
+
+      - name: Instalar dependências (composer)
+        run: composer install --no-progress --prefer-dist --no-interaction
+
+      - name: Lint (php -l em todo arquivo .php)
+        run: composer lint
+
+      - name: Testes unitários (sem banco/Redis — rápido e sempre confiável)
+        run: composer test:unit

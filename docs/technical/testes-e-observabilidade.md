@@ -6,7 +6,7 @@
 |---|---|---|---|
 | Unitário | PHP | Services e regras de negócio isoladas, sem banco/HTTP/Redis | PHPUnit — `tests/Unit/` |
 | Integração | PHP | Fluxos que batem no banco de dev de verdade (`Connection::get()`) | PHPUnit — `tests/Integration/` |
-| E2E | Navegador | Fluxos críticos completos (login, aprovação, publicação) | Playwright ou Cypress — continuam válidos por automatizarem o navegador, independente da tecnologia por trás da página. Ainda não implementado. |
+| E2E | Navegador / HTTP real | Fluxos críticos completos (login, aprovação, publicação) | Playwright ou Cypress pro navegador (ainda não implementado); pra Controller isolado, `tests/Integration/Http/HttpServerTestCase.php` sobe o servidor embutido do PHP e bate via cURL de verdade — ver nota abaixo. |
 | Acessibilidade | Navegador | Views novas ou alteradas | Checagem manual de teclado + contraste ([Parte 20, seção 106](ui-ux-frontend.md#106-checklist-de-ui-antes-de-um-pr)); ferramenta automatizável (ex.: axe) opcional no futuro |
 
 **Implementado (2026-09-15):** `phpunit.xml` na raiz + `composer test`/`test:unit`/`test:integration`. Duas suítes:
@@ -16,7 +16,13 @@
 
 > **Correção (2026-09-18):** boa parte dos "pulos" que se atribuíam à instabilidade do banco era, na verdade, **configuração**: o bootstrap do PHPUnit era só `vendor/autoload.php`, então o `.env` nunca era carregado, `DATABASE_HOST` caía no padrão `127.0.0.1` e a conexão era sempre recusada — a suíte de integração inteira era pulada e **nunca chegou a executar** (21 testes hoje). Agora `tests/bootstrap.php` carrega o `.env` (se existir; sem ele o comportamento antigo — integração pula, unitário roda — continua). Rodar a suíte pela primeira vez de verdade revelou um bug real em produção: o checklist de pré-aprovação lia `content_html` em vez de `content` (coluna de `article_versions`), reprovando todo artigo. Lição: um teste que é sempre pulado precisa ser tratado como teste que não existe — conferir de vez em quando se a suíte realmente executa (`Skipped: 0`).
 
-**Ainda não implementado:** cobertura de Controllers, do pipeline de IA (`ArticlePipeline`) e E2E de navegador — projeto tinha zero teste automatizado até esta data, isto é só o ponto de partida.
+**Implementado (2026-09-22):**
+
+- **`ArticlePipeline`** — `tests/Integration/Services/Pipeline/ArticlePipelineTest.php` roda `runGenerate()` de ponta a ponta contra o banco de dev, com um `AIProvider` falso (`FakeStepAIProvider`, fila de respostas pré-programada por passo) no lugar do Gemini real — sem custo, sem rede. Site criado e apagado pelo próprio teste (nunca um site real com WordPress conectado). Cobre o caminho feliz (PLANNED → IN_REVIEW) e o aviso de texto abaixo do mínimo de palavras — não é cobertura de cada ramo (regeneração, bloqueio, canibalização), é o ponto de partida.
+- **Controllers** — `tests/Integration/Http/HttpServerTestCase.php`: instanciar um Controller direto não funciona bem aqui, porque quase toda ação de escrita termina em `Http::redirect()` (`exit` de verdade) — mata o test runner em processo, e mesmo com `@runInSeparateProcess` nenhum assert depois da chamada chega a rodar (o processo morre antes do PHPUnit serializar o resultado). A base sobe o servidor embutido do PHP (`php -S`) numa porta aleatória e bate via cURL de verdade — `exit()`/`header()` fazem exatamente o que fariam em produção. Cobre Controller + rota + CSRF + auth juntos, como uma request real bateria. Exemplo em `SiteSourceControllerHttpTest` (criar/CSRF ausente/sessão inválida/remover). Como usa HTTP real contra `public/`, isto também é E2E no sentido "de ponta a ponta do backend" — só não é navegador (sem JS/CSS/render).
+- **E2E de navegador** — ainda não implementado (Playwright/Cypress); a técnica de sessão forjada + `npx playwright screenshot` usada manualmente nesta sessão (ver memória do projeto) é o mesmo mecanismo que um `playwright test` de verdade usaria via `storageState`.
+
+Cobertura de Controllers e do pipeline de IA eram as duas lacunas documentadas nesta seção desde 2026-09-15 — seguem não-exaustivas, mas deixaram de ser zero.
 
 ### 93. Cobertura mínima esperada `[PROPOSTA — definir número junto ao time]`
 

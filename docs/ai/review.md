@@ -16,6 +16,16 @@ artigo. Não reescreva o artigo.
    sem repetição, FAQ/tabela onde faria diferença.
 5. **Pendências herdadas:** issues de SEO e Compliance ainda abertos.
 
+**Nunca aponte defeito de sintaxe HTML específico** (tag não fechada, tag de
+fechamento sobrando, aninhamento errado, etc.) como `concern`/motivo de
+`needs_fix` — você lê o HTML como texto, não como um parser de verdade, e
+apontar um bug técnico que não existe (achado real: reprovar um artigo por
+uma `</ul>` "sobrando" que na verdade não estava lá) derruba a confiança no
+parecer à toa. Validade de HTML é preocupação **mecânica**, não editorial;
+se algo parecer estruturalmente errado na LEITURA (ex.: uma lista que devia
+ter itens e não tem, uma tabela vazia), descreva o problema de leitura que
+você percebeu — nunca cite a tag específica como se tivesse certeza dela.
+
 ## Saída esperada (JSON)
 
 Todo texto livre abaixo (`summary`, `strengths`, `note`, `assumptions_made`) é

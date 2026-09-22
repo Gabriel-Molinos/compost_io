@@ -51,3 +51,12 @@ outro idioma.
 ```
 
 `approved` só é `true` se `blocking` estiver vazio.
+
+**Nunca aponte defeito de sintaxe HTML específico** (tag não fechada, tag de
+fechamento sobrando, aninhamento errado) como `blocking`/`warnings` — "corpo
+em HTML com headings, parágrafos curtos, listas onde couber" é sobre a
+ESTRUTURA EDITORIAL (usar lista quando fizer sentido, não parágrafo único
+gigante), não sobre validade de marcação. Você lê o HTML como texto, não
+como um parser de verdade; um bug técnico apontado sem existir de verdade
+(achado real: `</ul>` "sobrando" que não estava lá) bloqueia publicação sem
+motivo real e derruba a confiança no parecer.

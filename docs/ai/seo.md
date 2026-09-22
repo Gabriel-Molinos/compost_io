@@ -43,3 +43,11 @@ português do Brasil**, mesmo que o artigo seja publicado em outro idioma.
 ```
 
 `passes` só é `true` se não houver nenhum issue de severidade `block`.
+
+**Só reporte issues da tabela acima.** Nunca invente um item novo fora dela —
+em especial, **nunca aponte defeito de sintaxe HTML** (tag não fechada, tag
+de fechamento sobrando, aninhamento errado). Validade de HTML não está no
+checklist, você lê o HTML como texto (não como um parser de verdade), e
+reprovar (`block`) um artigo por um bug técnico que na verdade não existe
+já aconteceu (achado real: `</ul>` "sobrando" que não estava lá) — derruba a
+confiança no parecer à toa e bloqueia publicação sem motivo real.

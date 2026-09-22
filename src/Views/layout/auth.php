@@ -25,6 +25,7 @@ use App\View;
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="<?= View::e(View::asset('assets/js/btn-fx.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/veil.js')) ?>" defer></script>
+    <script src="<?= View::e(View::asset('assets/js/footer-clock.js')) ?>" defer></script>
     <?php require __DIR__ . '/_veil_head.php'; ?>
 
     <style>
@@ -38,25 +39,77 @@ use App\View;
         }
     </style>
 </head>
-<body class="app-bg relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-12 font-sans text-text-primary antialiased">
+<body class="app-bg relative min-h-screen overflow-x-hidden font-sans text-text-primary antialiased">
     <div class="page-veil" aria-hidden="true"></div>
 
-    <main id="conteudo" class="relative z-10 w-full max-w-sm">
-        <?php // Brilho ambiente — pedido do responsável, 2026-09-21: "mais bonito". Preso a ESTE wrapper
-               // (não ao body): assim as manchas ficam coladas no card, bem visíveis, em vez de sumirem
-               // nos cantos vazios da tela num monitor largo. Só opacity anima (compositor). ?>
-        <span class="auth-glow -left-16 -top-10 h-72 w-72 bg-cyan/50" aria-hidden="true"></span>
-        <span class="auth-glow -bottom-16 -right-10 h-80 w-80 bg-cyan/35" aria-hidden="true" style="animation-delay: 3.2s"></span>
+    <?php
+    // Composição em duas colunas — "estágio" de identidade (o que a marca
+    // É) + "painel" de acesso (o que o usuário FAZ) — em vez do padrão
+    // genérico [logo em cima -> card centralizado]. Colunas 1.3fr/1fr:
+    // o estágio domina um pouco mais, o painel de formulário fica compacto
+    // e objetivo (largura de leitura confortável, nunca esticado). Abaixo
+    // de lg o estágio inteiro some (não "encolhe" — ver o cabeçalho
+    // compacto dentro do <main>, composição própria pro mobile) e o
+    // painel vira a tela inteira.
+    ?>
+    <div class="relative z-10 grid min-h-screen lg:grid-cols-[1.3fr_1fr]">
 
-        <div class="relative mx-auto mb-8 w-56">
-            <span class="pointer-events-none absolute inset-0 -z-10 animate-pulse rounded-full bg-cyan/30 blur-2xl" aria-hidden="true"></span>
-            <img src="/assets/brand/logo-lockup.webp" alt="COMPOST — Editorial Dashboard"
-                 class="h-auto w-full drop-shadow-[0_0_30px_rgba(0,208,240,0.25)]">
-        </div>
+        <aside class="relative hidden flex-col justify-between overflow-hidden border-r border-border/50 px-14 py-12 lg:flex" aria-hidden="true">
+            <div>
+                <div class="inline-flex items-center gap-2.5">
+                    <img src="/assets/brand/icon.webp" alt="" class="h-7 w-7">
+                    <span class="font-display text-lg font-bold tracking-[.1em] text-text-primary">COMPOST</span>
+                </div>
+                <p class="mt-1.5 font-mono text-[11px] uppercase tracking-[.32em] text-cyan">Editorial Dashboard</p>
+            </div>
 
-        <div class="auth-card relative rounded-3xl border border-border bg-gradient-to-b from-[#0C3B58] to-[#071E2E] p-7 shadow-2xl shadow-black/50 sm:p-8">
-            <?= $content ?>
-        </div>
-    </main>
+            <div class="flex flex-1 items-center justify-center py-8">
+                <div class="auth-portal" style="--portal-size: 13rem">
+                    <span class="auth-portal-orbit"><span class="auth-portal-dot"></span></span>
+                    <img src="/assets/brand/icon.webp" alt="" class="h-16 w-16">
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <p class="max-w-xs font-display text-xl font-semibold leading-snug text-text-primary">
+                    A IA pesquisa, escreve e organiza.
+                    <span class="text-cyan">Você decide</span> o que vai ao ar.
+                </p>
+                <ul class="flex flex-wrap gap-2">
+                    <li class="rounded-full border border-cyan/25 bg-cyan/5 px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-cyan">Aprovação sempre humana</li>
+                    <li class="rounded-full border border-cyan/25 bg-cyan/5 px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-cyan">Pipeline de IA operacional</li>
+                    <li class="rounded-full border border-cyan/25 bg-cyan/5 px-3 py-1 font-mono text-[10px] uppercase tracking-wide text-cyan">Publicação direta no WordPress</li>
+                </ul>
+                <div class="w-40">
+                    <?php require __DIR__ . '/_clock.php'; ?>
+                </div>
+            </div>
+        </aside>
+
+        <main id="conteudo" class="relative flex flex-col justify-center px-6 py-10 sm:px-10 lg:px-16 lg:py-12">
+            <div class="mx-auto w-full max-w-sm lg:mx-0">
+                <?php // Cabeçalho compacto — só < lg. É a composição PRÓPRIA do mobile
+                      // (não o estágio desktop encolhido): marca + descritor numa
+                      // linha, versão pequena do mesmo portal (mesma classe,
+                      // --portal-size menor), sem o texto/tendência/relógio (não
+                      // cabe com propósito numa tela pequena — o formulário é a
+                      // prioridade ali). ?>
+                <div class="mb-8 flex items-center gap-3 lg:hidden">
+                    <div class="auth-portal shrink-0" style="--portal-size: 3.75rem">
+                        <span class="auth-portal-orbit"><span class="auth-portal-dot"></span></span>
+                        <img src="/assets/brand/icon.webp" alt="" class="h-7 w-7">
+                    </div>
+                    <div>
+                        <p class="font-display text-base font-bold tracking-[.08em] text-text-primary">COMPOST</p>
+                        <p class="font-mono text-[10px] uppercase tracking-[.28em] text-cyan">Editorial Dashboard</p>
+                    </div>
+                </div>
+
+                <div class="auth-card relative rounded-3xl border border-border bg-gradient-to-b from-[#0C3B58] to-[#071E2E] p-7 shadow-2xl shadow-black/50 sm:p-8">
+                    <?= $content ?>
+                </div>
+            </div>
+        </main>
+    </div>
 </body>
 </html>

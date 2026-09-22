@@ -13,11 +13,14 @@ use App\View;
 
 $describedBy = $error !== null ? 'login-error' : null;
 ?>
-<h1 class="font-display text-2xl font-bold text-text-primary">Entrar</h1>
-<p class="mt-1 text-sm text-text-secondary">Acesse com seu e-mail e senha.</p>
+<p class="font-mono text-[11px] uppercase tracking-[.28em] text-cyan">Acesso</p>
+<h1 class="mt-1.5 font-display text-2xl font-bold text-text-primary">Acessar a redação</h1>
+<p class="mt-2 text-sm text-text-secondary">
+    Entre com o e-mail e a senha que o administrador cadastrou pra você.
+</p>
 
 <?php if ($flash !== null): ?>
-    <p role="status" class="mt-4 flex items-center gap-2 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-text-secondary">
+    <p role="status" class="mt-5 flex items-center gap-2 rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm text-text-secondary">
         <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan" aria-hidden="true"></span>
         <?= View::e($flash) ?>
     </p>
@@ -25,7 +28,7 @@ $describedBy = $error !== null ? 'login-error' : null;
 
 <?php if ($error !== null): ?>
     <p id="login-error" role="alert"
-       class="mt-4 flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
+       class="mt-5 flex items-start gap-2 rounded-xl border border-danger/40 bg-danger/10 px-3 py-2.5 text-sm text-danger">
         <span class="mt-0.5 shrink-0" aria-hidden="true"><?= Icon::nav('alert') ?></span>
         <span><?= View::e($error) ?></span>
     </p>
@@ -35,13 +38,13 @@ $describedBy = $error !== null ? 'login-error' : null;
     <?= Csrf::field() ?>
 
     <div>
-        <label for="email" class="sr-only">E-mail</label>
+        <label for="email" class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-text-secondary">E-mail</label>
         <div class="relative">
             <span class="pointer-events-none absolute inset-y-0 left-2.5 flex items-center">
                 <span class="flex h-7 w-7 items-center justify-center rounded-full <?= $error !== null ? 'bg-danger/10 text-danger' : 'bg-cyan/10 text-cyan' ?> [&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('mail') ?></span>
             </span>
             <input type="email" id="email" name="email" required autocomplete="username" autofocus
-                   placeholder="E-mail" value="<?= View::e($email) ?>"
+                   placeholder="voce@empresa.com" value="<?= View::e($email) ?>"
                    <?php if ($describedBy): ?>aria-describedby="<?= $describedBy ?>" aria-invalid="true"<?php endif; ?>
                    class="w-full rounded-full border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-[#0A3247] py-3.5 pl-12 pr-4 text-text-primary
                           shadow-[inset_0_1px_3px_rgba(0,0,0,.35)] placeholder:text-text-muted focus:outline-none">
@@ -49,13 +52,19 @@ $describedBy = $error !== null ? 'login-error' : null;
     </div>
 
     <div>
-        <label for="password" class="sr-only">Senha</label>
+        <div class="mb-1.5 flex items-baseline justify-between">
+            <label for="password" class="block text-xs font-semibold uppercase tracking-wide text-text-secondary">Senha</label>
+            <span id="caps-warning" class="items-center gap-1 text-[11px] font-medium text-warning" style="display: none">
+                <span class="[&>svg]:h-3 [&>svg]:w-3" aria-hidden="true"><?= Icon::nav('alert') ?></span>
+                Caps Lock ligado
+            </span>
+        </div>
         <div class="relative">
             <span class="pointer-events-none absolute inset-y-0 left-2.5 flex items-center">
                 <span class="flex h-7 w-7 items-center justify-center rounded-full <?= $error !== null ? 'bg-danger/10 text-danger' : 'bg-cyan/10 text-cyan' ?> [&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('lock') ?></span>
             </span>
             <input type="password" id="password" name="password" required autocomplete="current-password"
-                   placeholder="Senha"
+                   placeholder="Sua senha"
                    <?php if ($describedBy): ?>aria-describedby="<?= $describedBy ?>" aria-invalid="true"<?php endif; ?>
                    class="w-full rounded-full border <?= $error !== null ? 'border-danger' : 'border-border focus:border-cyan' ?> bg-[#0A3247] py-3.5 pl-12 pr-11 text-text-primary
                           shadow-[inset_0_1px_3px_rgba(0,0,0,.35)] focus:outline-none">
@@ -115,7 +124,7 @@ $loginUri = rtrim((string) Env::get('APP_URL', ''), '/') . '/oauth/callback';
 // data-width tem que ser um pixel fixo (o Google não aceita "100%"), por
 // isso o wrapper também é de largura fixa, do mesmo tamanho do card.
 ?>
-<div class="group relative mx-auto mt-4 h-11 w-[320px]">
+<div class="group relative mx-auto mt-4 h-11 w-[320px] max-w-full">
     <div class="g_id_signin absolute inset-0 z-10 overflow-hidden opacity-0"
          data-type="standard" data-size="large" data-width="320"></div>
 
@@ -132,6 +141,10 @@ $loginUri = rtrim((string) Env::get('APP_URL', ''), '/') . '/oauth/callback';
     </div>
 </div>
 
+<p class="mt-6 text-center text-xs text-text-muted">
+    Esqueceu a senha ou ainda não tem conta? Peça pro administrador do COMPOST liberar seu acesso.
+</p>
+
 <script>
     (function () {
         var btn = document.getElementById('toggle-password');
@@ -147,6 +160,26 @@ $loginUri = rtrim((string) Env::get('APP_URL', ''), '/') . '/oauth/callback';
             btn.querySelector('[data-icon=hide]').classList.toggle('hidden', !reveal);
             input.focus();
         });
+    })();
+
+    (function () {
+        // Prevenção de erro comum: avisa se Caps Lock está ligado enquanto o
+        // usuário digita a senha (pedido do redesign, 2026-09-22) — some de
+        // novo assim que desliga ou sai do campo. getModifierState nem
+        // sempre existe (navegador antigo); sem suporte, o aviso simplesmente
+        // nunca aparece, não quebra nada.
+        var input = document.getElementById('password');
+        var warning = document.getElementById('caps-warning');
+        if (!input || !warning || typeof KeyboardEvent === 'undefined' || !KeyboardEvent.prototype.getModifierState) {
+            return;
+        }
+
+        function check(e) {
+            warning.style.display = e.getModifierState('CapsLock') ? 'inline-flex' : 'none';
+        }
+        input.addEventListener('keyup', check);
+        input.addEventListener('keydown', check);
+        input.addEventListener('blur', function () { warning.style.display = 'none'; });
     })();
 
     (function () {

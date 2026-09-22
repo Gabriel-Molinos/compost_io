@@ -2077,23 +2077,71 @@
   }
 
   /* =====================================================================
-     Tela de login (pedido do responsável, 2026-09-21: "mais bonito") — o
-     fundo ganha duas manchas de luz respirando atrás do card (só opacity,
-     compositor), reaproveitando `article-breathe` (já usada no brilho dos
-     cards). O botão de entrar ganha um estado de carregando (spinner +
+     Tela de login — redesign completo (pedido do responsável, 2026-09-22:
+     "reconstrua a tela", não um ajuste cosmético). Composição em duas
+     colunas (ver layout/auth.php): estágio de identidade + painel de
+     acesso. O botão de entrar mantém o estado de carregando (spinner +
      "Entrando…") — a transição de verdade entre telas já é o véu global
      (assets/js/veil.js, dispara sozinho em qualquer submit); isso aqui é
      só o feedback imediato de "recebi o clique", antes do véu cobrir.
-     ===================================================================== */
-  .auth-glow {
+
+     "Portal" — o símbolo da marca dentro de um anel tracejado girando
+     (`--portal-size` parametriza o tamanho: ~13rem no estágio desktop,
+     ~3.75rem no cabeçalho compacto do mobile — mesmo componente, duas
+     escalas). NÃO é o `.dial-avatar` da sidebar (aquele é navegação, tem
+     outro propósito) — é a MESMA linguagem visual (anel tracejado
+     girando, `dial-ring-spin`, já existe pro avatar), reaproveitada de
+     propósito pra tela de login parecer parte do mesmo sistema sem
+     copiar componente nenhum 1:1. */
+  .auth-portal {
+    --portal-size: 13rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--portal-size);
+    height: var(--portal-size);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(0, 208, 240, .14), transparent 75%);
+  }
+  .auth-portal::before { /* anel tracejado externo, girando devagar */
+    content: '';
     position: absolute;
-    border-radius: 9999px;
-    filter: blur(90px);
-    pointer-events: none;
-    animation: article-breathe 7s ease-in-out infinite;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px dashed rgba(0, 208, 240, .38);
+    animation: dial-ring-spin 40s linear infinite;
+  }
+  .auth-portal::after { /* anel sólido interno, fixo */
+    content: '';
+    position: absolute;
+    inset: calc(var(--portal-size) * .135);
+    border-radius: 50%;
+    border: 1px solid rgba(0, 208, 240, .22);
+  }
+  .auth-portal-orbit {
+    position: absolute;
+    inset: 0;
+    animation: dial-ring-spin 9s linear infinite;
+  }
+  .auth-portal-dot {
+    position: absolute;
+    top: -3px;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    margin-left: -3px;
+    border-radius: 50%;
+    background: #7FE8FF;
+    box-shadow: 0 0 10px 2px rgba(127, 232, 255, .9);
+  }
+  .auth-portal img {
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 0 22px rgba(0, 208, 240, .5));
   }
   @media (prefers-reduced-motion: reduce) {
-    .auth-glow { animation: none; opacity: .45; }
+    .auth-portal::before, .auth-portal-orbit { animation: none; }
   }
 
   .btn-spin {

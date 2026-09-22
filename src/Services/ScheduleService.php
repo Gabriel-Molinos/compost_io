@@ -77,10 +77,11 @@ final class ScheduleService
         $stmt = Connection::get()->prepare(
             "SELECT s.id, s.scheduled_date, s.status, s.wordpress_post_id,
                     a.id AS article_id, a.title, a.status AS article_status,
-                    au.name AS author_name
+                    au.name AS author_name, i.url AS image_url, i.alt_text AS image_alt
              FROM schedules s
              JOIN articles a ON a.id = s.article_id AND a.site_id = :s AND a.deleted_at IS NULL
              LEFT JOIN site_authors au ON au.id = s.author_id
+             LEFT JOIN images i ON i.id = s.image_id
              WHERE s.status <> 'CANCELED'
                AND s.scheduled_date >= :start AND s.scheduled_date < :end
              ORDER BY s.scheduled_date, a.title"

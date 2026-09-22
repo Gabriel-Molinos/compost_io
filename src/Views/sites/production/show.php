@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Services\ArticleReviewService;
 use App\Support\Csrf;
+use App\Support\Icon;
 use App\Support\Labels;
 use App\View;
 
@@ -48,38 +49,26 @@ require __DIR__ . '/../_tabs.php';
     .article-body table { border-collapse: collapse; margin: 1rem 0; }
     .article-body th, .article-body td { border: 1px solid #d0d0d0; padding: .4rem .6rem; }
 </style>
-<a href="/sites/<?= View::e($site['id']) ?>/production" class="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
-    Produção
-</a>
-
-<div class="mt-3 rounded-lg border border-border bg-surface p-5">
-    <div class="flex flex-wrap items-start justify-between gap-3">
-        <h2 class="font-display text-xl font-semibold text-text-primary"><?= View::e($article['title'] ?: 'Rascunho #' . $article['id']) ?></h2>
-        <?= Labels::articleStatusBadge((string) $article['status']) ?>
-    </div>
-    <?php if (in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true)): ?>
-        <div class="loading-bar-track mt-3 max-w-xs" role="progressbar" aria-label="A IA está gerando este rascunho">
-            <div class="loading-bar-fill"></div>
-        </div>
-    <?php endif; ?>
-    <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-secondary">
-        <?php if ((int) ($article['attempt_number'] ?? 1) > 1): ?>
-            <span>tentativa <?= View::e($article['attempt_number']) ?></span>
-        <?php endif; ?>
-        <?php if (!empty($article['focus_keyword'])): ?>
-            <span>palavra-chave: <em class="text-text-primary not-italic font-medium"><?= View::e($article['focus_keyword']) ?></em></span>
-        <?php endif; ?>
-        <span>custo total <span class="text-text-primary font-medium">~US$ <?= number_format($totalCost, 4) ?></span></span>
-    </div>
-    <?php if (!empty($article['meta_description'])): ?>
-        <p class="mt-3 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-text-secondary">
-            <span class="font-semibold text-text-primary">Meta descrição:</span> <?= View::e($article['meta_description']) ?>
-        </p>
-    <?php endif; ?>
-</div>
 
 <?php
+/* =========================================================================
+   Redesign 2026-09-22 (pedido explícito): tudo ACIMA do corpo — cabeçalho,
+   alertas, sinais de qualidade (checklist/parecer da IA/SEO/compliance),
+   ação do momento (revisar/agendar/publicar/regenerar) e apoio (feedback,
+   imagens, detalhes técnicos) — reorganizado pra contar uma história em
+   ordem de leitura: "o que é isto" -> "está pronto?" -> "o que eu faço
+   agora" -> "detalhes de apoio". O corpo e o editor do corpo (abaixo) não
+   mudam. Dois helpers pequenos pra não repetir o mesmo cabeçalho de seção
+   (ícone + título + legenda) de formas ligeiramente diferentes em cada
+   bloco, como estava antes. */
+$sectionHeading = static function (string $icon, string $title, ?string $subtitle = null): void {
+    echo '<div class="flex items-center gap-2">'
+        . '<span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-cyan/10 text-cyan [&>svg]:h-4 [&>svg]:w-4">' . $icon . '</span>'
+        . '<h3 class="font-display text-base font-semibold text-text-primary">' . View::e($title) . '</h3></div>';
+    if ($subtitle !== null) {
+        echo '<p class="mt-1 text-xs text-text-secondary">' . View::e($subtitle) . '</p>';
+    }
+};
 $alertIcon = static function (string $kind): string {
     $path = $kind === 'danger'
         ? '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>'
@@ -87,9 +76,66 @@ $alertIcon = static function (string $kind): string {
     return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $path . '</svg>';
 };
 ?>
+
+<a href="/sites/<?= View::e($site['id']) ?>/production" class="inline-flex items-center gap-1 text-sm text-text-secondary hover:text-text-primary">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+    Produção
+</a>
+
+<?php
+// Cabeçalho: mesmo sistema de card/tag por status já usado na lista de
+// Produção (index.php) — abrir um rascunho a partir da lista agora bate
+// visualmente com o cartão que o trouxe até aqui, em vez de virar uma tela
+// com paleta diferente.
+$statusTone = Labels::articleStatusTone((string) $article['status']);
+$isGenerating = in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true);
+?>
+<div class="article-card <?= Labels::articleCardTone($statusTone) ?> mt-3 rounded-2xl" style="--card-enter: 0ms">
+    <span class="article-card-fx" aria-hidden="true"></span>
+    <span class="article-card-tag">
+        <?php if ($isGenerating): ?><span class="status-dot h-1.5 w-1.5 shrink-0 rounded-full bg-current" aria-hidden="true"></span><?php endif; ?>
+        <?= View::e(Labels::articleStatus((string) $article['status'])) ?>
+    </span>
+
+    <div class="p-5 pt-8 sm:p-6 sm:pt-8">
+        <div class="flex items-start gap-3">
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan/10 text-cyan"><?= Icon::nav('production') ?></span>
+            <div class="min-w-0 flex-1">
+                <h1 class="font-display text-xl font-bold leading-snug text-text-primary sm:text-2xl">
+                    <?= View::e($article['title'] ?: 'Rascunho #' . $article['id']) ?>
+                </h1>
+                <div class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <?php if ((int) ($article['attempt_number'] ?? 1) > 1): ?>
+                        <span class="article-card-fact"><span class="article-card-icon"><?= Icon::nav('clock') ?></span>tentativa <?= View::e($article['attempt_number']) ?></span>
+                    <?php endif; ?>
+                    <?php if (!empty($article['focus_keyword'])): ?>
+                        <span class="article-card-fact"><span class="article-card-icon"><?= Icon::nav('search') ?></span><?= View::e($article['focus_keyword']) ?></span>
+                    <?php endif; ?>
+                    <span class="article-card-fact"><span class="article-card-icon"><?= Icon::nav('reports') ?></span>US$ <?= number_format($totalCost, 4) ?> gastos</span>
+                </div>
+            </div>
+        </div>
+
+        <?php if ($isGenerating): ?>
+            <p role="status" class="mt-4 flex items-center gap-2 text-sm text-text-secondary">
+                A IA está gerando este rascunho em segundo plano — a página atualiza sozinha.
+            </p>
+            <div class="loading-bar-track mt-2 max-w-xs" role="progressbar" aria-label="A IA está gerando este rascunho">
+                <div class="loading-bar-fill"></div>
+            </div>
+        <?php endif; ?>
+
+        <?php if (!empty($article['meta_description'])): ?>
+            <p class="mt-4 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-text-secondary">
+                <span class="font-semibold text-text-primary">Meta descrição:</span> <?= View::e($article['meta_description']) ?>
+            </p>
+        <?php endif; ?>
+    </div>
+</div>
+
 <?php $linkRotAt = $notes['pipeline']['link_rot_detected_at'] ?? null; ?>
 <?php if ($linkRotAt !== null): ?>
-    <div role="alert" class="mt-4 flex gap-3 rounded-lg border border-danger/40 bg-danger/10 p-4">
+    <div role="alert" class="mt-4 flex gap-3 rounded-xl border border-danger/40 bg-danger/10 p-4">
         <span class="shrink-0 text-danger"><?= $alertIcon('danger') ?></span>
         <div class="text-sm text-text-primary">
             <p class="font-semibold text-danger">Link rot detectado</p>
@@ -104,7 +150,7 @@ $alertIcon = static function (string $kind): string {
 
 <?php $pipelineWarnings = (array) ($notes['pipeline']['warnings'] ?? []); ?>
 <?php if ($pipelineWarnings !== []): ?>
-    <div role="alert" class="mt-4 flex gap-3 rounded-lg border border-warning/40 bg-warning/10 p-4">
+    <div role="alert" class="mt-4 flex gap-3 rounded-xl border border-warning/40 bg-warning/10 p-4">
         <span class="shrink-0 text-warning"><?= $alertIcon('warning') ?></span>
         <div class="min-w-0 flex-1 text-sm text-text-primary">
             <p class="font-semibold text-warning">Avisos automáticos da geração</p>
@@ -117,12 +163,7 @@ $alertIcon = static function (string $kind): string {
     </div>
 <?php endif; ?>
 
-<?php if (in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true)): ?>
-    <p role="status" class="mt-4 flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-3 text-sm text-text-secondary">
-        <span aria-hidden="true" class="status-dot text-cyan">●</span>
-        Gerando em segundo plano — a página atualiza sozinha.
-    </p>
-<?php elseif ($article['status'] === 'ERROR'): ?>
+<?php if ($article['status'] === 'ERROR'): ?>
     <?php
     $lastFailure = null;
     foreach (array_reverse($executions) as $execution) {
@@ -132,7 +173,7 @@ $alertIcon = static function (string $kind): string {
         }
     }
     ?>
-    <div role="alert" class="mt-4 flex gap-3 rounded-lg border border-danger/40 bg-danger/10 p-4">
+    <div role="alert" class="mt-4 flex gap-3 rounded-xl border border-danger/40 bg-danger/10 p-4">
         <span class="shrink-0 text-danger"><?= $alertIcon('danger') ?></span>
         <p class="text-sm text-text-primary">
             <span class="font-semibold text-danger">Falha técnica na geração<?= $lastFailure !== null ? ' (passo: ' . View::e($lastFailure['step']) . ')' : '' ?>.</span>
@@ -141,33 +182,148 @@ $alertIcon = static function (string $kind): string {
     </div>
 <?php endif; ?>
 
-<?php if ($article['status'] === 'IN_REVIEW'): ?>
-    <?php $checklistPassed = $checklist !== null && \App\Services\ArticleReviewService::checklistPassed($checklist); ?>
-    <section class="mt-8">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Checklist de pré-aprovação</h3>
-        <p class="mt-1 text-xs text-text-muted">Obrigatório — aprovar só é permitido se os 3 itens estiverem ok.</p>
-        <ul class="mt-3 grid gap-2 sm:grid-cols-3">
-            <?php foreach ($checklist as $item): ?>
-                <li class="flex items-start gap-2 rounded-lg border p-3 text-sm <?= $item['ok'] ? 'border-success/40 bg-success/5' : 'border-danger/40 bg-danger/5' ?>">
-                    <span class="mt-0.5 shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase <?= $item['ok'] ? 'border-success/40 bg-success/15 text-success' : 'border-danger/40 bg-danger/15 text-danger' ?>">
-                        <?= $item['ok'] ? 'ok' : 'falhou' ?>
-                    </span>
-                    <span>
-                        <span class="block font-medium text-text-primary"><?= View::e($item['label']) ?></span>
-                        <span class="text-text-secondary"><?= View::e($item['detail']) ?></span>
-                    </span>
-                </li>
-            <?php endforeach; ?>
-        </ul>
-    </section>
+<?php
+// --- Qualidade do artigo -------------------------------------------------
+// Os 4 sinais automáticos (checklist obrigatório, parecer livre da IA, SEO,
+// compliance) viviam espalhados em 3 pontos diferentes da página (um logo
+// no topo, dois lá embaixo depois das imagens) — juntos aqui, dá pra
+// responder "está pronto?" olhando um só lugar, antes de decidir qualquer
+// coisa. A decisão de aprovar continua exigindo só o checklist (RF-008);
+// os outros 3 são consultivos.
+$review = $notes['review'] ?? null;
+$seo = $notes['seo'] ?? null;
+$compliance = $notes['compliance'] ?? null;
+$checklistPassed = $checklist !== null && ArticleReviewService::checklistPassed($checklist);
+$hasQualitySignals = $checklist !== null || $review !== null || $seo !== null || $compliance !== null;
 
-    <section data-tour="review-actions" class="mt-4">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Revisão</h3>
+$recommendationBadge = static function (string $rec): string {
+    [$cls, $label] = match ($rec) {
+        'ready_for_human' => ['border-success/40 bg-success/15 text-success', 'pronto pra revisão'],
+        'needs_fix'        => ['border-warning/40 bg-warning/15 text-warning', 'precisa de ajuste'],
+        default            => ['border-border bg-surface-2 text-text-secondary', $rec],
+    };
+    return '<span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ' . $cls . '">' . View::e($label) . '</span>';
+};
+$qualityCardOpen = static function (string $icon, string $title, string $badgeHtml): void {
+    echo '<div class="rounded-xl border border-border bg-surface p-4">'
+        . '<div class="flex items-center justify-between gap-2">'
+        . '<span class="flex items-center gap-2 text-sm font-semibold text-text-primary">'
+        . '<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-secondary [&>svg]:h-3.5 [&>svg]:w-3.5">' . $icon . '</span>'
+        . View::e($title) . '</span>' . $badgeHtml . '</div>';
+};
+/** @param list<array{text:string, severity:string}> $items */
+$gateBody = static function (array $items): void {
+    if ($items === []) {
+        return;
+    }
+    echo '<ul class="mt-3 space-y-2 text-sm text-text-secondary">';
+    foreach ($items as $it) {
+        $sevCls = match ($it['severity']) {
+            'block' => 'border-danger/40 bg-danger/15 text-danger',
+            'warn', 'aviso' => 'border-warning/40 bg-warning/15 text-warning',
+            default => 'border-border bg-surface-2 text-text-secondary',
+        };
+        $sevLabel = match ($it['severity']) {
+            'block' => 'bloqueio', 'warn', 'aviso' => 'aviso', default => $it['severity'],
+        };
+        echo '<li class="flex items-start gap-2"><span class="mt-0.5 shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase ' . $sevCls . '">' . View::e($sevLabel) . '</span>'
+            . '<span class="text-text-primary">' . View::e($it['text']) . '</span></li>';
+    }
+    echo '</ul>';
+};
+$seoItems = [];
+foreach ((array) ($seo['issues'] ?? []) as $i) {
+    if (!is_array($i)) { continue; }
+    $seoItems[] = ['severity' => (string) ($i['severity'] ?? '?'), 'text' => ($i['item'] ?? '') . (empty($i['fix']) ? '' : ' → ' . $i['fix'])];
+}
+$compItems = [];
+foreach ((array) ($compliance['blocking'] ?? []) as $b) {
+    if (!is_array($b)) { continue; }
+    $compItems[] = ['severity' => 'block', 'text' => ($b['rule'] ?? '') . (empty($b['fix']) ? '' : ' → ' . $b['fix'])];
+}
+foreach ((array) ($compliance['warnings'] ?? []) as $w) {
+    if (!is_array($w)) { continue; }
+    $compItems[] = ['severity' => 'aviso', 'text' => ($w['rule'] ?? '') . (empty($w['note']) ? '' : ': ' . $w['note'])];
+}
+?>
+<?php if ($hasQualitySignals): ?>
+    <section class="mt-6">
+        <?php $sectionHeading(Icon::nav('check'), 'Qualidade do artigo', 'Sinais automáticos pra ajudar a decidir — a decisão final é sempre sua.'); ?>
+        <div class="mt-3 grid gap-3 lg:grid-cols-2">
+            <?php if ($checklist !== null): ?>
+                <?php
+                $okCount = 0;
+                foreach ($checklist as $item) { if ($item['ok']) { $okCount++; } }
+                $badge = '<span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold '
+                    . ($checklistPassed ? 'border-success/40 bg-success/15 text-success' : 'border-danger/40 bg-danger/15 text-danger')
+                    . '">' . $okCount . '/' . count($checklist) . ' ok</span>';
+                $qualityCardOpen(Icon::nav('check'), 'Checklist de pré-aprovação', $badge);
+                ?>
+                <p class="mt-1 text-xs text-text-muted">Obrigatório — aprovar só é permitido com os 3 itens ok.</p>
+                <ul class="mt-3 space-y-2">
+                    <?php foreach ($checklist as $item): ?>
+                        <li class="flex items-start gap-2 text-sm">
+                            <span class="mt-0.5 shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase <?= $item['ok'] ? 'border-success/40 bg-success/15 text-success' : 'border-danger/40 bg-danger/15 text-danger' ?>">
+                                <?= $item['ok'] ? 'ok' : 'falhou' ?>
+                            </span>
+                            <span>
+                                <span class="block font-medium text-text-primary"><?= View::e($item['label']) ?></span>
+                                <span class="text-text-secondary"><?= View::e($item['detail']) ?></span>
+                            </span>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($review !== null): ?>
+                <?php $qualityCardOpen(Icon::nav('ai'), 'Parecer da IA', $recommendationBadge((string) ($review['recommendation'] ?? ''))); ?>
+                <p class="mt-2 text-sm text-text-primary"><?= View::e($review['summary'] ?? '') ?></p>
+                <?php if (!empty($review['concerns']) && is_array($review['concerns'])): ?>
+                    <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-text-secondary">
+                        <?php foreach ($review['concerns'] as $c): ?>
+                            <?php if (!is_array($c)) { continue; } ?>
+                            <li><?php if (!empty($c['area'])): ?><span class="font-medium text-text-primary"><?= View::e($c['area']) ?>:</span> <?php endif; ?><?= View::e($c['note'] ?? '') ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
+                <?php if (!empty($review['assumptions_made']) && is_array($review['assumptions_made'])): ?>
+                    <p class="mt-2 text-xs text-text-muted">Suposições da IA: <?= View::e(implode(' · ', array_map('strval', $review['assumptions_made']))) ?></p>
+                <?php endif; ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($seo !== null): ?>
+                <?php
+                $seoOk = (bool) ($seo['passes'] ?? false);
+                $badge = '<span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ' . ($seoOk ? 'border-success/40 bg-success/15 text-success' : 'border-danger/40 bg-danger/15 text-danger') . '">' . ($seoOk ? 'ok' : 'com pendências') . '</span>';
+                $qualityCardOpen(Icon::nav('search'), 'SEO', $badge);
+                $gateBody($seoItems);
+                ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($compliance !== null): ?>
+                <?php
+                $compOk = (bool) ($compliance['approved'] ?? false);
+                $badge = '<span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ' . ($compOk ? 'border-success/40 bg-success/15 text-success' : 'border-danger/40 bg-danger/15 text-danger') . '">' . ($compOk ? 'ok' : 'com pendências') . '</span>';
+                $qualityCardOpen(Icon::nav('shield'), 'Compliance', $badge);
+                $gateBody($compItems);
+                ?>
+                </div>
+            <?php endif; ?>
+        </div>
+    </section>
+<?php endif; ?>
+
+<?php if ($article['status'] === 'IN_REVIEW'): ?>
+    <section data-tour="review-actions" class="mt-6">
+        <?php $sectionHeading(Icon::nav('production'), 'Decisão do Redator-Chefe'); ?>
         <div class="mt-3 grid gap-4 sm:grid-cols-2">
-            <div class="rounded-lg border border-success/40 bg-success/5 p-4">
+            <div class="rounded-xl border border-success/40 bg-success/5 p-4">
                 <div class="flex items-center gap-2">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-success/15 text-success" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9.5 18 20 6"/></svg>
+                        <?= Icon::nav('check') ?>
                     </span>
                     <p class="font-display text-sm font-semibold text-text-primary">Aprovar</p>
                 </div>
@@ -185,10 +341,10 @@ $alertIcon = static function (string $kind): string {
                 </form>
             </div>
 
-            <div class="rounded-lg border border-danger/40 bg-danger/5 p-4">
+            <div class="rounded-xl border border-danger/40 bg-danger/5 p-4">
                 <div class="flex items-center gap-2">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-danger/15 text-danger" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                        <?= Icon::nav('close') ?>
                     </span>
                     <p class="font-display text-sm font-semibold text-text-primary">Rejeitar</p>
                 </div>
@@ -248,19 +404,19 @@ $authorOptions = static function (array $authors, int $selectedId): string {
 ?>
 
 <?php if ($article['status'] === 'APPROVED'): ?>
-    <section id="agendar" class="mt-8 rounded-lg border border-border bg-surface p-4">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Agendar publicação</h3>
+    <section id="agendar" class="mt-6 rounded-xl border border-border bg-surface p-5">
+        <?php $sectionHeading(Icon::nav('calendar'), 'Agendar publicação'); ?>
         <?php if ($authors === []): ?>
-            <p class="mt-1 text-sm text-text-secondary">
+            <p class="mt-3 text-sm text-text-secondary">
                 Nenhum autor disponível. Sincronize os autores em
                 <a href="/sites/<?= View::e($site['id']) ?>/wordpress" class="text-cyan hover:text-cyan-bright">WordPress</a>.
             </p>
         <?php elseif ($featuredSelected === null): ?>
-            <p class="mt-1 text-sm text-text-secondary">
+            <p class="mt-3 text-sm text-text-secondary">
                 Escolha a <a href="#imagens" class="text-cyan hover:text-cyan-bright">imagem destacada</a> antes de agendar.
             </p>
         <?php else: ?>
-            <p class="mt-1 text-sm text-text-secondary">
+            <p class="mt-3 text-sm text-text-secondary">
                 Escolha o autor — a imagem destacada já escolhida é usada automaticamente, e a data/hora também:
                 <?php if ($nextSlot !== null): ?>
                     <strong class="text-text-primary">
@@ -314,9 +470,9 @@ $authorOptions = static function (array $authors, int $selectedId): string {
     </section>
 <?php elseif ($article['status'] === 'SCHEDULED' && $schedule !== null): ?>
     <?php $imageIdForForm = $featuredSelected['id'] ?? $schedule['image_id']; ?>
-    <section id="agendar" class="mt-8 rounded-lg border border-cyan/40 bg-surface p-4">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Agendado</h3>
-        <p class="mt-1 text-sm text-text-primary">
+    <section id="agendar" class="mt-6 rounded-xl border border-cyan/40 bg-surface p-5">
+        <?php $sectionHeading(Icon::nav('clock'), 'Agendado'); ?>
+        <p class="mt-3 text-sm text-text-primary">
             <strong><?= View::e(date('d/m/Y H:i', strtotime((string) $schedule['scheduled_date']))) ?></strong>
             · autor: <?= View::e($schedule['author_name'] ?? '—') ?>
         </p>
@@ -371,9 +527,9 @@ $authorOptions = static function (array $authors, int $selectedId): string {
         </div>
     </section>
 <?php elseif ($article['status'] === 'SCHEDULED' && $schedule === null): ?>
-    <section id="agendar" class="mt-8 rounded-lg border border-danger/40 bg-danger/10 p-4">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-danger">Falha no envio ao WordPress</h3>
-        <p role="alert" class="mt-1 text-sm text-text-secondary">
+    <section id="agendar" class="mt-6 rounded-xl border border-danger/40 bg-danger/10 p-5">
+        <?php $sectionHeading(Icon::nav('alert'), 'Falha no envio ao WordPress'); ?>
+        <p role="alert" class="mt-3 text-sm text-text-secondary">
             <?php if ($lastSchedule !== null): ?>
                 Tentativa automática de publicação (agendada pra
                 <?= View::e(date('d/m/Y H:i', strtotime((string) $lastSchedule['scheduled_date']))) ?>) esgotou as
@@ -393,9 +549,9 @@ $authorOptions = static function (array $authors, int $selectedId): string {
     </section>
 <?php elseif ($article['status'] === 'PUBLISHED' && $lastSchedule !== null && !empty($lastSchedule['wordpress_post_id'])): ?>
     <?php $postUrl = rtrim((string) ($site['wordpress_url'] ?? ''), '/') . '/?p=' . (int) $lastSchedule['wordpress_post_id']; ?>
-    <section id="agendar" class="mt-8 rounded-lg border border-success/40 bg-surface p-4">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Publicado</h3>
-        <p class="mt-1 text-sm text-text-primary">
+    <section id="agendar" class="mt-6 rounded-xl border border-success/40 bg-surface p-5">
+        <?php $sectionHeading(Icon::nav('wordpress'), 'Publicado'); ?>
+        <p class="mt-3 text-sm text-text-primary">
             Post #<?= View::e($lastSchedule['wordpress_post_id']) ?> no WordPress
             <?php if (!empty($lastSchedule['author_name'])): ?> · autor: <?= View::e($lastSchedule['author_name']) ?><?php endif; ?>
             · data: <?= View::e(date('d/m/Y H:i', strtotime((string) $lastSchedule['scheduled_date']))) ?>
@@ -433,9 +589,9 @@ $attempt = (int) ($article['attempt_number'] ?? 1);
 $maxAttempts = 3;
 ?>
 <?php if ($article['status'] === 'REVISION_REQUESTED'): ?>
-    <section class="mt-8 rounded-lg border border-border bg-surface p-4">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Regeneração</h3>
-        <p class="mt-1 text-sm text-text-secondary">
+    <section class="mt-6 rounded-xl border border-border bg-surface p-5">
+        <?php $sectionHeading(Icon::nav('production'), 'Regeneração'); ?>
+        <p class="mt-3 text-sm text-text-secondary">
             Tentativa <?= $attempt ?> de <?= $maxAttempts ?>.
             <?php if ($attempt >= $maxAttempts): ?>
                 Esta é a última — se a próxima for rejeitada, o artigo fica <strong>bloqueado</strong> para decisão sua.
@@ -453,9 +609,9 @@ $maxAttempts = 3;
         </form>
     </section>
 <?php elseif ($article['status'] === 'ERROR'): ?>
-    <section class="mt-8 rounded-lg border border-border bg-surface p-4">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Tentar de novo</h3>
-        <p class="mt-1 text-sm text-text-secondary">
+    <section class="mt-6 rounded-xl border border-border bg-surface p-5">
+        <?php $sectionHeading(Icon::nav('production'), 'Tentar de novo'); ?>
+        <p class="mt-3 text-sm text-text-secondary">
             Tentativa <?= $attempt ?> de <?= $maxAttempts ?> — a falha foi técnica (ver acima), não uma rejeição do
             Redator-Chefe.
             <?php if ($attempt >= $maxAttempts): ?>
@@ -474,18 +630,18 @@ $maxAttempts = 3;
         </form>
     </section>
 <?php elseif ($article['status'] === 'BLOCKED'): ?>
-    <section class="mt-8 rounded-lg border border-danger/40 bg-danger/10 p-4">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-danger">Bloqueado</h3>
-        <p class="mt-1 text-sm text-text-secondary">
+    <section class="mt-6 rounded-xl border border-danger/40 bg-danger/10 p-5">
+        <?php $sectionHeading(Icon::nav('alert'), 'Bloqueado'); ?>
+        <p class="mt-3 text-sm text-text-secondary">
             O limite de <?= $maxAttempts ?> tentativas nesta linhagem foi atingido (rejeição e/ou falha técnica), sem aprovação. Decida o próximo passo — descartar, ou revisar a meta/diretrizes do site antes de tentar um novo tema.
         </p>
     </section>
 <?php endif; ?>
 
 <?php if (!empty($feedback)): ?>
-    <section class="mt-8 rounded-lg border border-border bg-surface p-4">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Feedback de rejeição (<?= count($feedback) ?>)</h3>
-        <ul class="mt-2 space-y-3 text-sm">
+    <section class="mt-6 rounded-xl border border-border bg-surface p-5">
+        <?php $sectionHeading(Icon::nav('feedback'), 'Feedback de rejeição (' . count($feedback) . ')'); ?>
+        <ul class="mt-3 space-y-3 text-sm">
             <?php foreach ($feedback as $f): ?>
                 <li class="border-l-2 border-danger/50 pl-3">
                     <p class="font-medium text-text-primary">
@@ -502,58 +658,6 @@ $maxAttempts = 3;
     </section>
 <?php endif; ?>
 
-<?php
-$execStatusBadge = static function (string $status): string {
-    [$cls, $label] = match ($status) {
-        'SUCCESS' => ['border-success/40 bg-success/15 text-success', 'concluído'],
-        'FAILED'  => ['border-danger/40 bg-danger/15 text-danger', 'falhou'],
-        default   => ['border-border bg-surface-2 text-text-secondary', $status],
-    };
-    return '<span class="rounded-full border px-2 py-0.5 text-xs font-medium ' . $cls . '">' . View::e($label) . '</span>';
-};
-?>
-<section class="mt-8 overflow-hidden rounded-lg border border-border bg-surface">
-    <details>
-        <summary class="px-4 py-3 text-sm font-semibold text-text-primary hover:text-cyan">
-            Passos da IA (<?= count($executions) ?>)
-        </summary>
-        <ul class="divide-y divide-border border-t border-border text-sm">
-            <?php foreach ($executions as $e): ?>
-                <li class="flex items-center justify-between gap-4 px-4 py-2.5">
-                    <span class="text-text-primary"><?= View::e($e['step']) ?></span>
-                    <span class="flex items-center gap-3 text-xs text-text-muted">
-                        <?php if ((int) $e['retry_count'] > 0): ?><span><?= View::e($e['retry_count']) ?> retry</span><?php endif; ?>
-                        <span>US$ <?= number_format((float) $e['cost'], 4) ?></span>
-                        <?= $execStatusBadge((string) $e['status']) ?>
-                    </span>
-                </li>
-                <?php if (!empty($e['error_message'])): ?>
-                    <li class="bg-danger/5 px-4 py-2 text-xs text-danger"><?= View::e($e['error_message']) ?></li>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </ul>
-    </details>
-</section>
-
-<?php if ($sources !== []): ?>
-    <section class="mt-8 overflow-hidden rounded-lg border border-border bg-surface">
-        <details>
-            <summary class="px-4 py-3 text-sm font-semibold text-text-primary hover:text-cyan">
-                Fontes (<?= count($sources) ?>)
-            </summary>
-            <ul class="divide-y divide-border border-t border-border text-sm">
-                <?php foreach ($sources as $s): ?>
-                    <li class="px-4 py-2.5">
-                        <a href="<?= View::e($s['url']) ?>" target="_blank" rel="noopener"
-                           class="text-cyan hover:text-cyan-bright"><?= View::e($s['title'] ?: $s['url']) ?></a>
-                        <?php if (!empty($s['publisher'])): ?><span class="text-text-muted"> — <?= View::e($s['publisher']) ?></span><?php endif; ?>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        </details>
-    </section>
-<?php endif; ?>
-
 <?php if (!empty($images)): ?>
     <?php
     $featured = array_values(array_filter($images, static fn ($i) => $i['role'] === 'FEATURED'));
@@ -561,22 +665,35 @@ $execStatusBadge = static function (string $status): string {
     $base = '/sites/' . View::e($site['id']) . '/production/' . View::e($article['id']);
     $deleteForm = static function (array $img) use ($base): void {
         echo '<form method="post" action="' . $base . '/images/' . View::e($img['id']) . '/delete"'
-            . ' data-confirm="Remover esta imagem?" class="mt-3">';
+            . ' data-confirm="Remover esta imagem?" class="flex-1">';
         echo Csrf::field();
         echo '<button type="submit" class="btn btn-danger flex w-full items-center justify-center gap-1.5 px-3 py-1.5 text-xs">'
             . '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
             . '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/>'
-            . '</svg>Remover imagem</button>';
+            . '</svg>Remover</button>';
+        echo '</form>';
+    };
+    // Substituir (Fase de imagens, pedido 2026-09-22): reenvia o mesmo prompt
+    // dessa imagem pro gerador — troca uma pela outra, sem contar como uma
+    // imagem a mais. Some do carregamento normal do form (onsubmit) porque a
+    // chamada de IA + imagem demora alguns segundos, mesmo padrão já usado
+    // em "Sugerir por relevância"/"Gerar mais" do editor de corpo.
+    $regenerateForm = static function (array $img) use ($base): void {
+        echo '<form method="post" action="' . $base . '/images/' . View::e($img['id']) . '/regenerate" class="flex-1"'
+            . ' onsubmit="this.querySelector(\'button\').disabled=true;this.querySelector(\'button\').textContent=\'Gerando…\';">';
+        echo Csrf::field();
+        echo '<button type="submit" class="btn btn-secondary flex w-full items-center justify-center gap-1.5 px-3 py-1.5 text-xs">'
+            . '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            . '<path d="M20 11A8 8 0 1 0 18.3 16"/><path d="M20 5v6h-6"/>'
+            . '</svg>Substituir</button>';
         echo '</form>';
     };
     ?>
-    <section id="imagens" class="mt-8">
-        <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">
-            Imagens (<?= count($images) ?>)
-        </h3>
+    <section id="imagens" class="mt-6 rounded-xl border border-border bg-surface p-5">
+        <?php $sectionHeading(Icon::nav('camera'), 'Imagens (' . count($images) . ')'); ?>
 
         <?php if ($featured !== []): ?>
-            <p class="mt-3 text-sm font-medium text-text-primary">Imagem destacada — <?= count($featured) ?> opção(ões)</p>
+            <p class="mt-4 text-sm font-medium text-text-primary">Imagem destacada — <?= count($featured) ?> opção(ões)</p>
             <p class="text-xs text-text-muted">A escolha é do Redator-Chefe. Use as setas pra navegar, veja ampliada e selecione a que ficar.</p>
             <form method="post" action="<?= $base ?>/images/select" class="mt-2">
                 <?= Csrf::field() ?>
@@ -657,8 +774,23 @@ $execStatusBadge = static function (string $status): string {
         <?php endif; ?>
 
         <?php if ($body !== []): ?>
-            <p class="mt-5 text-sm font-medium text-text-primary">Imagens do corpo — <?= count($body) ?></p>
-            <p class="text-xs text-text-muted">Distribuídas automaticamente pelo texto na publicação.</p>
+            <div class="mt-5 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <p class="text-sm font-medium text-text-primary">Imagens do corpo — <?= count($body) ?></p>
+                    <p class="text-xs text-text-muted">
+                        Distribuídas automaticamente pelo texto na publicação, sempre na mesma proporção da destacada.
+                        A descrição (alt) de cada uma só aparece ao ampliar.
+                    </p>
+                </div>
+                <form method="post" action="<?= $base ?>/images/body/add"
+                      onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Gerando…';">
+                    <?= Csrf::field() ?>
+                    <button type="submit" class="btn btn-primary shrink-0 whitespace-nowrap px-3 py-1.5 text-xs">
+                        <span class="[&>svg]:h-3.5 [&>svg]:w-3.5"><?= Icon::nav('plus') ?></span>
+                        Gerar mais uma
+                    </button>
+                </form>
+            </div>
             <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <?php foreach ($body as $i): ?>
                     <figure class="hover-card overflow-hidden rounded-lg border border-border bg-surface p-2">
@@ -666,6 +798,7 @@ $execStatusBadge = static function (string $status): string {
                             <img src="<?= View::e($i['url']) ?>" alt="<?= View::e($i['alt_text'] ?? '') ?>" loading="lazy" class="w-full rounded" />
                             <button type="button"
                                     data-lightbox="<?= View::e($i['url']) ?>"
+                                    data-lightbox-caption="<?= View::e($i['alt_text'] ?? '') ?>"
                                     aria-label="Ver imagem em tamanho grande"
                                     class="absolute inset-0 flex items-center justify-center bg-[#050B0F]/40 opacity-0 transition hover:opacity-100 focus-visible:opacity-100">
                                 <span class="rounded-md bg-surface/90 px-3 py-1.5 text-sm font-medium text-text-primary">Ver ampliado</span>
@@ -674,13 +807,10 @@ $execStatusBadge = static function (string $status): string {
                         <figcaption class="mt-2 text-xs font-medium text-text-secondary">
                             Imagem de corpo <span class="font-normal text-text-muted">· <?= View::e($i['format'] ?? '') ?></span>
                         </figcaption>
-                        <?php if (!empty($i['alt_text'])): ?>
-                            <p class="mt-2 rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary">
-                                <span class="font-semibold text-text-secondary">Descrição da imagem (alt):</span>
-                                <?= View::e($i['alt_text']) ?>
-                            </p>
-                        <?php endif; ?>
-                        <?php $deleteForm($i); ?>
+                        <div class="mt-3 flex gap-2">
+                            <?php $regenerateForm($i); ?>
+                            <?php $deleteForm($i); ?>
+                        </div>
                     </figure>
                 <?php endforeach; ?>
             </div>
@@ -689,91 +819,60 @@ $execStatusBadge = static function (string $status): string {
 <?php endif; ?>
 
 <?php
-$review = $notes['review'] ?? null;
-$seo = $notes['seo'] ?? null;
-$compliance = $notes['compliance'] ?? null;
-?>
-<?php
-$recommendationBadge = static function (string $rec): string {
-    [$cls, $label] = match ($rec) {
-        'ready_for_human' => ['border-success/40 bg-success/15 text-success', 'pronto pra revisão'],
-        'needs_fix'        => ['border-warning/40 bg-warning/15 text-warning', 'precisa de ajuste'],
-        default            => ['border-border bg-surface-2 text-text-secondary', $rec],
+// --- Detalhes técnicos ----------------------------------------------------
+// Passos da IA e Fontes eram duas seções soltas de mesmo peso visual que
+// tudo acima — juntas aqui, no fim, deixam claro que são apoio/auditoria,
+// não parte do fluxo de decisão.
+$execStatusBadge = static function (string $status): string {
+    [$cls, $label] = match ($status) {
+        'SUCCESS' => ['border-success/40 bg-success/15 text-success', 'concluído'],
+        'FAILED'  => ['border-danger/40 bg-danger/15 text-danger', 'falhou'],
+        default   => ['border-border bg-surface-2 text-text-secondary', $status],
     };
-    return '<span class="rounded-full border px-2.5 py-1 text-xs font-semibold ' . $cls . '">' . View::e($label) . '</span>';
+    return '<span class="rounded-full border px-2 py-0.5 text-xs font-medium ' . $cls . '">' . View::e($label) . '</span>';
 };
 ?>
-<?php if ($review !== null): ?>
-    <section class="mt-8 rounded-lg border border-border bg-surface p-4">
-        <div class="flex flex-wrap items-center gap-2">
-            <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">Parecer da IA</h3>
-            <?= $recommendationBadge((string) ($review['recommendation'] ?? '')) ?>
-        </div>
-        <p class="mt-2 text-sm text-text-primary"><?= View::e($review['summary'] ?? '') ?></p>
-        <?php if (!empty($review['concerns']) && is_array($review['concerns'])): ?>
-            <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-text-secondary">
-                <?php foreach ($review['concerns'] as $c): ?>
-                    <?php if (!is_array($c)) { continue; } ?>
-                    <li><?php if (!empty($c['area'])): ?><span class="font-medium text-text-primary"><?= View::e($c['area']) ?>:</span> <?php endif; ?><?= View::e($c['note'] ?? '') ?></li>
+<section class="mt-6 rounded-xl border border-border bg-surface p-5">
+    <?php $sectionHeading(Icon::nav('config'), 'Detalhes técnicos'); ?>
+
+    <details class="mt-3 overflow-hidden rounded-lg border border-border">
+        <summary class="px-4 py-3 text-sm font-semibold text-text-primary hover:text-cyan">
+            Passos da IA (<?= count($executions) ?>)
+        </summary>
+        <ul class="divide-y divide-border border-t border-border text-sm">
+            <?php foreach ($executions as $e): ?>
+                <li class="flex items-center justify-between gap-4 px-4 py-2.5">
+                    <span class="text-text-primary"><?= View::e($e['step']) ?></span>
+                    <span class="flex items-center gap-3 text-xs text-text-muted">
+                        <?php if ((int) $e['retry_count'] > 0): ?><span><?= View::e($e['retry_count']) ?> retry</span><?php endif; ?>
+                        <span>US$ <?= number_format((float) $e['cost'], 4) ?></span>
+                        <?= $execStatusBadge((string) $e['status']) ?>
+                    </span>
+                </li>
+                <?php if (!empty($e['error_message'])): ?>
+                    <li class="bg-danger/5 px-4 py-2 text-xs text-danger"><?= View::e($e['error_message']) ?></li>
+                <?php endif; ?>
+            <?php endforeach; ?>
+        </ul>
+    </details>
+
+    <?php if ($sources !== []): ?>
+        <details class="mt-3 overflow-hidden rounded-lg border border-border">
+            <summary class="px-4 py-3 text-sm font-semibold text-text-primary hover:text-cyan">
+                Fontes (<?= count($sources) ?>)
+            </summary>
+            <ul class="divide-y divide-border border-t border-border text-sm">
+                <?php foreach ($sources as $s): ?>
+                    <li class="px-4 py-2.5">
+                        <a href="<?= View::e($s['url']) ?>" target="_blank" rel="noopener"
+                           class="text-cyan hover:text-cyan-bright"><?= View::e($s['title'] ?: $s['url']) ?></a>
+                        <?php if (!empty($s['publisher'])): ?><span class="text-text-muted"> — <?= View::e($s['publisher']) ?></span><?php endif; ?>
+                    </li>
                 <?php endforeach; ?>
             </ul>
-        <?php endif; ?>
-        <?php if (!empty($review['assumptions_made']) && is_array($review['assumptions_made'])): ?>
-            <p class="mt-2 text-xs text-text-muted">Suposições da IA: <?= View::e(implode(' · ', array_map('strval', $review['assumptions_made']))) ?></p>
-        <?php endif; ?>
-    </section>
-<?php endif; ?>
-
-<?php
-/** @param list<array{text:string, severity:string}> $items */
-$gate = static function (string $label, ?array $note, bool $ok, array $items) : void {
-    if ($note === null) { return; }
-    $badgeCls = $ok ? 'border-success/40 bg-success/15 text-success' : 'border-danger/40 bg-danger/15 text-danger';
-    $badgeLabel = $ok ? 'ok' : 'com pendências';
-    echo '<div class="rounded-lg border border-border bg-surface p-4">';
-    echo '<div class="flex items-center justify-between gap-2">'
-        . '<span class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">' . View::e($label) . '</span>'
-        . '<span class="rounded-full border px-2.5 py-0.5 text-xs font-semibold ' . $badgeCls . '">' . $badgeLabel . '</span>'
-        . '</div>';
-    if ($items !== []) {
-        echo '<ul class="mt-3 space-y-2 text-sm text-text-secondary">';
-        foreach ($items as $it) {
-            $sevCls = match ($it['severity']) {
-                'block' => 'border-danger/40 bg-danger/15 text-danger',
-                'warn', 'aviso' => 'border-warning/40 bg-warning/15 text-warning',
-                default => 'border-border bg-surface-2 text-text-secondary',
-            };
-            $sevLabel = match ($it['severity']) {
-                'block' => 'bloqueio', 'warn', 'aviso' => 'aviso', default => $it['severity'],
-            };
-            echo '<li class="flex items-start gap-2"><span class="mt-0.5 shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase ' . $sevCls . '">' . View::e($sevLabel) . '</span>'
-                . '<span class="text-text-primary">' . View::e($it['text']) . '</span></li>';
-        }
-        echo '</ul>';
-    }
-    echo '</div>';
-};
-$seoItems = [];
-foreach ((array) ($seo['issues'] ?? []) as $i) {
-    if (!is_array($i)) { continue; }
-    $seoItems[] = ['severity' => (string) ($i['severity'] ?? '?'), 'text' => ($i['item'] ?? '') . (empty($i['fix']) ? '' : ' → ' . $i['fix'])];
-}
-$compItems = [];
-foreach ((array) ($compliance['blocking'] ?? []) as $b) {
-    if (!is_array($b)) { continue; }
-    $compItems[] = ['severity' => 'block', 'text' => ($b['rule'] ?? '') . (empty($b['fix']) ? '' : ' → ' . $b['fix'])];
-}
-foreach ((array) ($compliance['warnings'] ?? []) as $w) {
-    if (!is_array($w)) { continue; }
-    $compItems[] = ['severity' => 'aviso', 'text' => ($w['rule'] ?? '') . (empty($w['note']) ? '' : ': ' . $w['note'])];
-}
-?>
-<?php if ($seo !== null || $compliance !== null): ?>
-    <section class="mt-4 grid gap-3 sm:grid-cols-2">
-        <?php $gate('SEO', $seo, (bool) ($seo['passes'] ?? false), $seoItems); ?>
-        <?php $gate('Compliance', $compliance, (bool) ($compliance['approved'] ?? false), $compItems); ?>
-    </section>
-<?php endif; ?>
+        </details>
+    <?php endif; ?>
+</section>
 
 <section class="mt-8">
     <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">

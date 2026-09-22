@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var dialog, imgEl;
+  var dialog, imgEl, captionEl;
 
   function ensureDialog() {
     if (dialog) {
@@ -15,9 +15,10 @@
     }
     dialog = document.createElement('dialog');
     dialog.className = 'image-lightbox';
-    dialog.innerHTML = '<img alt="">';
+    dialog.innerHTML = '<img alt=""><p class="image-lightbox-caption"></p>';
     document.body.appendChild(dialog);
     imgEl = dialog.querySelector('img');
+    captionEl = dialog.querySelector('.image-lightbox-caption');
 
     dialog.addEventListener('click', function (e) {
       if (e.target === dialog) {
@@ -40,6 +41,9 @@
       ensureDialog();
       imgEl.src = trigger.getAttribute('data-lightbox');
       imgEl.alt = trigger.getAttribute('aria-label') || '';
+      // Descrição da imagem (alt) — pedido 2026-09-22: nas imagens de corpo
+      // ela fica escondida na grade, só aparece aqui na ampliada.
+      captionEl.textContent = trigger.getAttribute('data-lightbox-caption') || '';
       dialog.showModal();
     });
   }

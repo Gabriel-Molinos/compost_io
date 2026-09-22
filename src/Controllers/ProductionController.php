@@ -572,4 +572,51 @@ final class ProductionController extends Controller
         Session::flash('success', 'Rascunho descartado.');
         Http::redirect('/sites/' . $site['id'] . '/production');
     }
+
+    /**
+     * Gera mais uma imagem de corpo (pedido 2026-09-22) — chamada síncrona,
+     * mesmo padrão de suggestInternalLinks()/suggestExternalLinks() (1 chamada
+     * de IA + 1 geração de imagem, cabe na janela normal de request).
+     */
+    public function addBodyImage(string $siteId, string $articleId): void
+    {
+        $site = $this->requireSite($siteId);
+        Csrf::verify();
+        $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
+
+        set_time_limit(120);
+
+        try {
+            (new ArticlePipeline())->addBodyImage(
+                (int) $article['id'],
+                (int) $site['id'],
+                $article['goal_id'] !== null ? (int) $article['goal_id'] : null,
+                $article['category_id'] !== null ? (int) $article['category_id'] : null,
+            );
+            Session::flash('success', 'Nova imagem de corpo gerada.');
+        } catch (Throwable $e) {
+            Session::flash('error', $e->getMessage());
+        }
+
+        Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id'] . '#imagens');
+    }
+
+    /** Substitui (regenera) uma imagem já existente — mesmo prompt, novo resultado do gerador. */
+    public function regenerateImage(string $siteId, string $articleId, string $imageId): void
+    {
+        $site = $this->requireSite($siteId);
+        Csrf::verify();
+        $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
+
+        set_time_limit(120);
+
+        try {
+            (new ArticlePipeline())->regenerateImage((int) $article['id'], (int) $site['id'], (int) $imageId);
+            Session::flash('success', 'Imagem substituída.');
+        } catch (Throwable $e) {
+            Session::flash('error', $e->getMessage());
+        }
+
+        Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id'] . '#imagens');
+    }
 }

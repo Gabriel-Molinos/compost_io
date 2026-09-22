@@ -1943,6 +1943,23 @@
     border-radius: .75rem;
     box-shadow: 0 24px 60px -12px rgba(0, 0, 0, .7);
   }
+  /* Legenda (alt text) da imagem ampliada (pedido 2026-09-22): nas imagens de
+     corpo o alt fica escondido na grade — só aparece aqui, quando o
+     Redator-Chefe já pediu pra ver em tamanho grande. Vazia (imagem sem alt
+     próprio) = elemento continua no DOM, mas `:empty` some com ele. */
+  .image-lightbox-caption {
+    margin-top: .5rem;
+    border-radius: .5rem;
+    background: rgba(5, 11, 15, .82);
+    backdrop-filter: blur(2px);
+    padding: .625rem .875rem;
+    color: #F0F8FF;
+    font-size: .8125rem;
+    line-height: 1.5;
+  }
+  .image-lightbox-caption:empty {
+    display: none;
+  }
 
   /* Carrossel de imagem destacada (production/show.php, assets/js/image-carousel.js)
      — trilha desliza por transform (não troca display), fica suave e some o

@@ -472,6 +472,28 @@ final class ArticlePipeline
             return;
         }
 
+        // Imagens de corpo sempre na MESMA proporção da destacada (pedido do
+        // Redator-Chefe 2026-09-22) — a IA do passo `image` pode sugerir uma
+        // proporção diferente pra cada uma (ex. destacada 16:9, corpo 4:3),
+        // mas visualmente elas convivem no mesmo artigo, então precisam
+        // combinar. A proporção da própria destacada continua vindo da IA
+        // (é ela quem decide o enquadramento principal do artigo).
+        $featuredAr = null;
+        foreach ($specs as $spec) {
+            if ($spec['role'] === 'FEATURED') {
+                $featuredAr = $spec['ar'];
+                break;
+            }
+        }
+        if ($featuredAr !== null) {
+            foreach ($specs as &$spec) {
+                if ($spec['role'] === 'BODY') {
+                    $spec['ar'] = $featuredAr;
+                }
+            }
+            unset($spec);
+        }
+
         $size = (string) (Env::get('IMAGE_DEFAULT_SIZE', '2K'));
         if (!in_array($size, ImageRequest::SIZES, true)) {
             $size = '2K';
@@ -534,6 +556,7 @@ final class ArticlePipeline
                     $spec['prompt'] . ($styleNotes !== '' ? "\n\nStyle: " . $styleNotes : ''),
                     $spec['alt'] !== '' ? $spec['alt'] : null,
                     $format,
+                    $spec['ar'],
                 );
                 $made++;
             }
@@ -546,6 +569,160 @@ final class ArticlePipeline
         }
 
         $this->executions->markSuccessCost($execId, $cost);
+    }
+
+    /**
+     * Gera mais UMA imagem de corpo pro artigo (ação manual do Redator-Chefe,
+     * pedida na tela do artigo — fora do fluxo automático). Roda o passo
+     * `image` de novo com o conteúdo ATUAL do artigo (pode ter sido editado
+     * desde a geração original) e aproveita só o primeiro item de papel BODY
+     * da resposta — o resto é descartado; cada clique gera exatamente 1
+     * imagem nova, nunca o lote inteiro de novo. Proporção sempre igual à da
+     * imagem destacada em uso (pedido 2026-09-22 — ver
+     * `ImageService::featuredAspectRatio()`).
+     *
+     * @return array{id:int, url:string}
+     * @throws PipelineException
+     */
+    public function addBodyImage(int $articleId, int $siteId, ?int $goalId, ?int $categoryId): array
+    {
+        $article = $this->articles->findById($articleId);
+        if ($article === null) {
+            throw new PipelineException('Artigo não encontrado.', $articleId, 'image');
+        }
+        $version = $this->articles->latestVersion($articleId);
+
+        $brief = [
+            'title'         => (string) ($article['title'] ?? ''),
+            'focus_keyword' => (string) ($article['focus_keyword'] ?? ''),
+        ];
+        $draft = [
+            'title'             => (string) ($article['title'] ?? ''),
+            'meta_description'  => (string) ($article['meta_description'] ?? ''),
+            'content_html'      => (string) ($version['content'] ?? ''),
+            'word_count'        => (int) ($version['word_count'] ?? 0),
+        ];
+
+        $visual = $this->step('image', $articleId, $siteId, $goalId, $categoryId, $brief, $draft);
+        $styleNotes = trim((string) ($visual['style_notes'] ?? ''));
+
+        $spec = null;
+        foreach ((array) ($visual['images'] ?? []) as $b) {
+            if (is_array($b) && ($b['role'] ?? 'BODY') === 'BODY' && trim((string) ($b['prompt'] ?? '')) !== '') {
+                $spec = $b;
+                break;
+            }
+        }
+        if ($spec === null) {
+            throw new PipelineException('A IA não sugeriu nenhuma imagem de corpo nova pra este artigo.', $articleId, 'image');
+        }
+
+        $prompt = trim((string) $spec['prompt'])
+            . ', no text, no letters, no words, no writing, no captions, no signage in the image';
+        $prompt .= $styleNotes !== '' ? "\n\nStyle: " . $styleNotes : '';
+        $alt = trim((string) ($spec['alt_text'] ?? ''));
+
+        return $this->generateAndStoreOneImage($articleId, $siteId, 'BODY', $prompt, $alt !== '' ? $alt : null);
+    }
+
+    /**
+     * Regenera (substitui) uma imagem já existente — reenvia o MESMO prompt
+     * que gerou a original pro gerador (o resultado varia a cada chamada,
+     * não é determinístico) e troca uma pela outra. Mantém papel, alt text e
+     * se estava selecionada. Pedido 2026-09-22 (botão "Substituir" em cada
+     * imagem de corpo).
+     *
+     * @return array{id:int, url:string}
+     * @throws PipelineException
+     */
+    public function regenerateImage(int $articleId, int $siteId, int $imageId): array
+    {
+        $old = $this->imageStore->find($articleId, $imageId);
+        if ($old === null) {
+            throw new PipelineException('Imagem não encontrada.', $articleId, 'image');
+        }
+        $prompt = trim((string) ($old['prompt'] ?? ''));
+        if ($prompt === '') {
+            throw new PipelineException('Esta imagem não tem prompt salvo — não dá pra regenerar automaticamente.', $articleId, 'image');
+        }
+
+        $role = (string) $old['role'] === 'FEATURED' ? 'FEATURED' : 'BODY';
+        $alt = $old['alt_text'] !== null ? (string) $old['alt_text'] : null;
+        $wasSelected = (bool) $old['selected'];
+
+        // O prompt gravado (ImageService::add()) já é o prompt final enviado
+        // ao gerador da vez passada — inclui o sufixo "no text..." e o bloco
+        // "Style: ..." quando houve. Reenviar como está reproduz a mesma
+        // intenção visual, só com um resultado novo do modelo.
+        $new = $this->generateAndStoreOneImage($articleId, $siteId, $role, $prompt, $alt);
+
+        $this->imageStore->delete($articleId, $imageId);
+        (new ImageStorage())->delete((string) $old['url']);
+        if ($wasSelected) {
+            $this->imageStore->select($articleId, $new['id']);
+        }
+
+        return $new;
+    }
+
+    /**
+     * Núcleo comum das ações manuais acima: chama o provedor de imagem pra
+     * UM pedido, converte pra WebP quando possível e grava em `images`.
+     * Proporção: sempre a da imagem destacada em uso pro artigo (`null` ==
+     * artigo ainda sem destacada, ou linha antiga sem essa informação —
+     * migration 0025 —, cai no padrão 16:9 do próprio `ImageRequest`).
+     *
+     * @param 'FEATURED'|'BODY' $role
+     * @return array{id:int, url:string}
+     * @throws PipelineException
+     */
+    private function generateAndStoreOneImage(int $articleId, int $siteId, string $role, string $prompt, ?string $alt): array
+    {
+        $size = (string) (Env::get('IMAGE_DEFAULT_SIZE', '2K'));
+        if (!in_array($size, ImageRequest::SIZES, true)) {
+            $size = '2K';
+        }
+        $ar = $this->imageStore->featuredAspectRatio($articleId) ?? '16:9';
+
+        $provider = $this->imageProvider ?? new NanoBananaProvider();
+        $execId = $this->executions->create($articleId, 'image', 'nano-banana');
+        $this->executions->markRunning($execId);
+
+        try {
+            $request = new ImageRequest($prompt, $ar, $size);
+            $result = $this->retry->run(
+                fn () => $provider->generate($request),
+                fn (int $a, AIException $e) => null,
+            );
+        } catch (Throwable $e) {
+            $this->executions->markFailed($execId, $e->getMessage());
+            throw new PipelineException('Geração de imagem falhou: ' . $e->getMessage(), $articleId, 'image', $e);
+        }
+
+        $cost = ImagePricing::estimate($result->model, $size);
+        $bytes = $result->bytes;
+        $format = $result->extension();
+        if (ImageConverter::available()) {
+            try {
+                $bytes = ImageConverter::toWebp($result->bytes);
+                $format = 'webp';
+            } catch (Throwable) {
+                // mantém no formato original — mesmo comportamento de generateImages().
+            }
+        }
+
+        try {
+            $storage = new ImageStorage();
+            $url = $storage->save($siteId, $articleId, strtolower($role) . '-' . uniqid(), $bytes, $format);
+        } catch (Throwable $e) {
+            $this->executions->markFailed($execId, $e->getMessage());
+            throw new PipelineException('Falha ao gravar a imagem: ' . $e->getMessage(), $articleId, 'image', $e);
+        }
+
+        $id = $this->imageStore->add($articleId, $role, $url, $prompt, $alt, $format, $ar);
+        $this->executions->markSuccessCost($execId, $cost);
+
+        return ['id' => $id, 'url' => $url];
     }
 
     /**

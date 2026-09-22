@@ -147,6 +147,8 @@ return static function (Router $router): void {
     $router->add('POST', '/sites/{id}/production/{aid}/internal-links/suggest', [ProductionController::class, 'suggestInternalLinks'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/images/select',      [ProductionController::class, 'selectImage'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/images/{iid}/delete', [ProductionController::class, 'deleteImage'], auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/images/body/add',       [ProductionController::class, 'addBodyImage'], auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/images/{iid}/regenerate', [ProductionController::class, 'regenerateImage'], auth: true);
 
     // Agendamento de publicação (RF-011)
     $router->add('POST', '/sites/{id}/production/{aid}/schedule',        [ScheduleController::class, 'store'],   auth: true);

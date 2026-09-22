@@ -20,11 +20,12 @@ final class ImageService
         ?string $prompt,
         ?string $altText,
         string $format,
+        ?string $aspectRatio = null,
     ): int {
         $pdo = Connection::get();
         $pdo->prepare(
-            'INSERT INTO images (article_id, url, role, alt_text, selected, prompt, format)
-             VALUES (:a, :u, :r, :alt, 0, :p, :f)'
+            'INSERT INTO images (article_id, url, role, alt_text, selected, prompt, format, aspect_ratio)
+             VALUES (:a, :u, :r, :alt, 0, :p, :f, :ar)'
         )->execute([
             'a'   => $articleId,
             'u'   => mb_substr($url, 0, 1024),
@@ -32,6 +33,7 @@ final class ImageService
             'alt' => $altText !== null ? mb_substr($altText, 0, 500) : null,
             'p'   => $prompt,
             'f'   => mb_substr($format, 0, 10),
+            'ar'  => $aspectRatio !== null ? mb_substr($aspectRatio, 0, 8) : null,
         ]);
 
         return (int) $pdo->lastInsertId();
@@ -41,12 +43,33 @@ final class ImageService
     public function forArticle(int $articleId): array
     {
         $stmt = Connection::get()->prepare(
-            'SELECT id, url, role, alt_text, selected, prompt, format, created_at
+            'SELECT id, url, role, alt_text, selected, prompt, format, aspect_ratio, created_at
              FROM images WHERE article_id = :a ORDER BY role DESC, id'
         );
         $stmt->execute(['a' => $articleId]);
 
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Proporção da imagem destacada em uso — a escolhida (`selected=1`), ou a
+     * primeira opção FEATURED se ainda não houve escolha. Usada pra gerar
+     * imagens de corpo na MESMA proporção da destacada (pedido do
+     * Redator-Chefe 2026-09-22). `null` quando o artigo não tem nenhuma
+     * imagem destacada ainda, ou quando a linha é antiga e não guardou a
+     * proporção (migration 0025) — quem chama cai pro padrão 16:9 nesse caso.
+     */
+    public function featuredAspectRatio(int $articleId): ?string
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT aspect_ratio FROM images
+             WHERE article_id = :a AND role = 'FEATURED'
+             ORDER BY selected DESC, id LIMIT 1"
+        );
+        $stmt->execute(['a' => $articleId]);
+        $ar = $stmt->fetchColumn();
+
+        return $ar !== false && $ar !== null && trim((string) $ar) !== '' ? (string) $ar : null;
     }
 
     /** @return array<string, mixed>|null */

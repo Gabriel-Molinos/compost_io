@@ -76,6 +76,47 @@ final class NotificationController
         $this->json(['ok' => true, 'id' => $id, 'read' => $read, 'unread' => $this->notifications->unreadCount($userId)]);
     }
 
+    /**
+     * Polling do sino (assets/js/notification-toast.js) — GET simples,
+     * chamado a cada N segundos enquanto o usuário está com o app aberto.
+     * Sem `after` (primeira chamada da página): só devolve o id mais
+     * recente, pra servir de baseline — nunca lista nada aqui, senão toda
+     * notificação não lida viraria pop-up de novo a cada F5. Com `after`:
+     * devolve só o que é mais novo que esse id (o que efetivamente vira
+     * pop-up + som no cliente).
+     */
+    public function poll(): void
+    {
+        $userId = (int) AuthService::id();
+        $after = isset($_GET['after']) && ctype_digit((string) $_GET['after']) ? (int) $_GET['after'] : null;
+
+        if ($after === null) {
+            $this->json([
+                'ok'            => true,
+                'latestId'      => $this->notifications->latestId($userId),
+                'notifications' => [],
+                'unread'        => $this->notifications->unreadCount($userId),
+            ]);
+            return;
+        }
+
+        $fresh = $this->notifications->newerThan($userId, $after);
+        $latestId = $fresh !== [] ? (int) $fresh[array_key_last($fresh)]['id'] : $after;
+
+        $this->json([
+            'ok'            => true,
+            'latestId'      => $latestId,
+            'notifications' => array_map(static fn (array $n): array => [
+                'id'      => (int) $n['id'],
+                'type'    => (string) $n['type'],
+                'title'   => (string) $n['title'],
+                'message' => (string) $n['message'],
+                'link'    => $n['link'] !== null ? (string) $n['link'] : null,
+            ], $fresh),
+            'unread'        => $this->notifications->unreadCount($userId),
+        ]);
+    }
+
     private function wantsJson(): bool
     {
         return str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json');

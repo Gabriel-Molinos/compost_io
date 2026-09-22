@@ -59,6 +59,7 @@ return static function (Router $router): void {
 
     // Notificações (qualquer usuário logado — sempre só as próprias)
     $router->add('GET',  '/notifications',           [NotificationController::class, 'index'],        auth: true);
+    $router->add('GET',  '/notifications/poll',      [NotificationController::class, 'poll'],          auth: true);
     $router->add('POST', '/notifications/read-all',  [NotificationController::class, 'markAllRead'],  auth: true);
     $router->add('POST', '/notifications/{id}/open', [NotificationController::class, 'open'],          auth: true);
     $router->add('POST', '/notifications/{id}/read', [NotificationController::class, 'read'],          auth: true);

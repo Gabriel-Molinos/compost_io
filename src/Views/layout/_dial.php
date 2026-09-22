@@ -103,9 +103,10 @@ if ($showFeedback) {
             </div>
 
             <?php foreach ($shortcuts as [$href, $label, $icon, $tone, $k, $arc, $badge]): ?>
-                <a href="<?= View::e($href) ?>" class="dial-btn <?= $tone ?>" style="--k: <?= $k ?>; --arc: <?= $arc ?>" aria-label="<?= View::e($label) ?>" data-nodrag>
+                <?php $isNotifBell = $href === '/notifications'; ?>
+                <a href="<?= View::e($href) ?>" class="dial-btn <?= $tone ?>" style="--k: <?= $k ?>; --arc: <?= $arc ?>" aria-label="<?= View::e($label) ?>" data-nodrag<?= $isNotifBell ? ' data-notif-bell' : '' ?>>
                     <?= Icon::nav($icon) ?>
-                    <?php if ($badge > 0): ?><span class="nav-badge"><?= $badge > 99 ? '99+' : (int) $badge ?></span><?php endif; ?>
+                    <?php if ($badge > 0): ?><span class="nav-badge"<?= $isNotifBell ? ' data-notif-badge' : '' ?>><?= $badge > 99 ? '99+' : (int) $badge ?></span><?php endif; ?>
                     <span class="dial-btn-tip"><?= View::e($label) ?></span>
                 </a>
             <?php endforeach; ?>

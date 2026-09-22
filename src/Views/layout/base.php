@@ -108,6 +108,9 @@ if ($authUser !== null && !$hasSiteNav) {
     <script src="<?= View::e(View::asset('assets/js/footer-clock.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/veil.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/dial.js')) ?>" defer></script>
+    <?php if ($authUser !== null): ?>
+        <script src="<?= View::e(View::asset('assets/js/notification-toast.js')) ?>" defer></script>
+    <?php endif; ?>
     <?php if ($tourSiteId !== null): ?>
         <script>window.COMPOST_TOUR_SITE_ID = <?= (int) $tourSiteId ?>;</script>
         <script src="<?= View::e(View::asset('assets/js/tour.js')) ?>" defer></script>
@@ -140,6 +143,11 @@ if ($authUser !== null && !$hasSiteNav) {
         <?php // Véu de transição: DENTRO do wrapper pra ficar abaixo do dial (z-index) e cobrir também o fundo em volta do arco. ?>
         <div class="page-veil" aria-hidden="true"></div>
         <?php if ($authUser !== null): ?>
+            <?php // Pop-ups de notificação nova (assets/js/notification-toast.js, pedido
+                  // 2026-09-22) — região só, JS injeta/remove os cartões. aria-live="polite":
+                  // leitor de tela anuncia sem interromper o que já estava sendo lido. ?>
+            <div id="notif-toast-root" class="notif-toast-root" aria-live="polite" aria-atomic="false"></div>
+
             <?php // Sidebar radial (dial): coluna fixa no desktop, gaveta no celular. Só o conteúdo ao lado (<main>) rola. ?>
             <?php require __DIR__ . '/_dial.php'; ?>
             <div class="dial-backdrop" data-dial-toggle aria-hidden="true"></div>

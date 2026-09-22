@@ -2154,6 +2154,100 @@
   @media (prefers-reduced-motion: reduce) {
     .btn-spin { animation: none; }
   }
+
+  /* =====================================================================
+     Pop-up de notificação nova (assets/js/notification-toast.js, pedido
+     2026-09-22: "pop-up na tela com som de bolha estourando quando chega
+     notificação nova"). `--tone` por tipo — mesmo trio RGB já usado em
+     `.article-card--*`/`.article-card-tag--*`, só reaproveitado aqui
+     também, pra nunca ter um terceiro mapa de cor por status divergente
+     dos outros dois. O som em si é sintetizado via Web Audio API no JS
+     (sem arquivo de áudio pra baixar/hospedar).
+     ===================================================================== */
+  .notif-toast-root {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    width: min(22rem, calc(100vw - 2rem));
+    pointer-events: none;
+  }
+  .notif-toast {
+    --tone: 143 166 188; /* muted por padrão */
+    pointer-events: auto;
+    position: relative;
+    display: flex;
+    gap: .625rem;
+    align-items: flex-start;
+    border-radius: .875rem;
+    border: 1px solid rgb(var(--tone) / .4);
+    border-left: 3px solid rgb(var(--tone));
+    background: linear-gradient(100deg, rgb(var(--tone) / .16), #071522 70%);
+    box-shadow: 0 16px 40px -16px rgb(0 0 0 / .75), 0 0 0 1px rgb(var(--tone) / .12);
+    padding: .75rem .875rem;
+    cursor: pointer;
+    animation: notif-toast-in 260ms cubic-bezier(.22, .8, .32, 1);
+  }
+  .notif-toast:hover {
+    border-color: rgb(var(--tone) / .75);
+  }
+  .notif-toast.is-leaving {
+    animation: notif-toast-out 200ms ease forwards;
+  }
+  .notif-toast-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    flex-shrink: 0;
+    background: rgb(var(--tone) / .18);
+    color: rgb(var(--tone));
+  }
+  .notif-toast-icon svg { width: 1.05rem; height: 1.05rem; }
+  .notif-toast-body { min-width: 0; flex: 1; }
+  .notif-toast-title {
+    font-weight: 600;
+    font-size: .8125rem;
+    line-height: 1.3;
+    color: #F0F8FF;
+  }
+  .notif-toast-message {
+    margin-top: .15rem;
+    font-size: .75rem;
+    line-height: 1.35;
+    color: #8FA6BC;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .notif-toast-close {
+    flex-shrink: 0;
+    display: flex;
+    padding: .2rem;
+    border-radius: 9999px;
+    color: #7B8FA1;
+    transition: color 150ms ease, background-color 150ms ease;
+  }
+  .notif-toast-close:hover { color: #F0F8FF; background: rgba(255, 255, 255, .08); }
+  .notif-toast-close svg { width: .875rem; height: .875rem; }
+
+  @keyframes notif-toast-in {
+    from { opacity: 0; transform: translateX(20px) scale(.96); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+  }
+  @keyframes notif-toast-out {
+    to { opacity: 0; transform: translateX(20px) scale(.96); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .notif-toast { animation: none; }
+    .notif-toast.is-leaving { animation: none; opacity: 0; }
+  }
 }
 
 @property --angle {

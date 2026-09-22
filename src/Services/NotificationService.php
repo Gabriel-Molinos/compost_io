@@ -123,6 +123,44 @@ final class NotificationService
         )->execute(['u' => $userId]);
     }
 
+    /**
+     * Id da notificação mais recente do usuário (0 se não tem nenhuma) —
+     * ponto de partida do polling do sino (assets/js/notification-toast.js,
+     * pedido 2026-09-22: pop-up + som quando chega uma notificação nova).
+     * A PRIMEIRA chamada da página usa isto como baseline, sem listar nada
+     * — notificação que já existia antes de abrir a página não deve virar
+     * pop-up, só a que chegar depois.
+     */
+    public function latestId(int $userId): int
+    {
+        $stmt = Connection::get()->prepare('SELECT COALESCE(MAX(id), 0) FROM notifications WHERE user_id = :u');
+        $stmt->execute(['u' => $userId]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Notificações do usuário mais novas que `$afterId` (mais antigas
+     * primeiro — a ordem em que os pop-ups devem aparecer). Usada pelo
+     * polling do sino a cada rodada, depois da baseline de `latestId()`.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function newerThan(int $userId, int $afterId, int $limit = 20): array
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT id, type, title, message, link, created_at FROM notifications
+             WHERE user_id = :u AND id > :after
+             ORDER BY id ASC LIMIT :lim'
+        );
+        $stmt->bindValue('u', $userId, PDO::PARAM_INT);
+        $stmt->bindValue('after', $afterId, PDO::PARAM_INT);
+        $stmt->bindValue('lim', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
     /** @return list<int> */
     private function recipientsForSite(int $siteId): array
     {

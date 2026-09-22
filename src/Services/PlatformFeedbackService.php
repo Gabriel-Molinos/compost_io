@@ -37,7 +37,7 @@ final class PlatformFeedbackService
     public function listAll(int $limit = 200): array
     {
         $stmt = Connection::get()->prepare(
-            'SELECT f.*, u.name AS author_name, s.name AS site_name, r.name AS reviewer_name
+            'SELECT f.*, u.name AS author_name, u.avatar_path AS author_avatar, s.name AS site_name, r.name AS reviewer_name
              FROM platform_feedback f
              JOIN users u ON u.id = f.user_id
              LEFT JOIN sites s ON s.id = f.site_id

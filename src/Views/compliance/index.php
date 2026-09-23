@@ -83,14 +83,14 @@ $badGood = static function (array $pairs): void {
 <section class="mt-6 rounded-xl border border-border bg-surface p-5" style="--card-enter: 0ms">
     <?php $sectionHeading(Icon::nav('reports'), 'Resumo rápido', 'Os números que decidem se o checklist passa — pra consultar rápido, sem ler tudo de novo.'); ?>
     <?php $factTable([
-        ['Extensão do texto', '≥ 1500 palavras'],
-        ['Links internos', '3 a 5'],
-        ['Links externos', '1 a 2, sempre em nova aba'],
-        ['Imagens no corpo', '1 a cada ~500 palavras, todas em WebP'],
-        ['Parágrafo (texto original)', '≤ 2 linhas / 20–25 palavras'],
-        ['Palavra-chave', 'no título/H1 + destacada 1x no corpo — sem repetir artificialmente'],
+        ['Extensão do texto', 'no mínimo 1500 palavras'],
+        ['Links internos', 'entre 3 e 5'],
+        ['Links externos', 'no máximo 2, sempre em nova aba'],
+        ['Imagens no corpo', 'cerca de 1 a cada 500 palavras, todas em WebP'],
+        ['Parágrafo (texto original)', 'no máximo 2 linhas (por volta de 20 a 25 palavras)'],
+        ['Palavra-chave', 'no título/H1 + destacada 1 vez no corpo — sem repetir artificialmente'],
         ['Categoria', 'uma só, já cadastrada no site — nunca criar categoria nova'],
-        ['Meta descrição', 'obrigatória, com palavra-chave + call-to-action'],
+        ['Meta descrição', 'obrigatória, com palavra-chave + chamada pra ação'],
     ]) ?>
 </section>
 
@@ -138,7 +138,7 @@ $badGood = static function (array $pairs): void {
     <?php $checkList([
         'Todas as imagens em <strong class="font-semibold">formato WebP</strong>.',
         'Imagem destacada e alt text pertinentes ao tema do artigo — não genéricos.',
-        'Pelo menos <strong class="font-semibold">1 imagem no corpo a cada ~500 palavras</strong> (um artigo de 1500 palavras tem, na prática, umas 3).',
+        'Pelo menos <strong class="font-semibold">1 imagem no corpo a cada 500 palavras, mais ou menos</strong> (um artigo de 1500 palavras tem, na prática, umas 3).',
         'Sempre gerada pela plataforma (Nano Banana) ou de banco com uso liberado — nunca uma imagem "puxada" de outro site.',
     ], 'success') ?>
 </section>

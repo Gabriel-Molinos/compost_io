@@ -5,7 +5,14 @@ declare(strict_types=1);
 use App\Support\Icon;
 use App\View;
 
-/** Página estática (sem dado de banco) — ver App\Controllers\ComplianceController pro contexto. */
+/**
+ * Página estática (sem dado de banco) — ver App\Controllers\ComplianceController
+ * pro contexto. Fonte: docs/editorial/compliance.md + itens de docs/editorial/seo.md
+ * que a própria doc marca como "reforço de compliance" (achado do responsável,
+ * 2026-09-23: a 1ª versão desta página cobria só compliance.md e ficou rasa —
+ * várias regras "firmes" que também decidem se o artigo é aprovável vivem em
+ * seo.md e não apareciam aqui).
+ */
 
 $sectionHeading = static function (string $icon, string $title, ?string $subtitle = null): void {
     echo '<div class="flex items-center gap-2">'
@@ -28,6 +35,36 @@ $checkList = static function (array $items, string $tone = 'success'): void {
     }
     echo '</ul>';
 };
+
+/** @param list<array{0:string,1:string}> $rows rótulo => valor */
+$factTable = static function (array $rows): void {
+    echo '<table class="mt-3 w-full text-left text-sm">'
+        . '<thead class="border-b border-border text-text-muted"><tr>'
+        . '<th scope="col" class="px-3 py-2 font-medium">Regra</th>'
+        . '<th scope="col" class="px-3 py-2 font-medium">Valor obrigatório</th>'
+        . '</tr></thead><tbody class="divide-y divide-border">';
+    foreach ($rows as [$label, $value]) {
+        echo '<tr><td class="px-3 py-2 text-text-secondary">' . $label . '</td>'
+            . '<td class="px-3 py-2 font-mono text-text-primary">' . $value . '</td></tr>';
+    }
+    echo '</tbody></table>';
+};
+
+/** @param list<array{0:string,1:string}> $pairs [ruim, bom] */
+$badGood = static function (array $pairs): void {
+    echo '<div class="mt-3 space-y-3">';
+    foreach ($pairs as [$bad, $good]) {
+        echo '<div class="grid gap-2 sm:grid-cols-2">'
+            . '<div class="flex items-start gap-2 rounded-lg border border-danger/30 bg-danger/5 px-3 py-2 text-sm">'
+            . '<span class="mt-0.5 shrink-0 text-danger">' . Icon::nav('close') . '</span>'
+            . '<span class="text-text-secondary">' . $bad . '</span></div>'
+            . '<div class="flex items-start gap-2 rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-sm">'
+            . '<span class="mt-0.5 shrink-0 text-success">' . Icon::nav('check') . '</span>'
+            . '<span class="text-text-secondary">' . $good . '</span></div>'
+            . '</div>';
+    }
+    echo '</div>';
+};
 ?>
 <div class="flex items-start gap-3">
     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan/10 text-cyan"><?= Icon::nav('shield') ?></span>
@@ -38,12 +75,26 @@ $checkList = static function (array $items, string $tone = 'success'): void {
             leitura obrigatória pra qualquer pessoa que gera ou aprova artigo, não só pra quem
             programou o app. As mesmas regras aqui são as que a IA confere no passo de
             <span class="font-mono text-text-primary">compliance</span> do pipeline; a diferença é que aqui elas estão
-            explicadas, não em JSON.
+            explicadas, com exemplo, não em JSON.
         </p>
     </div>
 </div>
 
-<section class="mt-6 article-card article-card--cyan rounded-xl p-5" style="--card-enter: 0ms">
+<section class="mt-6 rounded-xl border border-border bg-surface p-5" style="--card-enter: 0ms">
+    <?php $sectionHeading(Icon::nav('reports'), 'Resumo rápido', 'Os números que decidem se o checklist passa — pra consultar rápido, sem ler tudo de novo.'); ?>
+    <?php $factTable([
+        ['Extensão do texto', '≥ 1500 palavras'],
+        ['Links internos', '3 a 5'],
+        ['Links externos', '1 a 2, sempre em nova aba'],
+        ['Imagens no corpo', '1 a cada ~500 palavras, todas em WebP'],
+        ['Parágrafo (texto original)', '≤ 2 linhas / 20–25 palavras'],
+        ['Palavra-chave', 'no título/H1 + destacada 1x no corpo — sem repetir artificialmente'],
+        ['Categoria', 'uma só, já cadastrada no site — nunca criar categoria nova'],
+        ['Meta descrição', 'obrigatória, com palavra-chave + call-to-action'],
+    ]) ?>
+</section>
+
+<section class="mt-4 article-card article-card--cyan rounded-xl p-5" style="--card-enter: 30ms">
     <?php $sectionHeading(Icon::nav('sources'), 'Elementos obrigatórios de um post', 'Sem isso, o checklist de pré-aprovação não deixa aprovar — a página do artigo mostra exatamente qual item falhou.'); ?>
     <?php $checkList([
         'Título claro, específico, sem clickbait.',
@@ -82,7 +133,63 @@ $checkList = static function (array $items, string $tone = 'success'): void {
     </section>
 </div>
 
-<section class="mt-4 article-card rounded-xl p-5" style="--card-enter: 120ms">
+<section class="mt-4 rounded-xl border border-border bg-surface p-5" style="--card-enter: 105ms">
+    <?php $sectionHeading(Icon::nav('camera'), 'Imagens', 'Vale tanto pra compliance quanto pra SEO — reforça docs/editorial/seo.md.'); ?>
+    <?php $checkList([
+        'Todas as imagens em <strong class="font-semibold">formato WebP</strong>.',
+        'Imagem destacada e alt text pertinentes ao tema do artigo — não genéricos.',
+        'Pelo menos <strong class="font-semibold">1 imagem no corpo a cada ~500 palavras</strong> (um artigo de 1500 palavras tem, na prática, umas 3).',
+        'Sempre gerada pela plataforma (Nano Banana) ou de banco com uso liberado — nunca uma imagem "puxada" de outro site.',
+    ], 'success') ?>
+</section>
+
+<section class="mt-4 rounded-xl border border-border bg-surface p-5" style="--card-enter: 120ms">
+    <?php $sectionHeading(Icon::nav('categories'), 'Categorias e conteúdo repetido', 'A categoria errada ou um tema repetido não é só "SEO malfeito" — reforça compliance (evita conteúdo raso/duplicado, ver docs/editorial/seo.md).'); ?>
+    <div class="mt-3 space-y-2 text-sm text-text-secondary">
+        <p><strong class="font-semibold text-text-primary">Categoria é fixa por site.</strong> Se o tema não encaixa em nenhuma categoria existente, o problema é o tema — não crie categoria nova pra "resolver". Pra agrupar um assunto novo dentro de uma categoria existente, use <strong class="font-semibold text-text-primary">tag</strong>.</p>
+        <p><strong class="font-semibold text-text-primary">Canibalização</strong> — se a palavra-chave do artigo já foi usada num artigo anterior do mesmo site, o sistema avisa e o artigo fica em rascunho em vez de ir pra publicação: dois posts competindo pela mesma busca prejudicam os dois, e conteúdo raspado/repetido é justamente o tipo de coisa que a política de qualidade do AdSense mira.</p>
+    </div>
+</section>
+
+<section class="mt-4 rounded-xl border border-border bg-surface p-5" style="--card-enter: 135ms">
+    <?php $sectionHeading(Icon::nav('alert'), 'Erros comuns — exemplo ruim × exemplo bom'); ?>
+    <?php $badGood([
+        [
+            '"Você não vai ACREDITAR no que aconteceu com essa cidade!" — título clickbait, não entrega o tema.',
+            '"Chuvas alagam 3 bairros de [cidade]; veja o que abriu hoje" — específico, já entrega do que se trata.',
+        ],
+        [
+            '"Esse chá cura qualquer inflamação, garantido" — promessa absoluta sem fundamento.',
+            '"Estudos preliminares associam o chá a menos inflamação, mas resultados variam por pessoa" — deixa clara a limitação.',
+        ],
+        [
+            '"ESCÂNDALO CHOCANTE: veja o que ninguém te conta!!!" — linguagem sensacionalista.',
+            '"Relatório aponta irregularidades em [órgão]; entenda o caso" — neutro, factual.',
+        ],
+        [
+            'Repetir "melhor smartphone barato" 8 vezes no texto pra tentar rankear — keyword stuffing.',
+            'Usar a expressão 1–2 vezes e variações naturais ("celular custo-benefício", "aparelho de entrada") no resto.',
+        ],
+        [
+            'Colocar um link ancorado bem colado/dentro de onde entra o bloco de anúncio do Google.',
+            'Manter espaço entre o texto com link e a área reservada pro anúncio.',
+        ],
+    ]) ?>
+</section>
+
+<section class="mt-4 rounded-xl border border-warning/30 bg-warning/5 p-5" style="--card-enter: 150ms">
+    <?php $sectionHeading(Icon::nav('alert'), 'Por que isso importa de verdade'); ?>
+    <p class="mt-2 text-sm text-text-secondary">
+        Essas regras não são "boa prática" opcional — são as políticas de conteúdo do próprio
+        Google AdSense (referências oficiais no fim da página). Artigo fora delas não é só
+        "reprovado no app": é o tipo de conteúdo que o Google pode deixar de monetizar, e,
+        se for recorrente no site, pode gerar restrição na conta de anúncios inteira — não
+        só daquele post. É por isso que compliance trava a aprovação com o mesmo peso que
+        um erro técnico, e não como um "detalhe a mais".
+    </p>
+</section>
+
+<section class="mt-4 article-card rounded-xl p-5" style="--card-enter: 165ms">
     <?php $sectionHeading(Icon::nav('ai'), 'Como isso aparece na hora de revisar', 'Mesmas regras acima, só que já conferidas — pra você não ter que decorar nada.'); ?>
     <div class="mt-4 grid gap-4 sm:grid-cols-2">
         <div>
@@ -112,9 +219,14 @@ $checkList = static function (array $items, string $tone = 'success'): void {
             </p>
         </div>
     </div>
+    <p class="mt-4 text-sm text-text-secondary">
+        Se preferir rejeitar em vez de aprovar com pendência, o motivo
+        <span class="font-mono text-text-primary">"Problema de compliance"</span> já pré-preenche a justificativa
+        com as pendências que a IA apontou — não precisa retranscrever.
+    </p>
 </section>
 
-<section class="mt-4 rounded-xl border border-border bg-surface p-5" style="--card-enter: 150ms">
+<section class="mt-4 rounded-xl border border-border bg-surface p-5" style="--card-enter: 180ms">
     <?php $sectionHeading(Icon::nav('globe'), 'Referência oficial', 'As regras acima seguem as políticas de conteúdo do Google AdSense.'); ?>
     <ul class="mt-3 space-y-1.5 text-sm">
         <li><a class="text-cyan hover:text-cyan-bright" href="https://support.google.com/adsense/answer/10502938?hl=pt-BR" target="_blank" rel="noopener">Políticas de qualidade do conteúdo — AdSense</a></li>

@@ -80,7 +80,16 @@ $badGood = static function (array $pairs): void {
     </div>
 </div>
 
-<section class="mt-6 rounded-xl border border-border bg-surface p-5" style="--card-enter: 0ms">
+<div role="alert" class="mt-6 flex items-start gap-3 rounded-xl border-2 border-warning/60 bg-warning/15 p-4">
+    <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-warning/20 text-warning [&>svg]:h-5 [&>svg]:w-5"><?= Icon::nav('alert') ?></span>
+    <p class="text-sm text-text-primary">
+        <span class="block font-display text-base font-bold text-warning">Lembrete antes de aprovar/agendar</span>
+        Confira se o site de destino tem a <strong class="font-semibold">moldura automática de imagens</strong> ativada —
+        nem todo site tem essa feature ligada.
+    </p>
+</div>
+
+<section class="mt-4 rounded-xl border border-border bg-surface p-5" style="--card-enter: 0ms">
     <?php $sectionHeading(Icon::nav('reports'), 'Resumo rápido', 'Os números que decidem se o checklist passa — pra consultar rápido, sem ler tudo de novo.'); ?>
     <?php $factTable([
         ['Extensão do texto', 'no mínimo 1500 palavras'],
@@ -141,10 +150,6 @@ $badGood = static function (array $pairs): void {
         'Pelo menos <strong class="font-semibold">1 imagem no corpo a cada 500 palavras, mais ou menos</strong> (um artigo de 1500 palavras tem, na prática, umas 3).',
         'Sempre gerada pela plataforma (Nano Banana) ou de banco com uso liberado — nunca uma imagem "puxada" de outro site.',
     ], 'success') ?>
-    <div class="mt-4 flex items-start gap-2.5 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2.5 text-sm">
-        <span class="mt-0.5 shrink-0 text-warning"><?= Icon::nav('alert') ?></span>
-        <p class="text-text-secondary"><strong class="font-semibold text-text-primary">Lembrete:</strong> confira se o site de destino tem a moldura automática de imagens ativada antes de aprovar/agendar — nem todo site tem essa feature ligada.</p>
-    </div>
 </section>
 
 <section class="mt-4 rounded-xl border border-border bg-surface p-5" style="--card-enter: 120ms">

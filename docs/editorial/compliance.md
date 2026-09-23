@@ -4,6 +4,13 @@ Este documento reúne duas exigências que todo artigo produzido pela plataforma
 
 O checklist de otimização para busca fica em [SEO On-Page & Checklist Editorial](seo.md) — dois itens são comuns aos dois documentos (extensão mínima do texto e distância entre links e blocos de anúncio).
 
+> **Implementado (2026-09-23):** estas regras também têm uma página dentro do
+> próprio app, escrita pra quem revisa (não pra quem programa) — `/compliance`,
+> link fixo na navegação, visível pra qualquer usuário logado
+> (`ComplianceController`, `src/Views/compliance/index.php`). Serve pra quem
+> gera/aprova post não precisar abrir este `.md` no repositório; a fonte das
+> regras é a mesma.
+
 ## Elementos obrigatórios de um post WordPress
 
 Baseado nos campos que a [WordPress REST API — Posts](../technical/integracoes.md#37-wordpress-rest-api) espera/expõe para criar e publicar um artigo (ver também [Integração WordPress — seção 31](fluxo-editorial.md#31-integração-wordpress)). Antes de um artigo ser considerado pronto para publicação, ele precisa ter:

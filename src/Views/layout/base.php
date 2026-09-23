@@ -36,6 +36,9 @@ if ($authUser !== null) {
         $globalNav[] = ['/users', 'Usuários', 'users'];
     }
     $globalNav[] = ['/sites', 'Sites', 'sites'];
+    // Regras de compliance — qualquer pessoa que gera ou aprova post precisa
+    // conhecer, então fica visível pra todo mundo logado, não só ADMIN.
+    $globalNav[] = ['/compliance', 'Regras de compliance', 'shield'];
 }
 
 // Tutorial guiado (layout/_dial.php + assets/js/tour.js) — só pra Redator-Chefe

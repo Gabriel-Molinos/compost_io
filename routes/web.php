@@ -6,6 +6,7 @@ use App\Controllers\AiPlaygroundController;
 use App\Controllers\AuthController;
 use App\Controllers\CalendarController;
 use App\Controllers\CategoryController;
+use App\Controllers\ComplianceController;
 use App\Controllers\EditorialMemoryController;
 use App\Controllers\EditorialRuleController;
 use App\Controllers\FeedbackController;
@@ -49,6 +50,11 @@ return static function (Router $router): void {
     $router->add('GET',  '/profile',        [ProfileController::class, 'edit'],         auth: true);
     $router->add('POST', '/profile/name',   [ProfileController::class, 'updateName'],   auth: true);
     $router->add('POST', '/profile/avatar', [ProfileController::class, 'updateAvatar'], auth: true);
+
+    // Regras de compliance de conteúdo/AdSense (docs/editorial/compliance.md)
+    // — página só de leitura, mesma regra pra qualquer usuário logado, sem
+    // dado de site nenhum.
+    $router->add('GET', '/compliance', [ComplianceController::class, 'index'], auth: true);
 
     // Feedback geral sobre o COMPOST (não sobre o conteúdo/artigo — isso é a
     // Memória Editorial de cada site). Qualquer usuário logado envia;

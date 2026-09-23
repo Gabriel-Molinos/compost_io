@@ -8,6 +8,11 @@ use App\Database\Connection;
 use App\Support\HtmlLinks;
 use RuntimeException;
 
+use function str_word_count;
+use function strip_tags;
+
+// ArticleNoteService fica no mesmo namespace App\Services — sem use extra necessário.
+
 /**
  * Revisão humana de um artigo (fluxo-editorial §27–28, RF-007/008/009).
  * O Redator-Chefe aprova ou rejeita um artigo em `IN_REVIEW`:
@@ -38,15 +43,24 @@ final class ArticleReviewService
     private const MAX_INTERNAL_LINKS = 5;
     private const MAX_EXTERNAL_LINKS = 2;
 
+    /** Extensão mínima de compliance/AdSense (docs/editorial/compliance.md, docs/ai/compliance.md). */
+    private const MIN_WORDS = 1500;
+
     private ArticleService $articles;
     private FeedbackService $feedback;
     private SiteService $sites;
+    private ArticleNoteService $notes;
 
-    public function __construct(?ArticleService $articles = null, ?FeedbackService $feedback = null, ?SiteService $sites = null)
-    {
+    public function __construct(
+        ?ArticleService $articles = null,
+        ?FeedbackService $feedback = null,
+        ?SiteService $sites = null,
+        ?ArticleNoteService $notes = null,
+    ) {
         $this->articles = $articles ?? new ArticleService();
         $this->feedback = $feedback ?? new FeedbackService();
         $this->sites = $sites ?? new SiteService();
+        $this->notes = $notes ?? new ArticleNoteService();
     }
 
     /**
@@ -68,6 +82,10 @@ final class ArticleReviewService
         // sempre vazio → 0 links → todo artigo reprovava no checklist (achado real
         // 2026-09-18, ao rodar a suíte de integração de verdade pela 1ª vez).
         $html = (string) ($version['content'] ?? '');
+        $wordCount = (int) ($version['word_count'] ?? 0);
+        if ($wordCount <= 0 && $html !== '') {
+            $wordCount = str_word_count(strip_tags($html));
+        }
 
         $site = $this->sites->find((int) $article['site_id']);
         $siteHost = $site !== null && !empty($site['wordpress_url'])
@@ -83,6 +101,11 @@ final class ArticleReviewService
                 'ok'     => !empty($article['category_id']),
                 'label'  => 'Categoria válida',
                 'detail' => !empty($article['category_id']) ? 'Definida.' : 'Nenhuma categoria definida.',
+            ],
+            'min_words' => [
+                'ok'     => $wordCount >= self::MIN_WORDS,
+                'label'  => 'Extensão mínima (' . self::MIN_WORDS . ' palavras)',
+                'detail' => $wordCount . ' palavra(s) — regra de compliance/AdSense (docs/editorial/compliance.md).',
             ],
             'internal_links' => [
                 'ok'     => $internalOk,
@@ -108,8 +131,41 @@ final class ArticleReviewService
         return true;
     }
 
-    /** @throws RuntimeException se o artigo não estiver em IN_REVIEW ou não passar no checklist de pré-aprovação */
-    public function approve(int $articleId): void
+    /**
+     * Itens de `blocking` do passo de compliance da IA (docs/ai/compliance.md), se houver.
+     * Diferente do checklist acima, isto é parecer da IA (pode errar — ver aviso sobre
+     * falso-positivo de sintaxe HTML nos prompts) — por isso nunca trava sozinho; exige
+     * confirmação explícita do humano em vez de bloquear a aprovação (ver {@see approve()}).
+     *
+     * @return list<array{rule: string, evidence: string, fix: string}>
+     */
+    public function complianceBlocking(int $articleId): array
+    {
+        $compliance = $this->notes->forArticle($articleId)['compliance'] ?? null;
+        if (!is_array($compliance)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ((array) ($compliance['blocking'] ?? []) as $b) {
+            if (!is_array($b)) {
+                continue;
+            }
+            $out[] = [
+                'rule'     => (string) ($b['rule'] ?? ''),
+                'evidence' => (string) ($b['evidence'] ?? ''),
+                'fix'      => (string) ($b['fix'] ?? ''),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @throws RuntimeException se o artigo não estiver em IN_REVIEW, não passar no
+     *         checklist de pré-aprovação, ou houver pendência de compliance sem confirmação
+     */
+    public function approve(int $articleId, bool $complianceAck = false): void
     {
         $article = $this->assertInReview($articleId);
 
@@ -121,6 +177,14 @@ final class ArticleReviewService
             ));
             throw new RuntimeException(
                 'Checklist de pré-aprovação não passou: ' . implode(', ', $failed) . '. Ajuste o artigo antes de aprovar.'
+            );
+        }
+
+        $blocking = $this->complianceBlocking($articleId);
+        if ($blocking !== [] && !$complianceAck) {
+            throw new RuntimeException(
+                'A IA apontou ' . count($blocking) . ' pendência(s) de compliance — reveja a seção "Compliance" '
+                . 'da página e marque "Revisei as pendências e decido aprovar assim mesmo" antes de confirmar.'
             );
         }
 

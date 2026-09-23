@@ -211,7 +211,7 @@ $qualityCardOpen = static function (string $icon, string $title, string $badgeHt
         . '<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-2 text-text-secondary [&>svg]:h-3.5 [&>svg]:w-3.5">' . $icon . '</span>'
         . View::e($title) . '</span>' . $badgeHtml . '</div>';
 };
-/** @param list<array{text:string, severity:string}> $items */
+/** @param list<array{text:string, severity:string, evidence?:string}> $items */
 $gateBody = static function (array $items): void {
     if ($items === []) {
         return;
@@ -227,7 +227,11 @@ $gateBody = static function (array $items): void {
             'block' => 'bloqueio', 'warn', 'aviso' => 'aviso', default => $it['severity'],
         };
         echo '<li class="flex items-start gap-2"><span class="mt-0.5 shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase ' . $sevCls . '">' . View::e($sevLabel) . '</span>'
-            . '<span class="text-text-primary">' . View::e($it['text']) . '</span></li>';
+            . '<span class="text-text-primary">' . View::e($it['text']);
+        if (!empty($it['evidence'])) {
+            echo '<span class="mt-1 block rounded border border-border bg-surface-2 px-2 py-1 text-xs italic text-text-muted">"' . View::e($it['evidence']) . '"</span>';
+        }
+        echo '</span></li>';
     }
     echo '</ul>';
 };
@@ -239,12 +243,17 @@ foreach ((array) ($seo['issues'] ?? []) as $i) {
 $compItems = [];
 foreach ((array) ($compliance['blocking'] ?? []) as $b) {
     if (!is_array($b)) { continue; }
-    $compItems[] = ['severity' => 'block', 'text' => ($b['rule'] ?? '') . (empty($b['fix']) ? '' : ' → ' . $b['fix'])];
+    $compItems[] = [
+        'severity' => 'block',
+        'text'     => ($b['rule'] ?? '') . (empty($b['fix']) ? '' : ' → ' . $b['fix']),
+        'evidence' => (string) ($b['evidence'] ?? ''),
+    ];
 }
 foreach ((array) ($compliance['warnings'] ?? []) as $w) {
     if (!is_array($w)) { continue; }
     $compItems[] = ['severity' => 'aviso', 'text' => ($w['rule'] ?? '') . (empty($w['note']) ? '' : ': ' . $w['note'])];
 }
+$compBlockingCount = count((array) ($compliance['blocking'] ?? []));
 ?>
 <?php if ($hasQualitySignals): ?>
     <section class="mt-6">
@@ -308,8 +317,12 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                 $compOk = (bool) ($compliance['approved'] ?? false);
                 $badge = '<span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ' . ($compOk ? 'border-success/40 bg-success/15 text-success' : 'border-danger/40 bg-danger/15 text-danger') . '">' . ($compOk ? 'ok' : 'com pendências') . '</span>';
                 $qualityCardOpen(Icon::nav('shield'), 'Compliance', $badge);
-                $gateBody($compItems);
                 ?>
+                <p class="mt-1 text-xs text-text-muted">
+                    <span class="font-semibold text-danger">Bloqueio</span> = fere uma regra de compliance/AdSense (docs/editorial/compliance.md) — leia o trecho citado e confira antes de aprovar.
+                    <span class="font-semibold text-warning">Aviso</span> = vale revisar, mas não impede.
+                </p>
+                <?php $gateBody($compItems); ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -334,6 +347,12 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                 <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/approve" class="mt-3"
                       data-confirm="Aprovar este artigo? Ele libera pra agendamento de publicação.">
                     <?= Csrf::field() ?>
+                    <?php if ($compBlockingCount > 0): ?>
+                        <label class="mb-3 flex items-start gap-2 text-xs text-text-secondary">
+                            <input type="checkbox" name="compliance_ack" value="1" required class="mt-0.5 shrink-0">
+                            <span>Revisei a(s) <?= $compBlockingCount ?> pendência(s) de compliance acima e decido aprovar assim mesmo.</span>
+                        </label>
+                    <?php endif; ?>
                     <button type="submit" <?= $checklistPassed ? '' : 'disabled title="Checklist de pré-aprovação não passou"' ?>
                             class="btn btn-success px-4 py-2 text-sm">
                         Aprovar artigo
@@ -359,7 +378,11 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                         <?= Csrf::field() ?>
                         <label class="text-sm">
                             <span class="block font-medium text-text-secondary">Motivo da rejeição</span>
-                            <select name="reason" required
+                            <select name="reason" required data-compliance-prefill
+                                    data-compliance-summary="<?= View::e(implode(' | ', array_map(
+                                        static fn (array $it): string => $it['text'],
+                                        array_filter($compItems, static fn (array $it): bool => $it['severity'] === 'block'),
+                                    ))) ?>"
                                     class="mt-1 w-full">
                                 <?php foreach (ArticleReviewService::REJECT_REASONS as $value => $label): ?>
                                     <option value="<?= View::e($value) ?>"><?= View::e($label) ?></option>
@@ -379,6 +402,23 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
                 </details>
             </div>
         </div>
+        <script>
+        (function () {
+            // Escolher "Problema de compliance" pré-preenche a justificativa com as
+            // pendências que a IA já apontou — evita o redator ter que reabrir o card
+            // de Compliance acima e retranscrever à mão. Só preenche se o campo ainda
+            // estiver vazio, pra nunca sobrescrever algo que a pessoa já escreveu.
+            var select = document.querySelector('select[data-compliance-prefill]');
+            if (!select) { return; }
+            select.addEventListener('change', function () {
+                var summary = select.dataset.complianceSummary || '';
+                var textarea = select.closest('form').querySelector('textarea[name="justification"]');
+                if (select.value === 'problema_compliance' && summary !== '' && textarea && textarea.value.trim() === '') {
+                    textarea.value = summary;
+                }
+            });
+        })();
+        </script>
     </section>
 <?php endif; ?>
 

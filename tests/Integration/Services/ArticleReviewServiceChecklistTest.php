@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Integration\Services;
 
 use App\Database\Connection;
+use App\Services\ArticleNoteService;
 use App\Services\ArticleReviewService;
 use App\Services\ArticleService;
 use PDOException;
@@ -63,7 +64,7 @@ final class ArticleReviewServiceChecklistTest extends TestCase
         return $id;
     }
 
-    public function testFailsAllThreeWhenNoCategoryAndNoLinks(): void
+    public function testFailsAllFourWhenNoCategoryNoLinksAndShortText(): void
     {
         $id = $this->createArticle(null);
         $this->articles->addVersion($id, '<p>Corpo sem link nenhum.</p>', 10);
@@ -72,11 +73,12 @@ final class ArticleReviewServiceChecklistTest extends TestCase
         $checklist = $this->review->checklist($article);
 
         $this->assertFalse($checklist['category']['ok']);
+        $this->assertFalse($checklist['min_words']['ok'], '10 palavras está abaixo do mínimo de 1500');
         $this->assertFalse($checklist['internal_links']['ok'], '0 link interno está fora da faixa 3-5');
         $this->assertTrue($checklist['external_links']['ok'], '0 link externo está dentro do máx. 2');
     }
 
-    public function testPassesAllThreeWithCategoryAndCorrectLinkCounts(): void
+    public function testPassesAllFourWithCategoryLinkCountsAndMinWords(): void
     {
         $categoryId = (int) Connection::get()
             ->query('SELECT id FROM categories WHERE site_id = ' . self::TEST_SITE_ID . ' LIMIT 1')
@@ -88,12 +90,13 @@ final class ArticleReviewServiceChecklistTest extends TestCase
         $id = $this->createArticle($categoryId);
         $internalLinks = str_repeat('<a href="https://' . $this->siteHost . '/artigo-relacionado">interno</a> ', 4);
         $externalLinks = '<a href="https://fonte-externa.gov.br/dados">externo</a>';
-        $this->articles->addVersion($id, "<p>{$internalLinks}{$externalLinks}</p>", 500);
+        $this->articles->addVersion($id, "<p>{$internalLinks}{$externalLinks}</p>", 1500);
 
         $article = $this->articles->findById($id);
         $checklist = $this->review->checklist($article);
 
         $this->assertTrue($checklist['category']['ok']);
+        $this->assertTrue($checklist['min_words']['ok'], '1500 palavras atinge o mínimo');
         $this->assertTrue($checklist['internal_links']['ok'], '4 links internos está dentro da faixa 3-5');
         $this->assertTrue($checklist['external_links']['ok'], '1 link externo está dentro do máx. 2');
         $this->assertTrue(ArticleReviewService::checklistPassed($checklist));
@@ -123,5 +126,79 @@ final class ArticleReviewServiceChecklistTest extends TestCase
 
         $article = $this->articles->findById($id);
         $this->assertSame('IN_REVIEW', $article['status'], 'aprovação recusada nunca deveria mudar o status');
+    }
+
+    /** @return int id do artigo, já com checklist passando (categoria + links + 1500 palavras) */
+    private function createChecklistPassingArticle(): int
+    {
+        $categoryId = (int) Connection::get()
+            ->query('SELECT id FROM categories WHERE site_id = ' . self::TEST_SITE_ID . ' LIMIT 1')
+            ->fetchColumn();
+        if ($categoryId === 0) {
+            $this->markTestSkipped('Site de teste sem nenhuma categoria cadastrada.');
+        }
+
+        $id = $this->createArticle($categoryId);
+        $internalLinks = str_repeat('<a href="https://' . $this->siteHost . '/artigo-relacionado">interno</a> ', 4);
+        $externalLinks = '<a href="https://fonte-externa.gov.br/dados">externo</a>';
+        $this->articles->addVersion($id, "<p>{$internalLinks}{$externalLinks}</p>", 1500);
+
+        return $id;
+    }
+
+    public function testApproveSucceedsWhenChecklistPassesAndNoComplianceNotes(): void
+    {
+        $id = $this->createChecklistPassingArticle();
+
+        $this->review->approve($id);
+
+        $article = $this->articles->findById($id);
+        $this->assertSame('APPROVED', $article['status']);
+    }
+
+    /**
+     * Pendência de compliance apontada pela IA nunca trava sozinha (pode errar —
+     * ver docs/ai/compliance.md sobre falso-positivo) — mas também nunca passa
+     * batido: exige confirmação explícita do humano (`$complianceAck`).
+     */
+    public function testApproveThrowsWhenComplianceBlockingWithoutAck(): void
+    {
+        $id = $this->createChecklistPassingArticle();
+        (new ArticleNoteService())->save($id, 'compliance', [
+            'approved' => false,
+            'blocking' => [
+                ['rule' => 'Fonte não confiável', 'evidence' => 'trecho X', 'fix' => 'citar fonte oficial'],
+            ],
+            'warnings' => [],
+        ]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/pendência.*compliance/i');
+
+        $this->review->approve($id);
+    }
+
+    public function testApproveSucceedsWhenComplianceBlockingWithAck(): void
+    {
+        $id = $this->createChecklistPassingArticle();
+        (new ArticleNoteService())->save($id, 'compliance', [
+            'approved' => false,
+            'blocking' => [
+                ['rule' => 'Fonte não confiável', 'evidence' => 'trecho X', 'fix' => 'citar fonte oficial'],
+            ],
+            'warnings' => [],
+        ]);
+
+        $this->review->approve($id, true);
+
+        $article = $this->articles->findById($id);
+        $this->assertSame('APPROVED', $article['status']);
+    }
+
+    public function testComplianceBlockingReturnsEmptyWithoutNotes(): void
+    {
+        $id = $this->createChecklistPassingArticle();
+
+        $this->assertSame([], $this->review->complianceBlocking($id));
     }
 }

@@ -487,9 +487,10 @@ final class ProductionController extends Controller
         $site = $this->requireSite($siteId);
         Csrf::verify();
         $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
+        $complianceAck = ($_POST['compliance_ack'] ?? '') === '1';
 
         try {
-            (new ArticleReviewService())->approve((int) $article['id']);
+            (new ArticleReviewService())->approve((int) $article['id'], $complianceAck);
             Session::flash('success', 'Artigo aprovado. Agora pode ser agendado.');
         } catch (Throwable $e) {
             Session::flash('error', $e->getMessage());

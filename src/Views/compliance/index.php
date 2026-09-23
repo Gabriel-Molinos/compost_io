@@ -141,6 +141,10 @@ $badGood = static function (array $pairs): void {
         'Pelo menos <strong class="font-semibold">1 imagem no corpo a cada 500 palavras, mais ou menos</strong> (um artigo de 1500 palavras tem, na prática, umas 3).',
         'Sempre gerada pela plataforma (Nano Banana) ou de banco com uso liberado — nunca uma imagem "puxada" de outro site.',
     ], 'success') ?>
+    <div class="mt-4 flex items-start gap-2.5 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2.5 text-sm">
+        <span class="mt-0.5 shrink-0 text-warning"><?= Icon::nav('alert') ?></span>
+        <p class="text-text-secondary"><strong class="font-semibold text-text-primary">Lembrete:</strong> confira se o site de destino tem a moldura automática de imagens ativada antes de aprovar/agendar — nem todo site tem essa feature ligada.</p>
+    </div>
 </section>
 
 <section class="mt-4 rounded-xl border border-border bg-surface p-5" style="--card-enter: 120ms">

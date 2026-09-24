@@ -909,9 +909,8 @@ $maxAttempts = 3;
                         ] as [$val, $label, $hint, $checked]): ?>
                             <label class="relative block cursor-pointer">
                                 <input type="radio" name="role" value="<?= $val ?>" <?= $checked ? 'checked' : '' ?> class="peer sr-only" />
-                                <span class="flex h-full items-start gap-3 rounded-lg border-2 border-border bg-surface p-3 transition
-                                             hover:border-cyan/60 peer-checked:border-cyan peer-checked:bg-cyan/10
-                                             peer-checked:shadow-[0_0_16px_rgba(0,208,240,.25)] peer-focus-visible:ring-2 peer-focus-visible:ring-cyan
+                                <?php // .pick = seleção padrão do app (holofote que segue o mouse, brilho ao marcar) — ver input.css ?>
+                                <span class="pick flex h-full items-start gap-3 rounded-lg p-3
                                              [&_.own-dot]:border-text-muted peer-checked:[&_.own-dot]:border-cyan peer-checked:[&_.own-dot]:bg-cyan">
                                     <span class="own-dot mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 transition" aria-hidden="true"></span>
                                     <span>
@@ -926,15 +925,16 @@ $maxAttempts = 3;
 
                 <div>
                     <span class="block text-sm font-medium text-text-primary">Arquivo da imagem</span>
+                    <?php // Mesmo padrão da área de foto do perfil (profile/edit.php): input peer + label .pick tracejado. ?>
+                    <input id="own-image" type="file" name="image" accept="image/webp,.webp" required class="peer sr-only" data-own-file />
                     <label for="own-image" data-own-drop
-                           class="mt-2 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface px-4 py-6 text-center transition
-                                  hover:border-cyan hover:bg-cyan/5 focus-within:border-cyan">
-                        <span class="text-cyan [&>svg]:h-8 [&>svg]:w-8" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+                           class="pick mt-2 flex flex-col items-center justify-center gap-2 rounded-xl border-dashed px-4 py-7 text-center
+                                  peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-cyan">
+                        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-cyan/15 text-cyan [&>svg]:h-5 [&>svg]:w-5" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
                         </span>
                         <span class="text-sm font-semibold text-text-primary" data-own-drop-title>Clique para escolher o arquivo .webp</span>
                         <span class="text-xs text-text-muted" data-own-drop-hint>ou arraste e solte aqui</span>
-                        <input id="own-image" type="file" name="image" accept="image/webp,.webp" required class="sr-only" data-own-file />
                     </label>
                     <div class="mt-3 hidden items-center gap-3 rounded-md border border-border bg-surface p-2" data-own-preview>
                         <img alt="" class="h-16 w-28 shrink-0 rounded object-cover" data-own-thumb />
@@ -1001,10 +1001,10 @@ $maxAttempts = 3;
 
                 input.addEventListener('change', function () { show(input.files[0]); });
                 ['dragenter', 'dragover'].forEach(function (ev) {
-                    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('border-cyan', 'bg-cyan/5'); });
+                    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('border-cyan', 'bg-cyan/10'); });
                 });
                 ['dragleave', 'drop'].forEach(function (ev) {
-                    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('border-cyan', 'bg-cyan/5'); });
+                    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('border-cyan', 'bg-cyan/10'); });
                 });
                 drop.addEventListener('drop', function (e) {
                     if (e.dataTransfer && e.dataTransfer.files.length) { input.files = e.dataTransfer.files; show(input.files[0]); }

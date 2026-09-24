@@ -34,6 +34,15 @@ final class Connection
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
+            // Achado de performance (2026-09-24): com o banco remoto, o
+            // handshake TCP+TLS custa ~600ms e cada round-trip ~290ms — pagos
+            // a CADA request. Conexão persistente (só em contexto web; o
+            // worker CLI é longo e já reaproveita a sua) elimina o handshake,
+            // e o fuso vai no init command (roda só ao abrir a conexão real)
+            // em vez de um exec() extra por request. Explicação do fuso: ver
+            // comentário mais abaixo.
+            PDO::ATTR_PERSISTENT         => PHP_SAPI !== 'cli',
+            PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone = '-03:00'",
         ];
 
         if (Env::bool('DATABASE_SSL')) {
@@ -66,7 +75,11 @@ final class Connection
         // horário do MySQL carregadas — Brasil não observa horário de
         // verão desde 2019, então -03:00 é sempre correto, sem precisar
         // reavaliar por data.
-        self::$instance->exec("SET time_zone = '-03:00'");
+        // (aplicado via MYSQL_ATTR_INIT_COMMAND acima). Conexão persistente
+        // pode voltar com transação aberta de um request que morreu no meio.
+        if (self::$instance->inTransaction()) {
+            self::$instance->rollBack();
+        }
 
         return self::$instance;
     }

@@ -74,9 +74,11 @@ final class ArticleReviewService
      * @param array<string, mixed> $article linha de `articles` (findById())
      * @return array<string, array{ok: bool, label: string, detail: string}>
      */
-    public function checklist(array $article): array
+    public function checklist(array $article, ?array $version = null, ?array $site = null): array
     {
-        $version = $this->articles->latestVersion((int) $article['id']);
+        // $version/$site opcionais: quem já os carregou (a tela do artigo) passa
+        // adiante e poupa 2 idas ao banco por request.
+        $version ??= $this->articles->latestVersion((int) $article['id']);
         // A coluna de article_versions é `content` (não `content_html`, que é só o nome
         // do campo no JSON do passo de escrita da IA). Com a chave errada o corpo vinha
         // sempre vazio → 0 links → todo artigo reprovava no checklist (achado real
@@ -87,7 +89,7 @@ final class ArticleReviewService
             $wordCount = str_word_count(strip_tags($html));
         }
 
-        $site = $this->sites->find((int) $article['site_id']);
+        $site ??= $this->sites->find((int) $article['site_id']);
         $siteHost = $site !== null && !empty($site['wordpress_url'])
             ? parse_url((string) $site['wordpress_url'], PHP_URL_HOST)
             : null;

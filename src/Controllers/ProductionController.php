@@ -210,8 +210,9 @@ final class ProductionController extends Controller
         // Checklist de pré-aprovação (RF-008) — só faz sentido mostrar
         // enquanto o Redator-Chefe ainda pode agir (IN_REVIEW); pra qualquer
         // outro status já foi decidido, exibir aqui só confundiria.
+        $version = $this->articles->latestVersion((int) $article['id']);
         $checklist = $article['status'] === 'IN_REVIEW'
-            ? (new ArticleReviewService())->checklist($article)
+            ? (new ArticleReviewService())->checklist($article, $version, $site)
             : null;
 
         View::render('sites/production/show', [
@@ -219,7 +220,7 @@ final class ProductionController extends Controller
             'metaRefresh' => $generating ? 5 : null,
             'site'       => $site,
             'article'    => $article,
-            'version'    => $this->articles->latestVersion((int) $article['id']),
+            'version'    => $version,
             'sources'    => $this->articles->sources((int) $article['id']),
             'internalCandidates' => $internalCandidates,
             'executions' => $this->executions->forArticle((int) $article['id']),

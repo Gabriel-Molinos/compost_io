@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Services\ArticleReviewService;
 use App\Support\Csrf;
 use App\Support\Icon;
+use App\Support\ImageUploadValidator;
 use App\Support\Labels;
 use App\View;
 
@@ -698,7 +699,8 @@ $maxAttempts = 3;
     </section>
 <?php endif; ?>
 
-<?php if (!empty($images)): ?>
+<?php // Aparece mesmo sem nenhuma imagem (ex.: a geração falhou) — quem revisa pode subir a sua. ?>
+<?php if (!empty($images) || !in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true)): ?>
     <?php
     $featured = array_values(array_filter($images, static fn ($i) => $i['role'] === 'FEATURED'));
     $body = array_values(array_filter($images, static fn ($i) => $i['role'] === 'BODY'));
@@ -795,7 +797,7 @@ $maxAttempts = 3;
                                       class="image-select-pill <?= $sel ? 'image-select-pill-selected' : '' ?> flex w-full items-center justify-center gap-2 rounded-md border-2 px-4 py-3 text-base font-semibold transition">
                                     <svg data-select-image-icon <?= $sel ? '' : 'hidden' ?> viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6"/></svg>
                                     <span data-select-image-text><?= $sel ? 'Imagem selecionada' : 'Usar esta imagem' ?></span>
-                                    <span class="font-normal opacity-75">· <?= View::e($i['format'] ?? '') ?></span>
+                                    <span class="font-normal opacity-75">· <?= View::e($i['format'] ?? '') ?><?= trim((string) ($i['prompt'] ?? '')) === '' ? ' · enviada por você' : '' ?></span>
                                 </span>
                             </label>
                             <?php if (!empty($i['alt_text'])): ?>
@@ -845,16 +847,64 @@ $maxAttempts = 3;
                             </button>
                         </span>
                         <figcaption class="mt-2 text-xs font-medium text-text-secondary">
-                            Imagem de corpo <span class="font-normal text-text-muted">· <?= View::e($i['format'] ?? '') ?></span>
+                            Imagem de corpo <span class="font-normal text-text-muted">· <?= View::e($i['format'] ?? '') ?><?= trim((string) ($i['prompt'] ?? '')) === '' ? ' · enviada por você' : '' ?></span>
                         </figcaption>
                         <div class="mt-3 flex gap-2">
-                            <?php $regenerateForm($i); ?>
+                            <?php // Imagem própria não tem prompt guardado — não há o que regenerar. ?>
+                            <?php if (trim((string) ($i['prompt'] ?? '')) !== ''): $regenerateForm($i); endif; ?>
                             <?php $deleteForm($i); ?>
                         </div>
                     </figure>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
+
+        <?php
+        $upMinW = ImageUploadValidator::MIN_WIDTH;
+        $upMaxW = ImageUploadValidator::MAX_WIDTH;
+        $upMinH = ImageUploadValidator::minHeight();
+        $upRatio = ImageUploadValidator::RATIO_W . ':' . ImageUploadValidator::RATIO_H;
+        $upMb = ImageUploadValidator::MAX_BYTES / 1048576;
+        ?>
+        <div class="mt-6 rounded-lg border border-border bg-surface-2 p-4">
+            <p class="text-sm font-semibold text-text-primary">Enviar uma imagem sua</p>
+            <p class="mt-1 text-xs text-text-muted">Use quando preferir uma foto ou arte própria no lugar das geradas pela IA.</p>
+
+            <div class="mt-3 rounded-md border border-cyan/40 bg-cyan/10 p-3 text-sm text-text-primary">
+                <p class="font-semibold">A imagem precisa ter:</p>
+                <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                    <li><strong>Formato WebP</strong> (arquivo .webp) — PNG e JPG não são aceitos.</li>
+                    <li><strong>Largura:</strong> de <?= $upMinW ?> a <?= $upMaxW ?> pixels.</li>
+                    <li><strong>Altura:</strong> na proporção <?= $upRatio ?> (paisagem). Exemplos: <strong><?= $upMinW ?> × <?= $upMinH ?> px</strong> ou <strong>1600 × 900 px</strong>.</li>
+                    <li><strong>Peso:</strong> até <?= $upMb ?> MB.</li>
+                </ul>
+            </div>
+
+            <form method="post" action="<?= $base ?>/images/upload" enctype="multipart/form-data" class="mt-4 space-y-3"
+                  onsubmit="var b=this.querySelector('button[type=submit]');b.disabled=true;b.textContent='Enviando…';">
+                <?= Csrf::field() ?>
+                <fieldset>
+                    <legend class="text-sm font-medium text-text-primary">Onde usar</legend>
+                    <div class="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm text-text-secondary">
+                        <label class="flex items-center gap-2"><input type="radio" name="role" value="FEATURED" checked /> Imagem destacada <span class="text-xs text-text-muted">(já fica escolhida)</span></label>
+                        <label class="flex items-center gap-2"><input type="radio" name="role" value="BODY" /> Corpo do artigo</label>
+                    </div>
+                </fieldset>
+                <div>
+                    <label for="own-image" class="block text-sm font-medium text-text-primary">Arquivo .webp</label>
+                    <input id="own-image" type="file" name="image" accept="image/webp,.webp" required
+                           class="mt-1 block w-full text-sm text-text-secondary file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5 file:text-sm file:text-text-primary" />
+                </div>
+                <div>
+                    <label for="own-alt" class="block text-sm font-medium text-text-primary">Descrição da imagem (alt)</label>
+                    <input id="own-alt" type="text" name="alt_text" maxlength="500" required
+                           placeholder="Ex.: Mulher aplicando sérum no rosto em frente ao espelho"
+                           class="mt-1 block w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary" />
+                    <p class="mt-1 text-xs text-text-muted">Descreva o que aparece na imagem; se fizer sentido, inclua a palavra-chave do artigo.</p>
+                </div>
+                <button type="submit" class="btn btn-primary px-4 py-2 text-sm">Enviar imagem</button>
+            </form>
+        </div>
     </section>
 <?php endif; ?>
 

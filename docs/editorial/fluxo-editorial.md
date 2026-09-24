@@ -241,6 +241,8 @@ Redator escolhe
 
 Implementado na Fase 5 — detalhes técnicos em [docs/integrations/images.md](../integrations/images.md). O brief visual é o passo `image` (`docs/ai/image.md`); as opções ficam em `images` (`selected = 0`) e o Redator-Chefe escolhe a destacada na página do artigo.
 
+> **Implementado (2026-09-24) — imagem própria:** além das geradas pela IA, o redator pode subir a sua (destacada ou de corpo) no bloco "Enviar uma imagem sua" da tela do artigo. Regras (`App\Support\ImageUploadValidator`, checadas pelos bytes do arquivo, não pela extensão): **WebP**, largura de **1200 a 2560 px**, proporção **16:9** (ex.: 1200×675 ou 1600×900), até **2 MB**, e descrição (alt) obrigatória. A destacada enviada já fica escolhida; a de corpo entra na distribuição automática. Imagens próprias não têm prompt, então não têm o botão "Substituir".
+
 ### 26. Processamento assíncrono
 
 A IA pode levar horas para finalizar uma produção. Portanto, o sistema **não** deverá depender de uma requisição HTTP aberta durante todo o processo.

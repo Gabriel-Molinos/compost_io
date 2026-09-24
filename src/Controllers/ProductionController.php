@@ -26,6 +26,7 @@ use App\Queue\Job;
 use App\Queue\Queue;
 use App\Services\Pipeline\ArticlePipeline;
 use App\Support\ImageStorage;
+use App\Support\ImageUploadValidator;
 use App\Services\Pipeline\PipelineException;
 use App\Support\Csrf;
 use App\Support\Http;
@@ -544,6 +545,64 @@ final class ProductionController extends Controller
         }
 
         Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id'] . '#imagens');
+    }
+
+    /**
+     * Imagem própria (destacada ou de corpo) no lugar das geradas pela IA.
+     * O arquivo é validado pelos bytes (WebP, largura, proporção, tamanho —
+     * ver ImageUploadValidator). A destacada enviada já vira a escolhida:
+     * subir uma foto própria é, por si só, a decisão.
+     */
+    public function uploadImage(string $siteId, string $articleId): void
+    {
+        $site = $this->requireSite($siteId);
+        Csrf::verify();
+        $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
+        $back = '/sites/' . $site['id'] . '/production/' . $article['id'] . '#imagens';
+
+        $role = ($_POST['role'] ?? '') === 'BODY' ? 'BODY' : 'FEATURED';
+        $alt = trim((string) ($_POST['alt_text'] ?? ''));
+        $file = $_FILES['image'] ?? null;
+
+        try {
+            if ($alt === '') {
+                throw new \InvalidArgumentException('Descreva a imagem no campo de texto alternativo (alt) — é exigido por SEO e acessibilidade.');
+            }
+            if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                throw new \InvalidArgumentException('Escolha um arquivo .webp para enviar.');
+            }
+            if (in_array($file['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+                throw new \InvalidArgumentException('A imagem passa do tamanho máximo de ' . (ImageUploadValidator::MAX_BYTES / 1048576) . ' MB.');
+            }
+            if ($file['error'] !== UPLOAD_ERR_OK || !is_uploaded_file((string) $file['tmp_name'])) {
+                throw new \InvalidArgumentException('O envio do arquivo falhou. Tente de novo.');
+            }
+
+            $bytes = (string) file_get_contents((string) $file['tmp_name']);
+            ImageUploadValidator::validate($bytes);
+
+            $url = (new ImageStorage())->save(
+                (int) $site['id'], (int) $article['id'], strtolower($role) . '-own-' . uniqid(), $bytes, 'webp',
+            );
+            $images = new ImageService();
+            $id = $images->add(
+                (int) $article['id'], $role, $url, null, mb_substr($alt, 0, 500), 'webp',
+                ImageUploadValidator::RATIO_W . ':' . ImageUploadValidator::RATIO_H,
+            );
+            if ($role === 'FEATURED') {
+                $images->select((int) $article['id'], $id);
+            }
+
+            Session::flash('success', $role === 'FEATURED'
+                ? 'Sua imagem foi enviada e já está escolhida como destacada.'
+                : 'Sua imagem foi adicionada ao corpo do artigo.');
+        } catch (\InvalidArgumentException $e) {
+            Session::flash('error', $e->getMessage());
+        } catch (\RuntimeException) {
+            Session::flash('error', 'Não foi possível gravar a imagem no servidor. Tente de novo.');
+        }
+
+        Http::redirect($back);
     }
 
     /** Redator-Chefe descarta uma imagem inadequada (Fase 5.4). */

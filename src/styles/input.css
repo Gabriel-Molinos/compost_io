@@ -2155,6 +2155,34 @@
     .btn-spin { animation: none; }
   }
 
+  /* Roda girando genérica — usa currentColor, então serve em botão (cyan,
+     escuro) e em fundo escuro; o tamanho vem do font-size (1em). Usada nas
+     imagens do artigo: geração em andamento, "Gerar mais/Substituir",
+     envio de imagem própria e imagem ainda carregando. */
+  .spinner {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 999px;
+    vertical-align: -0.125em;
+    animation: dial-ring-spin .7s linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation-duration: 2s; }
+  }
+  /* Spinner centralizado sobre uma <img> que ainda não terminou de carregar. */
+  .img-spinner {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 2rem;
+    height: 2rem;
+    color: #00D0F0;
+    border-width: 3px;
+  }
+
   /* =====================================================================
      Pop-up de notificação nova (assets/js/notification-toast.js, pedido
      2026-09-22: "pop-up na tela com som de bolha estourando quando chega

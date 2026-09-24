@@ -699,6 +699,19 @@ $maxAttempts = 3;
     </section>
 <?php endif; ?>
 
+<?php if (empty($images) && $isGenerating): ?>
+    <section id="imagens" class="mt-6 rounded-xl border border-border bg-surface p-5" role="status" aria-live="polite">
+        <?php $sectionHeading(Icon::nav('camera'), 'Imagens'); ?>
+        <div class="mt-4 flex items-center gap-4 rounded-lg border border-dashed border-cyan/40 bg-cyan/5 p-5">
+            <span class="spinner shrink-0 text-4xl text-cyan" aria-hidden="true"></span>
+            <div>
+                <p class="text-sm font-semibold text-text-primary">As imagens estão sendo geradas…</p>
+                <p class="text-xs text-text-muted">Chegam ao fim da produção do artigo. Esta página se atualiza sozinha — e depois você poderá enviar uma imagem sua aqui.</p>
+            </div>
+        </div>
+    </section>
+<?php endif; ?>
+
 <?php // Aparece mesmo sem nenhuma imagem (ex.: a geração falhou) — quem revisa pode subir a sua. ?>
 <?php if (!empty($images) || !in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true)): ?>
     <?php
@@ -722,7 +735,7 @@ $maxAttempts = 3;
     // em "Sugerir por relevância"/"Gerar mais" do editor de corpo.
     $regenerateForm = static function (array $img) use ($base): void {
         echo '<form method="post" action="' . $base . '/images/' . View::e($img['id']) . '/regenerate" class="flex-1"'
-            . ' onsubmit="this.querySelector(\'button\').disabled=true;this.querySelector(\'button\').textContent=\'Gerando…\';">';
+            . ' onsubmit="var b=this.querySelector(\'button\');b.disabled=true;b.innerHTML=\'<span class=&quot;spinner&quot;></span> Gerando…\';">';
         echo Csrf::field();
         echo '<button type="submit" class="btn btn-secondary flex w-full items-center justify-center gap-1.5 px-3 py-1.5 text-xs">'
             . '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
@@ -733,6 +746,11 @@ $maxAttempts = 3;
     ?>
     <section id="imagens" class="mt-6 rounded-xl border border-border bg-surface p-5">
         <?php $sectionHeading(Icon::nav('camera'), 'Imagens (' . count($images) . ')'); ?>
+        <?php if ($isGenerating): ?>
+            <p class="mt-3 flex items-center gap-2 text-xs text-cyan" role="status">
+                <span class="spinner" aria-hidden="true"></span> Ainda gerando imagens — esta página se atualiza sozinha.
+            </p>
+        <?php endif; ?>
 
         <?php if ($featured !== []): ?>
             <p class="mt-4 text-sm font-medium text-text-primary">Imagem destacada — <?= count($featured) ?> opção(ões)</p>
@@ -825,7 +843,7 @@ $maxAttempts = 3;
                     </p>
                 </div>
                 <form method="post" action="<?= $base ?>/images/body/add"
-                      onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Gerando…';">
+                      onsubmit="var b=this.querySelector('button');b.disabled=true;b.innerHTML='<span class=&quot;spinner&quot;></span> Gerando…';">
                     <?= Csrf::field() ?>
                     <button type="submit" class="btn btn-primary shrink-0 whitespace-nowrap px-3 py-1.5 text-xs">
                         <span class="[&>svg]:h-3.5 [&>svg]:w-3.5"><?= Icon::nav('plus') ?></span>
@@ -880,21 +898,50 @@ $maxAttempts = 3;
                 </ul>
             </div>
 
-            <form method="post" action="<?= $base ?>/images/upload" enctype="multipart/form-data" class="mt-4 space-y-3"
-                  onsubmit="var b=this.querySelector('button[type=submit]');b.disabled=true;b.textContent='Enviando…';">
+            <form method="post" action="<?= $base ?>/images/upload" enctype="multipart/form-data" class="mt-4 space-y-4" data-own-image-form>
                 <?= Csrf::field() ?>
                 <fieldset>
-                    <legend class="text-sm font-medium text-text-primary">Onde usar</legend>
-                    <div class="mt-1 flex flex-wrap gap-x-5 gap-y-1 text-sm text-text-secondary">
-                        <label class="flex items-center gap-2"><input type="radio" name="role" value="FEATURED" checked /> Imagem destacada <span class="text-xs text-text-muted">(já fica escolhida)</span></label>
-                        <label class="flex items-center gap-2"><input type="radio" name="role" value="BODY" /> Corpo do artigo</label>
+                    <legend class="text-sm font-medium text-text-primary">Onde usar esta imagem?</legend>
+                    <div class="mt-2 grid gap-3 sm:grid-cols-2">
+                        <?php foreach ([
+                            ['FEATURED', 'Imagem destacada', 'A capa do artigo. Já fica escolhida como a destacada.', true],
+                            ['BODY', 'Corpo do artigo', 'Entra no meio do texto, distribuída automaticamente.', false],
+                        ] as [$val, $label, $hint, $checked]): ?>
+                            <label class="relative block cursor-pointer">
+                                <input type="radio" name="role" value="<?= $val ?>" <?= $checked ? 'checked' : '' ?> class="peer sr-only" />
+                                <span class="flex h-full items-start gap-3 rounded-lg border-2 border-border bg-surface p-3 transition
+                                             hover:border-cyan/60 peer-checked:border-cyan peer-checked:bg-cyan/10
+                                             peer-checked:shadow-[0_0_16px_rgba(0,208,240,.25)] peer-focus-visible:ring-2 peer-focus-visible:ring-cyan
+                                             [&_.own-dot]:border-text-muted peer-checked:[&_.own-dot]:border-cyan peer-checked:[&_.own-dot]:bg-cyan">
+                                    <span class="own-dot mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 transition" aria-hidden="true"></span>
+                                    <span>
+                                        <span class="block text-sm font-semibold text-text-primary"><?= $label ?></span>
+                                        <span class="mt-0.5 block text-xs text-text-muted"><?= $hint ?></span>
+                                    </span>
+                                </span>
+                            </label>
+                        <?php endforeach; ?>
                     </div>
                 </fieldset>
+
                 <div>
-                    <label for="own-image" class="block text-sm font-medium text-text-primary">Arquivo .webp</label>
-                    <input id="own-image" type="file" name="image" accept="image/webp,.webp" required
-                           class="mt-1 block w-full text-sm text-text-secondary file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-1.5 file:text-sm file:text-text-primary" />
+                    <span class="block text-sm font-medium text-text-primary">Arquivo da imagem</span>
+                    <label for="own-image" data-own-drop
+                           class="mt-2 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-surface px-4 py-6 text-center transition
+                                  hover:border-cyan hover:bg-cyan/5 focus-within:border-cyan">
+                        <span class="text-cyan [&>svg]:h-8 [&>svg]:w-8" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+                        </span>
+                        <span class="text-sm font-semibold text-text-primary" data-own-drop-title>Clique para escolher o arquivo .webp</span>
+                        <span class="text-xs text-text-muted" data-own-drop-hint>ou arraste e solte aqui</span>
+                        <input id="own-image" type="file" name="image" accept="image/webp,.webp" required class="sr-only" data-own-file />
+                    </label>
+                    <div class="mt-3 hidden items-center gap-3 rounded-md border border-border bg-surface p-2" data-own-preview>
+                        <img alt="" class="h-16 w-28 shrink-0 rounded object-cover" data-own-thumb />
+                        <p class="text-sm text-text-secondary" data-own-check></p>
+                    </div>
                 </div>
+
                 <div>
                     <label for="own-alt" class="block text-sm font-medium text-text-primary">Descrição da imagem (alt)</label>
                     <input id="own-alt" type="text" name="alt_text" maxlength="500" required
@@ -902,10 +949,92 @@ $maxAttempts = 3;
                            class="mt-1 block w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary" />
                     <p class="mt-1 text-xs text-text-muted">Descreva o que aparece na imagem; se fizer sentido, inclua a palavra-chave do artigo.</p>
                 </div>
-                <button type="submit" class="btn btn-primary px-4 py-2 text-sm">Enviar imagem</button>
+
+                <button type="submit" class="btn btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm" data-own-submit>
+                    <span data-own-submit-icon class="[&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('plus') ?></span>
+                    <span data-own-submit-label>Enviar imagem</span>
+                </button>
             </form>
+            <script>
+            (function () {
+                var form = document.querySelector('[data-own-image-form]');
+                if (!form) { return; }
+                var input = form.querySelector('[data-own-file]');
+                var drop = form.querySelector('[data-own-drop]');
+                var title = form.querySelector('[data-own-drop-title]');
+                var hint = form.querySelector('[data-own-drop-hint]');
+                var preview = form.querySelector('[data-own-preview]');
+                var thumb = form.querySelector('[data-own-thumb]');
+                var check = form.querySelector('[data-own-check]');
+                var MIN_W = <?= (int) $upMinW ?>, MAX_W = <?= (int) $upMaxW ?>,
+                    RW = <?= (int) ImageUploadValidator::RATIO_W ?>, RH = <?= (int) ImageUploadValidator::RATIO_H ?>,
+                    MAX_B = <?= (int) ImageUploadValidator::MAX_BYTES ?>;
+
+                // Confere o arquivo no navegador só pra avisar na hora — quem decide
+                // de verdade é o servidor (ImageUploadValidator).
+                function show(file) {
+                    if (!file) {
+                        preview.classList.add('hidden'); preview.classList.remove('flex');
+                        title.textContent = 'Clique para escolher o arquivo .webp';
+                        hint.textContent = 'ou arraste e solte aqui';
+                        return;
+                    }
+                    title.textContent = file.name;
+                    hint.textContent = (file.size < 1048576 ? Math.max(1, Math.round(file.size / 1024)) + ' KB' : (file.size / 1048576).toFixed(2).replace('.', ',') + ' MB') + ' — clique para trocar';
+                    preview.classList.remove('hidden'); preview.classList.add('flex');
+                    check.textContent = 'Lendo a imagem…';
+                    var url = URL.createObjectURL(file);
+                    thumb.onload = function () {
+                        var w = thumb.naturalWidth, h = thumb.naturalHeight, problems = [];
+                        if (!/\.webp$/i.test(file.name) && file.type !== 'image/webp') { problems.push('não é WebP'); }
+                        if (w < MIN_W || w > MAX_W) { problems.push('largura fora de ' + MIN_W + '–' + MAX_W + ' px'); }
+                        if (Math.abs((w / h) / (RW / RH) - 1) > 0.02) { problems.push('proporção diferente de ' + RW + ':' + RH); }
+                        if (file.size > MAX_B) { problems.push('acima de ' + (MAX_B / 1048576) + ' MB'); }
+                        check.innerHTML = '<strong class="text-text-primary">' + w + ' × ' + h + ' px</strong> — ' + (problems.length
+                            ? '<span class="text-danger">' + problems.join('; ') + '. Ajuste antes de enviar.</span>'
+                            : '<span class="text-success">dentro das regras ✓</span>');
+                        URL.revokeObjectURL(url);
+                    };
+                    thumb.onerror = function () { check.innerHTML = '<span class="text-danger">Não foi possível ler esta imagem.</span>'; };
+                    thumb.src = url;
+                }
+
+                input.addEventListener('change', function () { show(input.files[0]); });
+                ['dragenter', 'dragover'].forEach(function (ev) {
+                    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('border-cyan', 'bg-cyan/5'); });
+                });
+                ['dragleave', 'drop'].forEach(function (ev) {
+                    drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('border-cyan', 'bg-cyan/5'); });
+                });
+                drop.addEventListener('drop', function (e) {
+                    if (e.dataTransfer && e.dataTransfer.files.length) { input.files = e.dataTransfer.files; show(input.files[0]); }
+                });
+
+                form.addEventListener('submit', function () {
+                    form.querySelector('[data-own-submit]').disabled = true;
+                    form.querySelector('[data-own-submit-icon]').innerHTML = '<span class="spinner"></span>';
+                    form.querySelector('[data-own-submit-label]').textContent = 'Enviando…';
+                });
+            })();
+            </script>
         </div>
     </section>
+    <script>
+    // Roda girando sobre cada imagem que ainda está carregando (lazy ou rede lenta).
+    document.querySelectorAll('#imagens img').forEach(function (img) {
+        if (img.complete && img.naturalWidth > 0) { return; }
+        var holder = img.parentElement;
+        holder.style.position = 'relative';
+        holder.style.minHeight = '9rem';
+        var spin = document.createElement('span');
+        spin.className = 'spinner img-spinner';
+        spin.setAttribute('aria-hidden', 'true');
+        holder.appendChild(spin);
+        var done = function () { spin.remove(); holder.style.minHeight = ''; };
+        img.addEventListener('load', done);
+        img.addEventListener('error', done);
+    });
+    </script>
 <?php endif; ?>
 
 <?php
@@ -1067,7 +1196,7 @@ $execStatusBadge = static function (string $status): string {
                                         <p class="mt-1 text-xs text-text-muted">Fontes que a pesquisa da IA já encontrou pra este artigo.</p>
                                     </div>
                                     <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/sources/suggest"
-                                          onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').textContent='Gerando…';">
+                                          onsubmit="var b=this.querySelector('button');b.disabled=true;b.innerHTML='<span class=&quot;spinner&quot;></span> Gerando…';">
                                         <?= Csrf::field() ?>
                                         <button type="submit"
                                                 class="btn btn-primary shrink-0 whitespace-nowrap px-2.5 py-1.5 text-[11px]">

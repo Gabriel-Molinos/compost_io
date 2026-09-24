@@ -101,14 +101,18 @@ final class WordPressSyncService
      * `wordpress_category_id`) e cria localmente as que só existem no WP.
      * Nunca apaga categoria local.
      *
-     * @return array{linked:int, already:int, imported:int, unmatched_local:list<string>}
+     * A descrição da categoria no WordPress (campo `description`) vira as
+     * diretrizes locais, mas SÓ quando a local ainda está vazia — texto que uma
+     * pessoa escreveu nunca é sobrescrito.
+     *
+     * @return array{linked:int, already:int, imported:int, guidelines_filled:int, unmatched_local:list<string>}
      */
     public function syncCategories(int $siteId): array
     {
         $client = $this->connections->client($siteId);
         $wpCategories = $this->fetchAll($client, 'listCategories', []);
 
-        /** @var array<string, array{id:int, name:string}> $wpByName */
+        /** @var array<string, array{id:int, name:string, description:string}> $wpByName */
         $wpByName = [];
         foreach ($wpCategories as $cat) {
             $id = (int) ($cat['id'] ?? 0);
@@ -116,17 +120,24 @@ final class WordPressSyncService
                 continue;
             }
             $name = html_entity_decode((string) ($cat['name'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $wpByName[self::normalize($name)] = ['id' => $id, 'name' => mb_substr(trim($name), 0, 191)];
+            $description = trim(html_entity_decode(strip_tags((string) ($cat['description'] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $wpByName[self::normalize($name)] = [
+                'id'          => $id,
+                'name'        => mb_substr(trim($name), 0, 191),
+                'description' => $description,
+            ];
         }
 
         $pdo = Connection::get();
-        $stmt = $pdo->prepare('SELECT id, name, wordpress_category_id FROM categories WHERE site_id = :s');
+        $stmt = $pdo->prepare('SELECT id, name, guidelines, wordpress_category_id FROM categories WHERE site_id = :s');
         $stmt->execute(['s' => $siteId]);
         $local = $stmt->fetchAll();
 
         $update = $pdo->prepare('UPDATE categories SET wordpress_category_id = :wid WHERE id = :id');
 
-        $linked = $already = 0;
+        $fillGuidelines = $pdo->prepare('UPDATE categories SET guidelines = :g WHERE id = :id');
+
+        $linked = $already = $guidelinesFilled = 0;
         $unmatchedLocal = [];
         $matchedKeys = [];
 
@@ -140,6 +151,11 @@ final class WordPressSyncService
             $matchedKeys[$key] = true;
             $wpId = $wpByName[$key]['id'];
 
+            if ($wpByName[$key]['description'] !== '' && trim((string) ($cat['guidelines'] ?? '')) === '') {
+                $fillGuidelines->execute(['g' => $wpByName[$key]['description'], 'id' => (int) $cat['id']]);
+                $guidelinesFilled++;
+            }
+
             if ((int) ($cat['wordpress_category_id'] ?? 0) === $wpId) {
                 $already++;
                 continue;
@@ -150,21 +166,30 @@ final class WordPressSyncService
         }
 
         $insert = $pdo->prepare(
-            'INSERT INTO categories (site_id, name, wordpress_category_id) VALUES (:s, :n, :wid)'
+            'INSERT INTO categories (site_id, name, guidelines, wordpress_category_id) VALUES (:s, :n, :g, :wid)'
         );
         $imported = 0;
         foreach ($wpByName as $key => $wp) {
             if (isset($matchedKeys[$key])) {
                 continue;
             }
-            $insert->execute(['s' => $siteId, 'n' => $wp['name'], 'wid' => $wp['id']]);
+            $insert->execute([
+                's'   => $siteId,
+                'n'   => $wp['name'],
+                'g'   => $wp['description'] !== '' ? $wp['description'] : null,
+                'wid' => $wp['id'],
+            ]);
             $imported++;
+            if ($wp['description'] !== '') {
+                $guidelinesFilled++;
+            }
         }
 
         return [
             'linked'          => $linked,
             'already'         => $already,
             'imported'        => $imported,
+            'guidelines_filled' => $guidelinesFilled,
             'unmatched_local' => $unmatchedLocal,
         ];
     }

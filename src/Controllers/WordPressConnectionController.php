@@ -135,13 +135,16 @@ final class WordPressConnectionController extends Controller
         Http::redirect('/sites/' . $site['id'] . '/wordpress');
     }
 
-    /** @param array{linked:int, already:int, imported:int, unmatched_local:list<string>} $r */
+    /** @param array{linked:int, already:int, imported:int, guidelines_filled:int, unmatched_local:list<string>} $r */
     private function categorySyncSummary(array $r): string
     {
         $msg = sprintf(
             'Categorias: %d importada(s) do WordPress, %d vinculada(s) por nome, %d já estavam.',
             $r['imported'], $r['linked'], $r['already'],
         );
+        if ($r['guidelines_filled'] > 0) {
+            $msg .= sprintf(' Diretrizes preenchidas a partir da descrição no WordPress: %d categoria(s).', $r['guidelines_filled']);
+        }
         if ($r['unmatched_local'] !== []) {
             $msg .= ' Locais sem par no WordPress (mantidas): ' . implode(', ', $r['unmatched_local']) . '.';
         }

@@ -54,6 +54,7 @@ articles
           PUBLISHED | DISCARDED | BLOCKED),
   slug?, focus_keyword?, meta_description?,          -- [+] SEO (seo.md / compliance.md)
   lineage_id?, attempt_number, published_at?,        -- lineage_id: só coluna agrupadora (ver 87.2)
+  writer_request? (TEXT),                            -- "Rascunho específico" (migration 0027): pedido livre do redator; herdado pelas regenerações
   timestamps, deleted_at?                            -- unique site_id+slug ; index site_id+focus_keyword
 
 article_versions

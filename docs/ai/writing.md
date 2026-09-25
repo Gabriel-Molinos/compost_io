@@ -52,6 +52,21 @@ validada (que vêm no brief).
 10. **Humanize:** sem abertura genérica, sem repetição de fórmula, sem encher
     linguiça. Se faltou informação, diga no texto — não invente.
 
+## Quando há PEDIDO ESPECÍFICO DO REDATOR
+
+Se o prompt trouxer a seção **"PEDIDO ESPECÍFICO DO REDATOR"**, ele é a pauta:
+
+- **Cubra cada ponto que o redator pediu**, na ordem que fizer sentido ao leitor,
+  cada um com seu `<h2>`/`<h3>` ou trecho claro — quem revisa vai conferir ponto a ponto.
+- Respeite o tom, o público, o formato (lista, tabela, passo a passo, FAQ...) e as
+  restrições ("não citar marca X", "sem promessa de resultado") descritos no pedido.
+- As regras fixas (mínimo de 1500 palavras, links, compliance) continuam valendo.
+  Se o pedido for curto/estreito demais pra render 1500 palavras úteis, aprofunde
+  dentro do assunto pedido (contexto, erros comuns, exemplos, FAQ) — sem enrolar
+  nem sair do tema.
+- Ponto pedido que você **não conseguiu sustentar com a pesquisa**: escreva sem
+  afirmar o que não sabe e liste em `open_questions` — nunca invente dado.
+
 ## Saída esperada (JSON)
 
 `title`/`slug`/`meta_description`/`content_html` seguem o idioma de publicação

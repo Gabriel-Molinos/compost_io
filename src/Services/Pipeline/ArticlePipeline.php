@@ -114,9 +114,9 @@ final class ArticlePipeline
      * pesado rodar (Fase 9.1b — fila conectada ao pipeline).
      */
     /** @param 'MANUAL'|'AUTO' $source repassado direto pra ArticleService::create() */
-    public function prepareGenerate(int $siteId, ?int $goalId = null, string $source = 'MANUAL'): int
+    public function prepareGenerate(int $siteId, ?int $goalId = null, string $source = 'MANUAL', ?string $writerRequest = null): int
     {
-        return $this->articles->create($siteId, $goalId, $source);
+        return $this->articles->create($siteId, $goalId, $source, $writerRequest);
     }
 
     /**
@@ -130,12 +130,22 @@ final class ArticlePipeline
     public function runGenerate(int $articleId, int $siteId, ?int $goalId = null, ?int $categoryId = null): array
     {
         $this->prompts->setEditorialContext($this->siteMemoryContext($siteId));
+        $this->prompts->setWriterRequest($this->writerRequestFor($articleId));
 
         try {
             return $this->run($articleId, $siteId, $goalId, $categoryId);
         } finally {
             $this->prompts->setEditorialContext(null);
+            $this->prompts->setWriterRequest(null);
         }
+    }
+
+    /** Pedido do redator guardado no artigo ("Rascunho específico"), ou null num rascunho comum. */
+    private function writerRequestFor(int $articleId): ?string
+    {
+        $request = trim((string) ($this->articles->findById($articleId)['writer_request'] ?? ''));
+
+        return $request !== '' ? $request : null;
     }
 
     /**
@@ -195,7 +205,11 @@ final class ArticlePipeline
         $goalId = $prev['goal_id'] !== null ? (int) $prev['goal_id'] : null;
         $categoryId = $prev['category_id'] !== null ? (int) $prev['category_id'] : null;
 
-        $articleId = $this->articles->createAttempt($siteId, $goalId, $lineageId, $attempt);
+        // O pedido do redator (se houve) acompanha a linhagem: a nova tentativa continua atendendo ao mesmo pedido.
+        $articleId = $this->articles->createAttempt(
+            $siteId, $goalId, $lineageId, $attempt,
+            $prev['writer_request'] !== null ? (string) $prev['writer_request'] : null,
+        );
 
         return [
             'article_id'  => $articleId,
@@ -220,11 +234,13 @@ final class ArticlePipeline
             $this->siteMemoryContext($siteId),
         ], static fn (string $s): bool => $s !== '');
         $this->prompts->setEditorialContext(implode("\n\n", $context));
+        $this->prompts->setWriterRequest($this->writerRequestFor($articleId));
 
         try {
             return $this->run($articleId, $siteId, $goalId, $categoryId);
         } finally {
             $this->prompts->setEditorialContext(null);
+            $this->prompts->setWriterRequest(null);
         }
     }
 

@@ -24,6 +24,21 @@ período e ainda não tenha sido coberto pelo site.
    recorte diferente ou marque para revisão humana. Sem essa seção (site ainda
    sem WordPress conectado), siga só com o que souber pelas categorias/metas.
 
+## Quando há PEDIDO ESPECÍFICO DO REDATOR
+
+Se o prompt trouxer a seção **"PEDIDO ESPECÍFICO DO REDATOR"** (botão
+"Rascunho específico"), o tema **não é livre**: o redator já disse o que quer.
+
+- Derive `title`, `focus_keyword` e `angle` **do pedido**, mantendo a intenção
+  dele. Você pode melhorar a redação do título e escolher a palavra-chave com
+  melhor potencial de busca **dentro do assunto pedido** — nunca trocar de assunto.
+- `category` é a que o redator escolheu (já vem definida no prompt).
+- A checagem de duplicação/canibalização continua: se o pedido se sobrepõe a um
+  post existente, **mantenha o assunto pedido**, escolha um recorte diferente do
+  post existente e registre isso em `cannibalization_note` — não desobedeça o pedido
+  em silêncio.
+- Em `rationale`, diga em uma frase como o plano atende ao pedido.
+
 ## Saída esperada (JSON)
 
 `title`/`angle`/`category` seguem o idioma de publicação do site (vão virar

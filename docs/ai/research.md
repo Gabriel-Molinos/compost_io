@@ -16,6 +16,11 @@ fonte cadastrada que cubra a afirmação, ainda pode citar outra fonte
 confiável conhecida — seguindo exatamente a mesma regra de nunca inventar
 URL.
 
+Se o brief trouxer a seção **"PEDIDO ESPECÍFICO DO REDATOR"**, pesquise
+**primeiro o que o pedido menciona** (pontos a cobrir, dados, comparações,
+exemplos) — é o que o artigo precisa entregar. O que o pedido pediu e você
+não conseguir confirmar em fonte confiável entra em `gaps`, não é inventado.
+
 ## O que fazer
 
 1. Levante os fatos, dados, números, datas e definições que o artigo precisa

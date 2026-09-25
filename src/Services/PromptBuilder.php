@@ -34,6 +34,9 @@ final class PromptBuilder
     /** Texto de "memória editorial" injetado pelo pipeline (regeneração — Fase 6, feedback da linhagem). */
     private ?string $editorialContext = null;
 
+    /** Pedido livre do redator ("Rascunho específico"), injetado pelo pipeline em TODOS os passos do artigo. */
+    private ?string $writerRequest = null;
+
     /** Texto dos posts existentes no WordPress, injetado pelo pipeline só pro passo `planning` (Fase 9.3). */
     private ?string $existingContentContext = null;
 
@@ -85,6 +88,9 @@ final class PromptBuilder
         if ($categoryId !== null) {
             $layers[] = $this->categoryLayer($siteId, $categoryId);
         }
+        // Logo depois de meta/categoria e ANTES do brief: quando o redator pediu um
+        // post específico, o brief (título/ângulo do planning) já nasce desse pedido.
+        $layers[] = $this->writerRequestLayer();
         $layers[] = $this->briefLayer($brief);
         $layers[] = $this->draftLayer($draft);
         $layers[] = $this->memoryLayer();
@@ -265,6 +271,36 @@ final class PromptBuilder
         return "# ARTIGO PRODUZIDO (para auditar)\n\n"
             . ($meta !== [] ? implode("\n", $meta) . "\n\n" : '')
             . "Corpo (HTML):\n\n" . $html;
+    }
+
+    /**
+     * Pedido do redator (botão "Rascunho específico", pedido 2026-09-24): ele
+     * descreve exatamente o post que quer. Gravado em `articles.writer_request`
+     * e injetado pelo `ArticlePipeline` em toda geração/regeneração do artigo.
+     */
+    public function setWriterRequest(?string $text): void
+    {
+        $this->writerRequest = ($text !== null && trim($text) !== '') ? trim($text) : null;
+    }
+
+    private function writerRequestLayer(): string
+    {
+        if ($this->writerRequest === null) {
+            return '';
+        }
+
+        return "# PEDIDO ESPECÍFICO DO REDATOR (PRIORIDADE MÁXIMA)\n\n"
+            . "O redator responsável descreveu abaixo, com as próprias palavras, exatamente o post que quer. "
+            . "Isto NÃO é uma sugestão: é a pauta deste artigo.\n\n"
+            . "- Tema, ângulo, público, pontos a cobrir, tom e restrições citados no pedido devem ser seguidos à risca.\n"
+            . "- Você pode melhorar a redação, o título e a otimização SEO, mas nunca trocar o assunto nem ignorar um ponto pedido.\n"
+            . "- As regras fixas do app continuam valendo por cima do pedido (compliance/AdSense, mínimo de 1500 palavras, "
+            . "links, imagens em WebP). Se algo do pedido as violar, siga a regra fixa e diga isso no campo de texto livre "
+            . "do passo (observações/dúvidas) — nunca obedeça nem ignore em silêncio.\n"
+            . "- Nunca invente fatos, dados ou fontes para atender ao pedido: se não houver fonte confiável para algo pedido, "
+            . "escreva sem afirmar e sinalize a lacuna.\n"
+            . "- A categoria escolhida pelo redator já está definida acima e não muda.\n\n"
+            . "Pedido do redator (entre as linhas ===):\n===\n" . $this->writerRequest . "\n===";
     }
 
     /**

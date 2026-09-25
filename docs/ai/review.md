@@ -11,7 +11,11 @@ artigo. Não reescreva o artigo.
 
 1. **Fatos:** cada dado tem fonte? Alguma afirmação ficou sem confirmação?
 2. **Tom:** o texto respeita o tom de voz e os interesses/não-interesses do site?
-3. **Meta:** o artigo atende à categoria e ao ângulo planejados?
+3. **Meta:** o artigo atende à categoria e ao ângulo planejados? Se o prompt trouxer
+   o **"PEDIDO ESPECÍFICO DO REDATOR"**, confira **ponto a ponto** se o artigo
+   atendeu ao que foi pedido (assunto, pontos a cobrir, tom, formato, restrições);
+   ponto pedido que ficou de fora ou foi desrespeitado vira um item em `concerns` (`area`: `goal`) — e a
+   `summary` deve dizer, em uma frase, se o pedido foi atendido.
 4. **Estrutura e leitura:** título honesto, parágrafos curtos, sem texto robótico,
    sem repetição, FAQ/tabela onde faria diferença.
 5. **Pendências herdadas:** issues de SEO e Compliance ainda abertos.

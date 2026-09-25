@@ -201,7 +201,7 @@ docs/
     └── image.md            (Fase 5 — imagens)
 ```
 
-As regras específicas dos sites **não** viram 60 arquivos duplicados — ficam como dados relacionados a cada site e são injetadas em tempo de montagem pelo `PromptBuilder` (`src/Services/PromptBuilder.php`), que combina Prompt Base + Passo + Identidade do Site + Meta + Categoria + Brief + Memória Editorial (§22).
+As regras específicas dos sites **não** viram 60 arquivos duplicados — ficam como dados relacionados a cada site e são injetadas em tempo de montagem pelo `PromptBuilder` (`src/Services/PromptBuilder.php`), que combina Prompt Base + Passo + Identidade do Site + Meta + Categoria + Pedido do Redator (quando houver, ver §24) + Brief + Memória Editorial (§22).
 
 ### 24. Produção do artigo
 
@@ -217,6 +217,14 @@ O processo deve priorizar fontes confiáveis. Fontes preferenciais:
 - fontes jornalísticas confiáveis.
 
 A plataforma deve registrar as fontes utilizadas.
+
+**Rascunho específico (pedido do redator).** Além do rascunho comum (a IA escolhe o tema) e do automático diário, a página de Produção tem o botão **"Rascunho específico"**: o redator escolhe a **categoria** (obrigatória), opcionalmente a meta, e **descreve o post que quer** (40 a 3000 caracteres — assunto, público, pontos obrigatórios, tom, o que evitar).
+
+- O texto fica guardado no artigo (`articles.writer_request`) e entra como camada de **prioridade máxima** no prompt de **todos** os passos da IA, do planejamento à revisão; a etapa de revisão confere o artigo ponto a ponto contra o pedido.
+- As regras fixas de compliance/SEO (mínimo de 1500 palavras, links, etc.) continuam valendo por cima do pedido — o redator manda no conteúdo, não nas regras.
+- **Regenerações herdam o pedido**: se o Redator-Chefe rejeitar e o artigo for regenerado, a nova tentativa da mesma linhagem continua seguindo o mesmo pedido.
+- Quem revisa vê o pedido no topo da página do artigo ("Pedido do redator"), e a lista de Produção marca esses rascunhos como **específico**.
+- Custo e limite diário são os mesmos do rascunho comum (várias chamadas ao Gemini por geração).
 
 ### 25. Imagens
 

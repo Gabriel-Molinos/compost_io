@@ -147,6 +147,7 @@ return static function (Router $router): void {
 
     // Produção de artigos pela IA
     $router->add('GET',  '/sites/{id}/production',              [ProductionController::class, 'index'],    auth: true);
+    $router->add('POST', '/sites/{id}/production/generate-custom', [ProductionController::class, 'generateCustom'], auth: true);
     $router->add('POST', '/sites/{id}/production/generate',     [ProductionController::class, 'generate'], auth: true);
     $router->add('GET',  '/sites/{id}/production/{aid}',        [ProductionController::class, 'show'],     auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/delete', [ProductionController::class, 'destroy'],  auth: true);

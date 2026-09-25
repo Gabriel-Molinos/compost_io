@@ -21,6 +21,14 @@ final class ArticleService
     public const PER_PAGE = 20;
 
     /**
+     * Tamanho do pedido livre do redator ("Rascunho específico"). O mínimo evita
+     * um "faz um post de skincare" que não diz nada — o ponto do botão é o redator
+     * dizer EXATAMENTE o que quer; o máximo mantém o prompt (e o custo) sob controle.
+     */
+    public const WRITER_REQUEST_MIN = 40;
+    public const WRITER_REQUEST_MAX = 3000;
+
+    /**
      * Grupos de status usados no filtro da aba Produção — mesmo agrupamento
      * de `production/index.php` (antes calculado em PHP puro sobre a lista
      * inteira; agora também vira `WHERE status IN (...)` no SQL, então
@@ -80,6 +88,7 @@ final class ArticleService
         $stmt = Connection::get()->prepare(
             "SELECT a.id, a.title, a.status, a.focus_keyword, a.category_id, a.created_at,
                     a.attempt_number, a.lineage_id, a.source,
+                    (a.writer_request IS NOT NULL) AS has_writer_request,
                     c.name AS category_name,
                     g.period AS goal_period,
                     COALESCE((SELECT SUM(cost) FROM ai_executions e WHERE e.article_id = a.id), 0) AS ai_cost,
@@ -496,14 +505,22 @@ final class ArticleService
         return (int) $stmt->fetchColumn();
     }
 
-    /** @param 'MANUAL'|'AUTO' $source MANUAL = clique no botão "Gerar rascunho"; AUTO = geração diária automática (bin/worker.php). */
-    public function create(int $siteId, ?int $goalId, string $source = 'MANUAL'): int
+    /**
+     * @param 'MANUAL'|'AUTO' $source MANUAL = clique no botão "Gerar rascunho"; AUTO = geração diária automática (bin/worker.php).
+     * @param ?string $writerRequest pedido livre do redator ("Rascunho específico") — NULL = a IA escolhe o tema.
+     */
+    public function create(int $siteId, ?int $goalId, string $source = 'MANUAL', ?string $writerRequest = null): int
     {
         $pdo = Connection::get();
         $pdo->prepare(
-            "INSERT INTO articles (site_id, goal_id, status, attempt_number, source)
-             VALUES (:s, :g, 'PLANNED', 1, :src)"
-        )->execute(['s' => $siteId, 'g' => $goalId, 'src' => $source === 'AUTO' ? 'AUTO' : 'MANUAL']);
+            "INSERT INTO articles (site_id, goal_id, status, attempt_number, source, writer_request)
+             VALUES (:s, :g, 'PLANNED', 1, :src, :req)"
+        )->execute([
+            's'   => $siteId,
+            'g'   => $goalId,
+            'src' => $source === 'AUTO' ? 'AUTO' : 'MANUAL',
+            'req' => self::nullable($writerRequest, self::WRITER_REQUEST_MAX),
+        ]);
 
         return (int) $pdo->lastInsertId();
     }
@@ -519,14 +536,24 @@ final class ArticleService
         return (int) $stmt->fetchColumn() > 0;
     }
 
-    /** Nova tentativa da mesma linhagem (regeneração — fluxo-editorial §29). */
-    public function createAttempt(int $siteId, ?int $goalId, int $lineageId, int $attemptNumber): int
+    /**
+     * Nova tentativa da mesma linhagem (regeneração — fluxo-editorial §29).
+     * `$writerRequest` repassa o pedido do redator da tentativa anterior: a
+     * regeneração continua atendendo ao mesmo pedido, não volta a escolher tema livre.
+     */
+    public function createAttempt(int $siteId, ?int $goalId, int $lineageId, int $attemptNumber, ?string $writerRequest = null): int
     {
         $pdo = Connection::get();
         $pdo->prepare(
-            "INSERT INTO articles (site_id, goal_id, status, lineage_id, attempt_number)
-             VALUES (:s, :g, 'PLANNED', :l, :n)"
-        )->execute(['s' => $siteId, 'g' => $goalId, 'l' => $lineageId, 'n' => $attemptNumber]);
+            "INSERT INTO articles (site_id, goal_id, status, lineage_id, attempt_number, writer_request)
+             VALUES (:s, :g, 'PLANNED', :l, :n, :req)"
+        )->execute([
+            's'   => $siteId,
+            'g'   => $goalId,
+            'l'   => $lineageId,
+            'n'   => $attemptNumber,
+            'req' => self::nullable($writerRequest, self::WRITER_REQUEST_MAX),
+        ]);
 
         return (int) $pdo->lastInsertId();
     }

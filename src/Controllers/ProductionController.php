@@ -112,7 +112,18 @@ final class ProductionController extends Controller
             'page'         => $page,
             'totalPages'   => $totalPages,
             'tourReviewArticle' => $this->articles->firstInReview((int) $site['id']),
+            // O que o redator já digitou no "Rascunho específico" quando a validação falhou — não perder um texto longo.
+            'customOld'    => $this->pullCustomDraftOld(),
         ]);
+    }
+
+    /** @return array{category_id:string, goal_id:string, writer_request:string}|null */
+    private function pullCustomDraftOld(): ?array
+    {
+        $raw = Session::pullFlash('custom_draft_old');
+        $old = is_string($raw) ? json_decode($raw, true) : null;
+
+        return is_array($old) ? $old + ['category_id' => '', 'goal_id' => '', 'writer_request' => ''] : null;
     }
 
     public function generate(string $siteId): void
@@ -130,6 +141,63 @@ final class ProductionController extends Controller
             $categoryId = (int) $_POST['category_id'];
         }
 
+        $this->startGeneration($site, $goalId, $categoryId, null);
+    }
+
+    /**
+     * "Rascunho específico" (pedido 2026-09-24): o redator escolhe a categoria e
+     * descreve, com as próprias palavras, o post que quer. O pedido fica guardado
+     * no artigo e vira a pauta de todos os passos da IA (PromptBuilder) — inclusive
+     * nas regenerações da mesma linhagem.
+     */
+    public function generateCustom(string $siteId): void
+    {
+        $site = $this->requireSite($siteId);
+        Csrf::verify();
+
+        $goalId = null;
+        if (($_POST['goal_id'] ?? '') !== '' && (new GoalService())->find((int) $site['id'], (int) $_POST['goal_id']) !== null) {
+            $goalId = (int) $_POST['goal_id'];
+        }
+        $categoryId = null;
+        if (($_POST['category_id'] ?? '') !== '' && (new CategoryService())->find((int) $site['id'], (int) $_POST['category_id']) !== null) {
+            $categoryId = (int) $_POST['category_id'];
+        }
+        $request = trim((string) ($_POST['writer_request'] ?? ''));
+        $length = mb_strlen($request);
+
+        $error = match (true) {
+            $categoryId === null => 'Escolha a categoria do post.',
+            $length < ArticleService::WRITER_REQUEST_MIN => 'Descreva melhor o post que você quer — mínimo de '
+                . ArticleService::WRITER_REQUEST_MIN . ' caracteres (você escreveu ' . $length . '). Quanto mais específico, mais o texto sai do jeito que você imagina.',
+            $length > ArticleService::WRITER_REQUEST_MAX => 'O pedido passou de ' . ArticleService::WRITER_REQUEST_MAX
+                . ' caracteres (' . $length . '). Resuma os pontos principais.',
+            default => null,
+        };
+        if ($error !== null) {
+            Session::flash('error', $error);
+            Session::flash('custom_draft_old', (string) json_encode([
+                'category_id'    => (string) ($_POST['category_id'] ?? ''),
+                'goal_id'        => (string) ($_POST['goal_id'] ?? ''),
+                'writer_request' => $request,
+            ]));
+            // Sem #âncora de propósito: o painel já volta aberto (customOld) e a âncora rolaria a página
+            // pra longe do aviso de erro, que o layout mostra no topo.
+            Http::redirect('/sites/' . $site['id'] . '/production');
+            return;
+        }
+
+        $this->startGeneration($site, $goalId, $categoryId, $request);
+    }
+
+    /**
+     * Parte comum às duas gerações manuais (comum e específica): guarda de custo,
+     * criação do artigo e despacho do job. Sempre termina em redirect.
+     *
+     * @param array<string,mixed> $site
+     */
+    private function startGeneration(array $site, ?int $goalId, ?int $categoryId, ?string $writerRequest): void
+    {
         $pipeline = new ArticlePipeline();
 
         // Guarda de custo (requisitos §95) — check + create atômicos (Fase 9,
@@ -138,7 +206,7 @@ final class ProductionController extends Controller
             $articleId = $this->articles->createWithDailyLimit(
                 (int) $site['id'],
                 ArticleService::DAILY_LIMIT,
-                fn () => $pipeline->prepareGenerate((int) $site['id'], $goalId),
+                fn () => $pipeline->prepareGenerate((int) $site['id'], $goalId, 'MANUAL', $writerRequest),
             );
         } catch (DailyLimitExceededException $e) {
             Session::flash('error', $e->getMessage());

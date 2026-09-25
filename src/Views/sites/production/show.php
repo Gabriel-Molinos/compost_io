@@ -134,6 +134,21 @@ $isGenerating = in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true);
     </div>
 </div>
 
+<?php if (trim((string) ($article['writer_request'] ?? '')) !== ''): ?>
+    <?php // Pedido específico do redator (botão "Rascunho específico"): quem revisa confere se o texto atendeu. ?>
+    <section id="pedido-do-redator" class="mt-4 rounded-xl border border-cyan/40 bg-cyan/5 p-4">
+        <h2 class="flex items-center gap-2 font-display text-sm font-semibold text-text-primary">
+            <span class="flex h-7 w-7 items-center justify-center rounded-md bg-cyan/10 text-cyan [&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('production') ?></span>
+            Pedido do redator
+        </h2>
+        <p class="mt-2 whitespace-pre-line text-sm text-text-primary"><?= View::e((string) $article['writer_request']) ?></p>
+        <p class="mt-3 text-xs text-text-muted">
+            A IA seguiu este pedido em todos os passos (e continua seguindo se o artigo for regenerado).
+            Antes de aprovar, confira se o texto cobriu cada ponto pedido.
+        </p>
+    </section>
+<?php endif; ?>
+
 <?php $linkRotAt = $notes['pipeline']['link_rot_detected_at'] ?? null; ?>
 <?php if ($linkRotAt !== null): ?>
     <div role="alert" class="mt-4 flex gap-3 rounded-xl border border-danger/40 bg-danger/10 p-4">

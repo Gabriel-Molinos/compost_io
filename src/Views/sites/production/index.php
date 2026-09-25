@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Services\ArticleService;
 use App\Support\Csrf;
 use App\Support\Icon;
 use App\Support\Labels;
@@ -23,6 +24,7 @@ use App\View;
 /** @var int $page */
 /** @var int $totalPages */
 /** @var array{id: int}|null $tourReviewArticle */
+/** @var array{category_id: string, goal_id: string, writer_request: string}|null $customOld — o que o redator já digitou no "Rascunho específico" quando a validação falhou */
 
 $activeTab = 'production';
 require __DIR__ . '/../_tabs.php';
@@ -81,11 +83,21 @@ $goalTagLabel = static function (string $period) use ($mesesAbrev): string {
 <section data-tour="generate-form" class="article-card article-card--cyan hover-card mt-6 rounded-2xl">
     <span class="article-card-fx" aria-hidden="true"></span>
     <div class="p-5">
-        <h2 class="flex items-center gap-2 font-display text-base font-semibold text-text-primary">
-            <span class="flex h-8 w-8 items-center justify-center rounded-md bg-cyan/10 text-cyan"><?= Icon::nav('plus') ?></span>
-            Gerar novo rascunho
-        </h2>
-        <p class="mt-1 text-xs text-text-muted">Um extra além do automático de hoje — escolha meta e categoria, ou deixe a IA decidir.</p>
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h2 class="flex items-center gap-2 font-display text-base font-semibold text-text-primary">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-md bg-cyan/10 text-cyan"><?= Icon::nav('plus') ?></span>
+                    Gerar novo rascunho
+                </h2>
+                <p class="mt-1 text-xs text-text-muted">Um extra além do automático de hoje — escolha meta e categoria, ou deixe a IA decidir.</p>
+            </div>
+            <?php // Quer um post específico? Abre o painel logo abaixo (id rascunho-especifico) ?>
+            <button type="button" data-custom-toggle aria-expanded="<?= $customOld !== null ? 'true' : 'false' ?>" aria-controls="rascunho-especifico"
+                    class="btn btn-secondary relative z-10 inline-flex items-center gap-2 px-3 py-2 text-sm">
+                <span class="[&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('production') ?></span>
+                Rascunho específico
+            </button>
+        </div>
 
         <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/generate"
               class="mt-4 flex flex-wrap items-end gap-3"
@@ -124,6 +136,122 @@ $goalTagLabel = static function (string $period) use ($mesesAbrev): string {
         </form>
     </div>
 </section>
+
+<?php // ── Rascunho específico: o redator escolhe a categoria e descreve o post que quer (pedido 2026-09-24) ── ?>
+<?php
+$customOpen = $customOld !== null;
+$reqMin = ArticleService::WRITER_REQUEST_MIN;
+$reqMax = ArticleService::WRITER_REQUEST_MAX;
+?>
+<section id="rascunho-especifico" data-custom-panel class="article-card article-card--cyan mt-3 rounded-2xl <?= $customOpen ? '' : 'hidden' ?>">
+    <span class="article-card-fx" aria-hidden="true"></span>
+    <div class="p-5">
+        <h2 class="flex items-center gap-2 font-display text-base font-semibold text-text-primary">
+            <span class="flex h-8 w-8 items-center justify-center rounded-md bg-cyan/10 text-cyan"><?= Icon::nav('production') ?></span>
+            Rascunho específico
+        </h2>
+        <p class="mt-1 max-w-3xl text-sm text-text-secondary">
+            Aqui <strong>você manda</strong>: escolha a categoria e descreva o post que quer. A IA segue o seu pedido à risca
+            (tema, pontos, tom, formato) — só as regras de compliance continuam valendo por cima
+            (mínimo de 1500 palavras, links, etc.). Quem revisar vai ver o seu pedido na página do artigo.
+        </p>
+
+        <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/generate-custom" class="mt-4 space-y-4" data-custom-form>
+            <?= Csrf::field() ?>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <label class="block text-sm">
+                    <span class="flex items-center gap-1.5 font-medium text-text-secondary">
+                        <span class="[&>svg]:h-3.5 [&>svg]:w-3.5"><?= Icon::nav('categories') ?></span> Categoria <span class="text-danger" aria-hidden="true">*</span>
+                    </span>
+                    <select name="category_id" required class="mt-1 w-full">
+                        <option value="">Escolha a categoria…</option>
+                        <?php foreach ($categories as $c): ?>
+                            <option value="<?= View::e($c['id']) ?>" <?= (string) ($customOld['category_id'] ?? '') === (string) $c['id'] ? 'selected' : '' ?>><?= View::e($c['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label class="block text-sm">
+                    <span class="flex items-center gap-1.5 font-medium text-text-secondary">
+                        <span class="[&>svg]:h-3.5 [&>svg]:w-3.5"><?= Icon::nav('goals') ?></span> Meta <span class="text-xs font-normal text-text-muted">(opcional — conta para a meta do mês)</span>
+                    </span>
+                    <select name="goal_id" class="mt-1 w-full">
+                        <option value="">— (sem meta)</option>
+                        <?php foreach ($goals as $g): ?>
+                            <option value="<?= View::e($g['id']) ?>" <?= (string) ($customOld['goal_id'] ?? '') === (string) $g['id'] ? 'selected' : '' ?>><?= View::e($g['period']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+            </div>
+
+            <div>
+                <label for="writer-request" class="flex items-center gap-1.5 text-sm font-medium text-text-secondary">
+                    Descreva o post que você quer <span class="text-danger" aria-hidden="true">*</span>
+                </label>
+                <div class="mt-2 rounded-md border border-cyan/30 bg-cyan/5 p-3 text-xs text-text-secondary">
+                    <p class="font-semibold text-text-primary">Quanto mais específico, mais o texto sai do jeito que você imagina. Conte:</p>
+                    <ul class="mt-1 list-disc space-y-0.5 pl-5">
+                        <li><strong>Assunto</strong> e a palavra que as pessoas vão pesquisar no Google;</li>
+                        <li><strong>Para quem</strong> é e qual o objetivo (informar, comparar, ensinar passo a passo…);</li>
+                        <li><strong>Pontos que não podem faltar</strong> (uma tabela, um FAQ, comparar 3 produtos…);</li>
+                        <li><strong>Tom e formato</strong> (conversa próxima, guia completo, lista numerada…);</li>
+                        <li><strong>O que evitar</strong> (citar marcas, prometer resultado…).</li>
+                    </ul>
+                </div>
+                <textarea id="writer-request" name="writer_request" rows="8" required minlength="<?= $reqMin ?>" maxlength="<?= $reqMax ?>" data-custom-text
+                          class="mt-2 w-full rounded-md border border-border bg-surface-2 px-3 py-2 text-sm text-text-primary focus:border-cyan focus:outline-none"
+                          placeholder="Exemplo: Guia de rotina de skincare para pele oleosa, para mulheres de 30 a 45 anos. Quero o passo a passo de manhã e de noite, uma tabela comparando 3 tipos de protetor solar e um FAQ com 5 perguntas. Tom acolhedor, como uma amiga que entende do assunto. Não citar marcas específicas nem prometer resultado em poucos dias."><?= View::e((string) ($customOld['writer_request'] ?? '')) ?></textarea>
+                <p class="mt-1 flex justify-between text-xs text-text-muted">
+                    <span data-custom-hint>Mínimo de <?= $reqMin ?> caracteres.</span>
+                    <span data-custom-counter>0 / <?= $reqMax ?></span>
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="submit" class="btn btn-primary inline-flex items-center gap-2 px-4 py-2 text-sm" data-custom-submit>
+                    <span data-custom-submit-icon class="[&>svg]:h-4 [&>svg]:w-4"><?= Icon::nav('ai') ?></span>
+                    <span data-custom-submit-label>Gerar rascunho específico</span>
+                </button>
+                <p class="text-xs text-text-muted">Mesmo custo e limite diário do rascunho comum — várias chamadas ao Gemini por geração.</p>
+            </div>
+        </form>
+    </div>
+</section>
+
+<script>
+(function () {
+    var toggle = document.querySelector('[data-custom-toggle]');
+    var panel = document.querySelector('[data-custom-panel]');
+    if (!toggle || !panel) { return; }
+    var text = panel.querySelector('[data-custom-text]');
+    var counter = panel.querySelector('[data-custom-counter]');
+    var hint = panel.querySelector('[data-custom-hint]');
+    var MIN = <?= (int) $reqMin ?>, MAX = <?= (int) $reqMax ?>;
+
+    function setOpen(open) {
+        panel.classList.toggle('hidden', !open);
+        toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) { text.focus({ preventScroll: true }); panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    }
+    toggle.addEventListener('click', function () { setOpen(panel.classList.contains('hidden')); });
+    if (location.hash === '#rascunho-especifico') { setOpen(true); }
+
+    function count() {
+        var n = text.value.trim().length;
+        counter.textContent = n + ' / ' + MAX;
+        var ok = n >= MIN;
+        hint.textContent = ok ? 'Pedido com detalhe suficiente ✓' : 'Mínimo de ' + MIN + ' caracteres — faltam ' + (MIN - n) + '.';
+        hint.className = ok ? 'text-success' : '';
+    }
+    text.addEventListener('input', count);
+    count();
+
+    panel.querySelector('[data-custom-form]').addEventListener('submit', function () {
+        panel.querySelector('[data-custom-submit]').disabled = true;
+        panel.querySelector('[data-custom-submit-icon]').innerHTML = '<span class="spinner"></span>';
+        panel.querySelector('[data-custom-submit-label]').textContent = 'Gerando… (pode levar 1–2 min)';
+    });
+})();
+</script>
 
 <?php if ($counts['all'] === 0 && !$filtersActive): ?>
     <p class="mt-6 text-text-secondary">Nenhum artigo produzido ainda.</p>
@@ -293,6 +421,9 @@ $goalTagLabel = static function (string $period) use ($mesesAbrev): string {
                             <?php endif; ?>
                             <?php if (($a['source'] ?? 'MANUAL') === 'AUTO'): ?>
                                 <span class="article-card-pill">automático</span>
+                            <?php endif; ?>
+                            <?php if (!empty($a['has_writer_request'])): ?>
+                                <span class="article-card-pill" title="Nasceu de um pedido específico do redator">específico</span>
                             <?php endif; ?>
                             <span class="text-xs text-text-muted"><?= implode('<span aria-hidden="true" class="mx-1.5">·</span>', $details) ?></span>
                         </div>

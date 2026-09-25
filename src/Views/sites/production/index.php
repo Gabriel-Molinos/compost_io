@@ -17,6 +17,7 @@ use App\View;
 /** @var string $statusGroup */
 /** @var string|null $exactStatus */
 /** @var int|null $categoryId */
+/** @var int|null $goalId filtro por meta: id da meta, ArticleService::GOAL_NONE (0) = sem meta, null = todas */
 /** @var string|null $origin */
 /** @var string|null $search */
 /** @var bool $filtersActive */
@@ -39,6 +40,7 @@ $baseParams = [
     'status'       => $statusGroup !== 'all' ? $statusGroup : null,
     'exact_status' => $exactStatus,
     'category_id'  => $categoryId,
+    'goal_id'      => $goalId === null ? null : ($goalId === ArticleService::GOAL_NONE ? 'none' : $goalId),
     'origin'       => $origin,
     'q'            => $search,
 ];
@@ -326,6 +328,16 @@ $reqMax = ArticleService::WRITER_REQUEST_MAX;
                 <option value="">Todas</option>
                 <?php foreach ($categories as $c): ?>
                     <option value="<?= View::e($c['id']) ?>" <?= $categoryId === (int) $c['id'] ? 'selected' : '' ?>><?= View::e($c['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </label>
+        <label class="min-w-[11rem] text-sm">
+            <span class="block font-medium text-text-secondary">Meta</span>
+            <select name="goal_id" data-filter-auto class="mt-1 w-full">
+                <option value="">Todas</option>
+                <option value="none" <?= $goalId === ArticleService::GOAL_NONE ? 'selected' : '' ?>>Sem meta</option>
+                <?php foreach ($goals as $g): ?>
+                    <option value="<?= View::e($g['id']) ?>" <?= $goalId === (int) $g['id'] ? 'selected' : '' ?>><?= View::e($goalTagLabel((string) $g['period'])) ?></option>
                 <?php endforeach; ?>
             </select>
         </label>

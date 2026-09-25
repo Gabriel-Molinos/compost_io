@@ -228,6 +228,8 @@ A plataforma deve registrar as fontes utilizadas.
 
 **Geração automática diária — só com meta.** O worker gera 1 rascunho por dia por site ativo, seguindo a **meta do mês atual**; se o mês atual não tem meta, usa a **do próximo mês** (e distribui as categorias contando os artigos daquela meta). Se o site não tem meta em nenhum dos dois, **a geração automática fica pausada**: a equipe do site (admins + redator-chefe vinculado) recebe uma notificação "Geração automática pausada: falta a meta" (no máximo 1 por dia) e a geração volta sozinha, na varredura seguinte, assim que uma meta for cadastrada. O rascunho manual continua livre, com ou sem meta.
 
+**Filtros da lista de Produção.** Além das abas de status, a lista filtra por **categoria, meta, origem (manual/automático)** e busca por título/palavra-chave, tudo combinável e refletido na URL (`?category_id=…&goal_id=…&origin=…&q=…`). O filtro de **meta** lista as metas do site e mais "Sem meta" (`goal_id=none`); os números das abas acompanham o filtro. Um rascunho gerado com a meta do mês seguinte (regra acima) conta na meta em que foi gerado, não no mês em que foi criado.
+
 ### 25. Imagens
 
 A geração de imagens será separada da geração de texto.

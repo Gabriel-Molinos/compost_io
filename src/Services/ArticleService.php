@@ -25,6 +25,9 @@ final class ArticleService
      * um "faz um post de skincare" que não diz nada — o ponto do botão é o redator
      * dizer EXATAMENTE o que quer; o máximo mantém o prompt (e o custo) sob controle.
      */
+    /** Valor especial do filtro por meta: "sem meta" (0 nunca é um id real). */
+    public const GOAL_NONE = 0;
+
     public const WRITER_REQUEST_MIN = 40;
     public const WRITER_REQUEST_MAX = 3000;
 
@@ -81,8 +84,9 @@ final class ArticleService
         ?int $categoryId = null,
         ?string $origin = null,
         ?string $search = null,
+        ?int $goalId = null,
     ): array {
-        [$where, $params] = $this->buildFilterWhere($siteId, $statusGroup, $exactStatus, $categoryId, $origin, $search);
+        [$where, $params] = $this->buildFilterWhere($siteId, $statusGroup, $exactStatus, $categoryId, $origin, $search, $goalId);
 
         $offset = max(0, ($page - 1)) * $perPage;
         $stmt = Connection::get()->prepare(
@@ -122,8 +126,9 @@ final class ArticleService
         ?int $categoryId = null,
         ?string $origin = null,
         ?string $search = null,
+        ?int $goalId = null,
     ): int {
-        [$where, $params] = $this->buildFilterWhere($siteId, $statusGroup, $exactStatus, $categoryId, $origin, $search);
+        [$where, $params] = $this->buildFilterWhere($siteId, $statusGroup, $exactStatus, $categoryId, $origin, $search, $goalId);
         $stmt = Connection::get()->prepare("SELECT COUNT(*) FROM articles a WHERE {$where}");
         $stmt->execute($params);
 
@@ -138,9 +143,9 @@ final class ArticleService
      *
      * @return array{all: int, done: int, attention: int, progress: int, discarded: int}
      */
-    public function countsByStatusGroup(int $siteId, ?int $categoryId = null, ?string $origin = null, ?string $search = null): array
+    public function countsByStatusGroup(int $siteId, ?int $categoryId = null, ?string $origin = null, ?string $search = null, ?int $goalId = null): array
     {
-        [$where, $params] = $this->buildBaseWhere($siteId, $categoryId, $origin, $search);
+        [$where, $params] = $this->buildBaseWhere($siteId, $categoryId, $origin, $search, $goalId);
 
         $cases = [];
         foreach (self::STATUS_GROUPS as $group => $statuses) {
@@ -178,13 +183,14 @@ final class ArticleService
         ?int $categoryId = null,
         ?string $origin = null,
         ?string $search = null,
+        ?int $goalId = null,
     ): array {
         $statuses = self::STATUS_GROUPS[$statusGroup] ?? [];
         if (count($statuses) < 2) {
             return [];
         }
 
-        [$where, $params] = $this->buildBaseWhere($siteId, $categoryId, $origin, $search);
+        [$where, $params] = $this->buildBaseWhere($siteId, $categoryId, $origin, $search, $goalId);
         $stmt = Connection::get()->prepare(
             "SELECT a.status, COUNT(*) AS n FROM articles a WHERE {$where} GROUP BY a.status"
         );
@@ -201,7 +207,7 @@ final class ArticleService
     }
 
     /** @return array{0: string, 1: array<string, mixed>} */
-    private function buildBaseWhere(int $siteId, ?int $categoryId, ?string $origin, ?string $search): array
+    private function buildBaseWhere(int $siteId, ?int $categoryId, ?string $origin, ?string $search, ?int $goalId = null): array
     {
         $where = ['a.site_id = :s', 'a.deleted_at IS NULL'];
         $params = ['s' => $siteId];
@@ -209,6 +215,13 @@ final class ArticleService
         if ($categoryId !== null) {
             $where[] = 'a.category_id = :category_id';
             $params['category_id'] = $categoryId;
+        }
+        // Filtro por meta (2026-09-25): GOAL_NONE = artigos gerados sem meta; um id = os daquela meta.
+        if ($goalId === self::GOAL_NONE) {
+            $where[] = 'a.goal_id IS NULL';
+        } elseif ($goalId !== null) {
+            $where[] = 'a.goal_id = :goal_id';
+            $params['goal_id'] = $goalId;
         }
         if ($origin !== null && in_array($origin, ['AUTO', 'MANUAL'], true)) {
             $where[] = 'a.source = :origin';
@@ -230,8 +243,9 @@ final class ArticleService
         ?int $categoryId,
         ?string $origin,
         ?string $search,
+        ?int $goalId = null,
     ): array {
-        [$baseWhere, $params] = $this->buildBaseWhere($siteId, $categoryId, $origin, $search);
+        [$baseWhere, $params] = $this->buildBaseWhere($siteId, $categoryId, $origin, $search, $goalId);
         $where = [$baseWhere];
 
         if ($exactStatus !== null && in_array($exactStatus, self::allStatuses(), true)) {

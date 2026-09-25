@@ -72,7 +72,18 @@ final class ProductionController extends Controller
         $search = trim((string) ($_GET['q'] ?? ''));
         $search = $search !== '' ? $search : null;
 
-        $counts = $this->articles->countsByStatusGroup((int) $site['id'], $categoryId, $origin, $search);
+        // Filtro por meta (pedido do responsável, 2026-09-25): ?goal_id=<id da meta> ou ?goal_id=none (sem meta).
+        // Meta de outro site (forjado/defasado) é ignorada, igual à categoria.
+        $goals = (new GoalService())->allForSite((int) $site['id']);
+        $goalParam = (string) ($_GET['goal_id'] ?? '');
+        $goalId = null;
+        if ($goalParam === 'none') {
+            $goalId = ArticleService::GOAL_NONE;
+        } elseif (ctype_digit($goalParam) && in_array((int) $goalParam, array_map('intval', array_column($goals, 'id')), true)) {
+            $goalId = (int) $goalParam;
+        }
+
+        $counts = $this->articles->countsByStatusGroup((int) $site['id'], $categoryId, $origin, $search, $goalId);
         $statusGroup = (string) ($_GET['status'] ?? 'all');
         if (!isset($counts[$statusGroup])) {
             $statusGroup = 'all';
@@ -86,10 +97,10 @@ final class ProductionController extends Controller
         if ($exactStatus !== null && !in_array($exactStatus, ArticleService::statusGroups()[$statusGroup] ?? [], true)) {
             $exactStatus = null;
         }
-        $exactCounts = $this->articles->countsByExactStatus((int) $site['id'], $statusGroup, $categoryId, $origin, $search);
+        $exactCounts = $this->articles->countsByExactStatus((int) $site['id'], $statusGroup, $categoryId, $origin, $search, $goalId);
 
         $totalForGroup = $exactStatus !== null
-            ? $this->articles->countFiltered((int) $site['id'], $statusGroup, $exactStatus, $categoryId, $origin, $search)
+            ? $this->articles->countFiltered((int) $site['id'], $statusGroup, $exactStatus, $categoryId, $origin, $search, $goalId)
             : $counts[$statusGroup];
         $totalPages = max(1, (int) ceil($totalForGroup / ArticleService::PER_PAGE));
         $page = max(1, min($totalPages, (int) ($_GET['page'] ?? 1)));
@@ -97,8 +108,9 @@ final class ProductionController extends Controller
         View::render('sites/production/index', [
             'title'        => 'Produção · ' . $site['name'],
             'site'         => $site,
-            'articles'     => $this->articles->allForSite((int) $site['id'], $statusGroup, $page, ArticleService::PER_PAGE, $exactStatus, $categoryId, $origin, $search),
-            'goals'        => (new GoalService())->allForSite((int) $site['id']),
+            'articles'     => $this->articles->allForSite((int) $site['id'], $statusGroup, $page, ArticleService::PER_PAGE, $exactStatus, $categoryId, $origin, $search, $goalId),
+            'goals'        => $goals,
+            'goalId'       => $goalId,
             'categories'   => $categories,
             'counts'       => $counts,
             'exactCounts'  => $exactCounts,
@@ -107,7 +119,7 @@ final class ProductionController extends Controller
             'categoryId'   => $categoryId,
             'origin'       => $origin,
             'search'       => $search,
-            'filtersActive' => $statusGroup !== 'all' || $exactStatus !== null || $categoryId !== null || $origin !== null || $search !== null,
+            'filtersActive' => $statusGroup !== 'all' || $exactStatus !== null || $categoryId !== null || $goalId !== null || $origin !== null || $search !== null,
             'totalForGroup' => $totalForGroup,
             'page'         => $page,
             'totalPages'   => $totalPages,

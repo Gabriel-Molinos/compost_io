@@ -65,6 +65,25 @@
     // Pixelito (mascote) na bolinha branca, com a expressão do tipo — o mapa vem de
     // App\Support\Pixelito via window.COMPOST_PIXELITO (layout/base.php), nunca duplicado aqui.
     var PX = window.COMPOST_PIXELITO || null;
+    // REGRA: só existe UM Pixelito "vivo" na tela por vez. Aqui: só o aviso mais NOVO leva a carinha dele —
+    // os anteriores voltam ao ícone do tipo — e nenhum leva durante o tutorial (ele está no balão do tour)
+    // nem com o chat aberto (ele está no topo do painel — pixelito.js).
+    // Enquanto algum pop-up o tem, a bolinha do canto se retira (html.pixelito-away-toast, ver syncMascot).
+    function releaseMascot(toast) {
+        var bubble = toast.querySelector('.pixelito-bubble');
+        if (bubble && toast._fallbackIcon) {
+            bubble.outerHTML = toast._fallbackIcon;
+        }
+    }
+    function syncMascot() {
+        document.documentElement.classList.toggle('pixelito-away-toast', !!root.querySelector('.pixelito-bubble'));
+    }
+    new MutationObserver(syncMascot).observe(root, { childList: true, subtree: true });
+    // Abriu o chat com um aviso na tela: o Pixelito volta pro painel, o aviso fica com o ícone do tipo.
+    document.addEventListener('pixelito:chat-open', function () {
+        [].forEach.call(root.querySelectorAll('.notif-toast'), releaseMascot);
+    });
+
     function pixelitoBubble(type) {
         var expr = (PX.byType && PX.byType[type]) || PX.default;
         return '<span class="pixelito-bubble"><img src="' + PX.base + expr + '.webp" alt="" width="96" height="96" draggable="false"></span>';
@@ -159,6 +178,11 @@
         var tone = TONES[n.type] || TONES.DEFAULT;
         var iconPaths = ICONS[n.type] || ICONS.DEFAULT;
 
+        // Só o mais novo fica com o Pixelito (ver releaseMascot).
+        [].forEach.call(root.querySelectorAll('.notif-toast'), releaseMascot);
+        var html = document.documentElement;
+        var withMascot = PX && !html.classList.contains('pixelito-away-tour') && !html.classList.contains('pixelito-chat-open');
+
         // Nunca deixa empilhar demais na tela — mais que MAX_VISIBLE, os mais
         // antigos saem primeiro (o mesmo pop-up ainda existe na central de
         // notificações inteira, isto aqui é só o aviso na hora).
@@ -173,8 +197,9 @@
         el.setAttribute('tabindex', '0');
 
         var fallbackIcon = '<span class="notif-toast-icon">' + svg(iconPaths) + '</span>';
+        el._fallbackIcon = fallbackIcon;
         el.innerHTML =
-            (PX ? pixelitoBubble(n.type) : fallbackIcon) +
+            (withMascot ? pixelitoBubble(n.type) : fallbackIcon) +
             '<span class="notif-toast-body">' +
                 '<span class="notif-toast-title"></span>' +
                 '<span class="notif-toast-message"></span>' +

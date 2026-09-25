@@ -2315,11 +2315,6 @@
 
   /* No pop-up: um pouco maior que o ícone antigo (2rem), alinhado ao topo do texto. */
   .notif-toast .pixelito-bubble { --pixelito-size: 2.5rem; }
-  /* Na lista: dentro do .notif-icon (mantém o "balançar" do hover); lida = apagado. */
-  .notif-icon--pixelito { background: none; box-shadow: none; }
-  .notif-icon--pixelito .pixelito-bubble { --pixelito-size: 3rem; transition: filter 200ms ease; }
-  .notif-card[data-read="1"] .notif-icon--pixelito { background: none; box-shadow: none; }
-  .notif-card[data-read="1"] .notif-icon--pixelito .pixelito-bubble { filter: grayscale(.7) opacity(.7); }
   /* No tutorial: cabeçalho do balão com ele ao lado do título. */
   .tour-tooltip-head { display: flex; align-items: center; gap: .625rem; }
   .tour-tooltip-head .pixelito-bubble { --pixelito-size: 2.5rem; }
@@ -2348,8 +2343,32 @@
     background: none;
     cursor: pointer;
     filter: drop-shadow(0 0 14px rgb(0 208 240 / .35));
-    transition: transform 180ms ease, filter 200ms ease;
+    transition: transform 180ms ease, filter 200ms ease, opacity 220ms ease;
   }
+  /* Com o chat aberto o Pixelito está no TOPO do painel: o botão vira um "X" de fechar, sem carinha. */
+  .pixelito-fab-x {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 9999px;
+    border: 2px solid rgb(0 208 240 / .75);
+    background: #063F59;
+    color: #F0F8FF;
+    box-shadow: 0 10px 24px -8px rgb(0 0 0 / .7);
+  }
+  .pixelito-fab-x svg { width: 1.25rem; height: 1.25rem; }
+  .pixelito.is-open .pixelito-fab .pixelito-bubble { display: none; }
+  .pixelito.is-open .pixelito-fab-x { display: flex; }
+  /* SÓ UM Pixelito na tela: enquanto ele está num pop-up de aviso, a bolinha do canto se retira (e volta
+     sozinha quando o aviso sai); no tutorial ele está no balão do tour, então o ajudante some por inteiro. */
+  html.pixelito-away-toast .pixelito:not(.is-open) .pixelito-fab { opacity: 0; pointer-events: none; }
+  html.pixelito-away-toast .pixelito-hint { display: none; }
+  html.pixelito-away-tour .pixelito { display: none; }
+  /* Troca de expressão do Pixelito do topo do painel: um "pulinho". */
+  .pixelito-bubble.is-swap { animation: pixelito-swap 260ms cubic-bezier(.34, 1.56, .64, 1); }
+  @keyframes pixelito-swap { 0% { transform: scale(.86); } 100% { transform: scale(1); } }
   /* O "boiar" é só da bolinha por dentro: o botão (alvo do clique) fica parado. */
   .pixelito-fab .pixelito-bubble {
     box-shadow: 0 0 0 3px rgb(0 208 240 / .75), 0 10px 24px -8px rgb(0 0 0 / .7);
@@ -2557,7 +2576,7 @@
     .pixelito-panel { width: calc(100vw - 1.5rem); height: calc(100vh - 10rem); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .pixelito-fab .pixelito-bubble, .pixelito-panel, .pixelito-hint, .pixelito-msg, .pixelito-go, .pixelito-dots span { animation: none; }
+    .pixelito-fab .pixelito-bubble, .pixelito-panel, .pixelito-hint, .pixelito-msg, .pixelito-go, .pixelito-dots span, .pixelito-bubble.is-swap { animation: none; }
     .pixelito-log { scroll-behavior: auto; }
     .pixelito-fab:hover { transform: none; }
   }

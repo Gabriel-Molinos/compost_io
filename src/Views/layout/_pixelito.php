@@ -16,6 +16,11 @@ use App\View;
  * letra. Não há IA nem requisição — as perguntas/respostas vêm daqui, renderizadas no
  * servidor (src/Support/PixelitoGuide.php), e assets/js/pixelito.js só encena a conversa.
  *
+ * REGRA (pedido 2026-09-25): só existe UM Pixelito "vivo" na tela por vez. Com o chat aberto, é o do
+ * TOPO do painel que fala (troca de expressão); os avatares das mensagens são só uma marca fixa de quem
+ * falou; e o botão do canto vira um "X" (sem carinha). Nos avisos e no tutorial ele "vai" pra lá e a
+ * bolinha do canto se retira — ver notification-toast.js / tour.js e o CSS html.pixelito-away-*.
+ *
  * Espera do escopo do base.php: $site (array|null), $sidebar['firstSiteId'], $tourSiteId.
  */
 
@@ -25,7 +30,8 @@ $pixelitoTopics = PixelitoGuide::topics($pixelitoSiteId);
 <div class="pixelito" data-pixelito>
     <section id="pixelito-panel" class="pixelito-panel" data-pixelito-panel role="dialog" aria-label="Conversa com o Pixelito" hidden>
         <header class="pixelito-panel-head">
-            <?= Pixelito::bubble('falando', 'lg') ?>
+            <?php // O Pixelito "vivo" do painel: pixelito.js troca a expressão dele (falando / normal / triste). ?>
+            <?= Pixelito::bubble('normal', 'lg') ?>
             <div class="min-w-0 flex-1">
                 <p class="pixelito-panel-title">Pixelito</p>
                 <p class="pixelito-panel-sub">Seu ajudante no COMPOST</p>
@@ -41,9 +47,9 @@ $pixelitoTopics = PixelitoGuide::topics($pixelitoSiteId);
              data-notfound="<?= View::e(PixelitoGuide::NOT_FOUND) ?>"
              data-notfound-link="<?= View::e(PixelitoGuide::NOT_FOUND_LINK) ?>"
              data-notfound-link-label="<?= View::e(PixelitoGuide::NOT_FOUND_LINK_LABEL) ?>"
-             data-avatar-talking="<?= View::e(Pixelito::url('falando')) ?>"
-             data-avatar-idle="<?= View::e(Pixelito::url('normal')) ?>"
-             data-avatar-sad="<?= View::e(Pixelito::url('sem-animo')) ?>"></div>
+             data-face-talking="<?= View::e(Pixelito::url('falando')) ?>"
+             data-face-idle="<?= View::e(Pixelito::url('normal')) ?>"
+             data-face-sad="<?= View::e(Pixelito::url('sem-animo')) ?>"></div>
 
         <?php // Perguntas prontas: tocar numa "envia" a pergunta. Some o que não bate com o que a pessoa digita. ?>
         <div class="pixelito-tray" data-pixelito-tray>
@@ -81,5 +87,9 @@ $pixelitoTopics = PixelitoGuide::topics($pixelitoSiteId);
 
     <button type="button" class="pixelito-fab" data-pixelito-fab aria-expanded="false" aria-controls="pixelito-panel" aria-label="Abrir a conversa com o Pixelito" title="Precisa de ajuda? Pergunte ao Pixelito">
         <?= Pixelito::bubble('normal', 'xl') ?>
+        <?php // Com o chat aberto o Pixelito está no topo do painel: aqui vira um "X" de fechar (CSS: .is-open). ?>
+        <span class="pixelito-fab-x" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </span>
     </button>
 </div>

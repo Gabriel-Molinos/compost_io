@@ -11,6 +11,11 @@
  *   · balãozinho "Precisa de ajuda?" uma única vez por sessão.
  * Acessibilidade: o leitor de tela lê a resposta inteira de uma vez (.sr-only); a versão
  * digitada é aria-hidden. Com prefers-reduced-motion não há efeito de digitação.
+ *
+ * REGRA: só um Pixelito "vivo" por vez. Com o chat aberto, o do TOPO do painel é quem fala (troca de
+ * expressão: falando enquanto digita, normal parado, triste no "não achei"); o avatar de cada mensagem
+ * é fixo (só marca quem falou); o botão do canto vira um "X". A classe html.pixelito-chat-open avisa
+ * os pop-ups de notificação (notification-toast.js) pra não trazerem outra carinha enquanto isso.
  */
 (function () {
     'use strict';
@@ -22,6 +27,8 @@
     var panel = root.querySelector('[data-pixelito-panel]');
     var log = root.querySelector('[data-pixelito-log]');
     var closeBtn = root.querySelector('[data-pixelito-close]');
+    var face = panel ? panel.querySelector('.pixelito-panel-head .pixelito-bubble') : null; // o Pixelito vivo do topo
+    var faceImg = face ? face.querySelector('img') : null;
     var form = root.querySelector('[data-pixelito-form]');
     var search = root.querySelector('[data-pixelito-search]');
     var hint = root.querySelector('[data-pixelito-hint]');
@@ -37,6 +44,16 @@
 
     function isOpen() { return !panel.hidden; }
     function hideHint() { if (hint) hint.hidden = true; }
+
+    // Troca a expressão do Pixelito do topo (com um "pulinho" pra notar a troca).
+    function setFace(kind) {
+        var url = log.getAttribute('data-face-' + kind);
+        if (!faceImg || !url || faceImg.getAttribute('src') === url) return;
+        faceImg.src = url;
+        face.classList.remove('is-swap');
+        void face.offsetWidth; // reinicia a animação
+        face.classList.add('is-swap');
+    }
     function scrollDown() { log.scrollTop = log.scrollHeight; }
 
     // ---------- abrir / fechar ----------
@@ -44,7 +61,13 @@
         hideHint();
         panel.hidden = false;
         fab.setAttribute('aria-expanded', 'true');
+        fab.setAttribute('aria-label', 'Fechar a conversa com o Pixelito');
         root.classList.add('is-open');
+        document.documentElement.classList.add('pixelito-chat-open');
+        // Já traz as 3 carinhas pro cache: a troca de expressão nunca "pisca" esperando a imagem.
+        ['talking', 'idle', 'sad'].forEach(function (k) { new Image().src = log.getAttribute('data-face-' + k) || ''; });
+        // Se um pop-up de aviso estava com o Pixelito, ele volta pro painel (notification-toast.js escuta isto).
+        document.dispatchEvent(new CustomEvent('pixelito:chat-open'));
         if (!greeted) {
             greeted = true;
             botSay(log.getAttribute('data-greeting') || '', null);
@@ -58,7 +81,10 @@
     function close(returnFocus) {
         panel.hidden = true;
         fab.setAttribute('aria-expanded', 'false');
+        fab.setAttribute('aria-label', 'Abrir a conversa com o Pixelito');
         root.classList.remove('is-open');
+        document.documentElement.classList.remove('pixelito-chat-open');
+        setFace('idle');
         if (returnFocus) fab.focus({ preventScroll: true });
     }
     fab.addEventListener('click', function () { if (isOpen()) { close(false); } else { open(); } });
@@ -82,11 +108,12 @@
         scrollDown();
     }
 
-    // Avatar do Pixelito ao lado da fala: "falando" enquanto digita, "normal" quando termina.
-    function avatar(src) {
+    // Avatar fixo ao lado de cada fala do Pixelito (só marca quem falou — SEMPRE a mesma carinha;
+    // quem muda de expressão é o do topo do painel, ver setFace).
+    function avatar() {
         var wrap = el('span', 'pixelito-bubble');
         var img = document.createElement('img');
-        img.src = src;
+        img.src = log.getAttribute('data-face-idle');
         img.alt = '';
         img.width = 96;
         img.height = 96;
@@ -101,11 +128,10 @@
      */
     function botSay(text, link, sad, onDone) {
         busy = true;
-        var talking = log.getAttribute('data-avatar-talking');
-        var idle = sad ? log.getAttribute('data-avatar-sad') : log.getAttribute('data-avatar-idle');
+        setFace(sad ? 'sad' : 'talking'); // o do topo fala (ou fica triste no "não achei")
 
         var msg = el('div', 'pixelito-msg pixelito-msg--bot');
-        var av = avatar(sad ? idle : talking);
+        var av = avatar();
         var bubble = el('div', 'pixelito-text');
         msg.appendChild(av.wrap);
         msg.appendChild(bubble);
@@ -122,7 +148,7 @@
         function finish() {
             skipCurrent = null;
             typed.textContent = text;
-            av.img.src = idle;
+            setFace(sad ? 'sad' : 'idle'); // terminou de falar (o triste continua até a próxima pergunta)
             if (link && link.href) {
                 var a = el('a', 'btn btn-secondary pixelito-go');
                 a.href = link.href;

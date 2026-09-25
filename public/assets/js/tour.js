@@ -243,8 +243,13 @@
 
     var overlayEl, spotlightEl, tooltipEl;
 
+    // Só existe UM Pixelito na tela por vez: durante o tutorial ele "mora" no balão do tour, então a
+    // bolinha do canto (layout/_pixelito.php) se retira — CSS: html.pixelito-away-tour. Sai no teardown.
+    var AWAY_CLASS = 'pixelito-away-tour';
+
     function ensureDom() {
         if (overlayEl) { return; }
+        document.documentElement.classList.add(AWAY_CLASS);
         overlayEl = document.createElement('div');
         overlayEl.className = 'tour-overlay';
         spotlightEl = document.createElement('div');
@@ -257,6 +262,7 @@
     }
 
     function teardown() {
+        document.documentElement.classList.remove(AWAY_CLASS); // mesmo sem DOM montado (a classe pode ter vindo do <head>)
         if (!overlayEl) { return; }
         [overlayEl, spotlightEl, tooltipEl].forEach(function (el) { el.remove(); });
         overlayEl = spotlightEl = tooltipEl = null;
@@ -409,6 +415,8 @@
         }
         if (location.pathname === '/' && !localStorage.getItem(STORAGE_SEEN)) {
             start();
+            return;
         }
+        document.documentElement.classList.remove(AWAY_CLASS); // nenhum tour rodando: a bolinha do canto fica
     });
 })();

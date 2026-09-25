@@ -120,6 +120,8 @@ if ($authUser !== null && !$hasSiteNav) {
     <?php endif; ?>
     <?php if ($tourSiteId !== null): ?>
         <script>window.COMPOST_TOUR_SITE_ID = <?= (int) $tourSiteId ?>;</script>
+        <?php // Tutorial em andamento (ou pedido por ?tour=1): o Pixelito do canto já nasce escondido — ele está no balão do tour (tour.js). ?>
+        <script>try { if (sessionStorage.getItem('compost_tour_step') !== null || /[?&]tour=1(&|$)/.test(location.search)) { document.documentElement.classList.add('pixelito-away-tour'); } } catch (e) {}</script>
         <script src="<?= View::e(View::asset('assets/js/tour.js')) ?>" defer></script>
     <?php endif; ?>
 

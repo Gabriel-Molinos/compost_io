@@ -101,21 +101,32 @@ O Pixelito (um passarinho azul) aparece **sempre dentro da mesma bolinha branca*
 
 | Onde | O que faz | Arquivos |
 |---|---|---|
-| Pop-up e lista de notificações | avisa; a expressão muda pelo **tipo** da notificação | `notification-toast.js`, `notifications/index.php` |
+| Pop-up de notificação | avisa; a expressão muda pelo **tipo** da notificação (a lista de notificações usa só os ícones) | `notification-toast.js` |
 | Tutorial (`tour.js`) | é quem "fala" cada passo | `tour.js` (função `mood`) |
 | Botão flutuante (canto inferior direito) | abre um **chat simulado**: a pessoa toca numa pergunta pronta (ou digita palavras-chave e dá Enter), ela vira a mensagem dela e o Pixelito "digita" a resposta pronta, com link para a tela | `layout/_pixelito.php`, `pixelito.js`, `Support/PixelitoGuide.php` |
+
+**Regra: só existe UM Pixelito "vivo" na tela por vez** (pedido do responsável — ele não pode aparecer com duas expressões ao mesmo tempo). A bolinha do canto é a "casa" dele; ele só "vai" para outro lugar no lugar dela:
+
+| Situação | Quem mostra o Pixelito | O que acontece com o resto |
+|---|---|---|
+| Nada acontecendo | botão do canto (`normal`) | — |
+| Chat aberto | o **topo do painel** (é ele que fala: `falando` ao digitar, `normal` parado, `sem-animo` no "não achei") | o botão do canto vira um **X**; os avatares das mensagens são só uma marca fixa (`normal`, nunca mudam) |
+| Aviso chegou | só o pop-up **mais novo** | os pop-ups anteriores voltam ao ícone do tipo; a bolinha do canto se retira e volta quando o aviso sai; com o chat aberto o aviso vem só com o ícone |
+| Tutorial rodando | o balão do tutorial | o ajudante do canto some por inteiro; avisos vêm só com o ícone |
+
+Implementação: classes no `<html>` — `pixelito-chat-open` (pixelito.js), `pixelito-away-toast` (notification-toast.js, via `MutationObserver`) e `pixelito-away-tour` (tour.js, já aplicada no `<head>` do `base.php` para não piscar). Toda tela nova que mostrar o Pixelito precisa seguir isso (ou reutilizar essas classes) — **não** coloque a carinha dele em listas ou repetida.
 
 **Fonte única de verdade:** `App\Support\Pixelito` guarda as expressões válidas e o mapa tipo de notificação → expressão. O layout entrega o mesmo mapa ao JS em `window.COMPOST_PIXELITO` (nunca há uma 2ª cópia no JS). As imagens ficam em `public/assets/pixelito/<expressão>.webp` — o **nome do arquivo é o nome da expressão**.
 
 | Expressão | Quando aparece |
 |---|---|
-| `normal` | padrão; botão flutuante |
-| `falando` | tutorial (passos comuns e abertura), vínculo a um site, cabeçalho do painel de ajuda |
+| `normal` | padrão; botão flutuante; topo do chat parado; avatar fixo das mensagens |
+| `falando` | tutorial (passos comuns e abertura), vínculo a um site, topo do chat enquanto "digita" |
 | `falando-confiante` | atenção (`ATTENTION`); passos do tutorial que só apontam o menu |
 | `falando-orgulhoso` | publicação com sucesso; fim do tutorial |
 | `orgulhoso` | rascunho pronto para revisão (`ARTICLE_READY`) |
 | `relaxado` | feedback |
-| `sem-animo` | falha ao publicar; busca sem resultado no guia |
+| `sem-animo` | falha ao publicar; resposta "não achei" do chat |
 
 **Como adicionar uma expressão nova:** coloque o `.webp` (quadrado, cabeça enquadrada como as atuais) em `public/assets/pixelito/`, acrescente o nome em `Pixelito::EXPRESSIONS` e, se for de um tipo de notificação, no mapa `BY_NOTIFICATION_TYPE`. `PixelitoTest` falha se um tipo de notificação novo (`NotificationService::TYPE_*`) ficar sem expressão, ou se houver imagem sem registro.
 

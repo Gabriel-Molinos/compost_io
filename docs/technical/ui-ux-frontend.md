@@ -103,7 +103,7 @@ O Pixelito (um passarinho azul) aparece **sempre dentro da mesma bolinha branca*
 |---|---|---|
 | Pop-up e lista de notificações | avisa; a expressão muda pelo **tipo** da notificação | `notification-toast.js`, `notifications/index.php` |
 | Tutorial (`tour.js`) | é quem "fala" cada passo | `tour.js` (função `mood`) |
-| Botão flutuante (canto inferior direito) | abre um **guia de dúvidas** ("como faço X?") com busca, respostas curtas e link para a tela | `layout/_pixelito.php`, `pixelito.js`, `Support/PixelitoGuide.php` |
+| Botão flutuante (canto inferior direito) | abre um **chat simulado**: a pessoa toca numa pergunta pronta (ou digita palavras-chave e dá Enter), ela vira a mensagem dela e o Pixelito "digita" a resposta pronta, com link para a tela | `layout/_pixelito.php`, `pixelito.js`, `Support/PixelitoGuide.php` |
 
 **Fonte única de verdade:** `App\Support\Pixelito` guarda as expressões válidas e o mapa tipo de notificação → expressão. O layout entrega o mesmo mapa ao JS em `window.COMPOST_PIXELITO` (nunca há uma 2ª cópia no JS). As imagens ficam em `public/assets/pixelito/<expressão>.webp` — o **nome do arquivo é o nome da expressão**.
 
@@ -119,9 +119,11 @@ O Pixelito (um passarinho azul) aparece **sempre dentro da mesma bolinha branca*
 
 **Como adicionar uma expressão nova:** coloque o `.webp` (quadrado, cabeça enquadrada como as atuais) em `public/assets/pixelito/`, acrescente o nome em `Pixelito::EXPRESSIONS` e, se for de um tipo de notificação, no mapa `BY_NOTIFICATION_TYPE`. `PixelitoTest` falha se um tipo de notificação novo (`NotificationService::TYPE_*`) ficar sem expressão, ou se houver imagem sem registro.
 
+**Como o chat funciona:** não há IA nem requisição — perguntas e respostas são renderizadas no servidor e o `pixelito.js` só encena a conversa ("…" → texto letra por letra, ~18 ms/caractere, entre 0,7 e 2,6 s → link). Tocar na fala pula a digitação; perguntas feitas durante a digitação são ignoradas; pergunta já feita fica marcada com ✓; o que foi digitado e não bate com nenhuma pergunta recebe a resposta "não achei" (`PixelitoGuide::NOT_FOUND`) com link para Feedback. Leitor de tela lê a resposta inteira de uma vez (a versão digitada é `aria-hidden`); com `prefers-reduced-motion` a resposta aparece na hora.
+
 **Como adicionar uma dúvida ao guia:** um item em `PixelitoGuide::topics()` — pergunta, resposta curta (≤ 420 caracteres, fiel à tela), link opcional (`{site}` vira o id do site atual). `PixelitoGuideTest` garante que todo link aponta para uma rota GET que existe.
 
-Regras de UI: o botão é fixo (`z-index: 150` — acima do conteúdo e do menu, abaixo dos pop-ups e do tutorial) e só a bolinha "boia" por dentro (alvo de clique parado); `main` reserva `pb-24` para o botão não cobrir o fim da página; Esc/clique fora fecham; `prefers-reduced-motion` desliga as animações. **Fora do escopo desta versão:** chat livre com IA, Pixelito na tela de login, preferência de "silenciar" salva por usuário.
+Regras de UI: o botão é fixo (`z-index: 150` — acima do conteúdo e do menu, abaixo dos pop-ups e do tutorial) e só a bolinha "boia" por dentro (alvo de clique parado); `main` reserva `pb-24` para o botão não cobrir o fim da página; Esc/clique fora fecham; `prefers-reduced-motion` desliga as animações. **Fora do escopo desta versão:** resposta livre com IA (o chat é encenado, só responde o que está no guia), Pixelito na tela de login, preferência de "silenciar" salva por usuário.
 
 ### 106. Checklist de UI antes de um PR
 

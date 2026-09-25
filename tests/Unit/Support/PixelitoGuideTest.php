@@ -69,6 +69,22 @@ final class PixelitoGuideTest extends TestCase
         }
     }
 
+    public function testTheNotFoundReplyLinksToARealRoute(): void
+    {
+        $this->assertNotSame('', trim(PixelitoGuide::GREETING));
+        $this->assertNotSame('', trim(PixelitoGuide::NOT_FOUND));
+        $this->assertNotSame('', trim(PixelitoGuide::NOT_FOUND_LINK_LABEL));
+
+        $found = false;
+        foreach ($this->getRoutePatterns() as $pattern) {
+            if (preg_match($pattern, PixelitoGuide::NOT_FOUND_LINK) === 1) {
+                $found = true;
+                break;
+            }
+        }
+        $this->assertTrue($found, 'o link da resposta "não achei" não bate com nenhuma rota GET');
+    }
+
     public function testWithoutASiteTheSiteLinksFallBackToTheSiteList(): void
     {
         foreach (PixelitoGuide::topics(null) as $topic) {

@@ -17,6 +17,15 @@ namespace App\Support;
  */
 final class PixelitoGuide
 {
+    /** Primeira fala do Pixelito quando o painel abre (digitada na hora, como num chat). */
+    public const GREETING = 'Oi, eu sou o Pixelito! Toque numa dúvida aí embaixo (ou digite palavras-chave) que eu te explico.';
+
+    /** Resposta quando o que a pessoa digitou não bate com nenhuma pergunta do guia. */
+    public const NOT_FOUND = 'Hmm, não achei essa dúvida por aqui. Conta pra equipe o que faltou que a gente coloca no guia!';
+
+    public const NOT_FOUND_LINK = '/feedback';
+    public const NOT_FOUND_LINK_LABEL = 'Falar com a equipe';
+
     /**
      * @return list<array{topic: string, items: list<array{q: string, a: string, link: ?string, linkLabel: ?string}>}>
      */

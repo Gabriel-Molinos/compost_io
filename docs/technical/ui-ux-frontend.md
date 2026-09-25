@@ -95,6 +95,34 @@ botão, input, select, textarea, checkbox/radio, card, badge/status, modal, toas
 
 Cada tela em `src/Views/{dashboard,production,planning,calendar,reports,settings,sites}/` (ver [Organização das Views, seção 12](arquitetura.md#12-organização-das-views)) compõe a partir desses partials — não redefine o componente localmente.
 
+#### 105.1 Pixelito — o mascote-ajudante (2026-09-25)
+
+O Pixelito (um passarinho azul) aparece **sempre dentro da mesma bolinha branca** (`.pixelito-bubble`, tamanhos `sm/md/lg/xl`) e faz três papéis para o redator — todos sem IA e sem custo:
+
+| Onde | O que faz | Arquivos |
+|---|---|---|
+| Pop-up e lista de notificações | avisa; a expressão muda pelo **tipo** da notificação | `notification-toast.js`, `notifications/index.php` |
+| Tutorial (`tour.js`) | é quem "fala" cada passo | `tour.js` (função `mood`) |
+| Botão flutuante (canto inferior direito) | abre um **guia de dúvidas** ("como faço X?") com busca, respostas curtas e link para a tela | `layout/_pixelito.php`, `pixelito.js`, `Support/PixelitoGuide.php` |
+
+**Fonte única de verdade:** `App\Support\Pixelito` guarda as expressões válidas e o mapa tipo de notificação → expressão. O layout entrega o mesmo mapa ao JS em `window.COMPOST_PIXELITO` (nunca há uma 2ª cópia no JS). As imagens ficam em `public/assets/pixelito/<expressão>.webp` — o **nome do arquivo é o nome da expressão**.
+
+| Expressão | Quando aparece |
+|---|---|
+| `normal` | padrão; botão flutuante |
+| `falando` | tutorial (passos comuns e abertura), vínculo a um site, cabeçalho do painel de ajuda |
+| `falando-confiante` | atenção (`ATTENTION`); passos do tutorial que só apontam o menu |
+| `falando-orgulhoso` | publicação com sucesso; fim do tutorial |
+| `orgulhoso` | rascunho pronto para revisão (`ARTICLE_READY`) |
+| `relaxado` | feedback |
+| `sem-animo` | falha ao publicar; busca sem resultado no guia |
+
+**Como adicionar uma expressão nova:** coloque o `.webp` (quadrado, cabeça enquadrada como as atuais) em `public/assets/pixelito/`, acrescente o nome em `Pixelito::EXPRESSIONS` e, se for de um tipo de notificação, no mapa `BY_NOTIFICATION_TYPE`. `PixelitoTest` falha se um tipo de notificação novo (`NotificationService::TYPE_*`) ficar sem expressão, ou se houver imagem sem registro.
+
+**Como adicionar uma dúvida ao guia:** um item em `PixelitoGuide::topics()` — pergunta, resposta curta (≤ 420 caracteres, fiel à tela), link opcional (`{site}` vira o id do site atual). `PixelitoGuideTest` garante que todo link aponta para uma rota GET que existe.
+
+Regras de UI: o botão é fixo (`z-index: 150` — acima do conteúdo e do menu, abaixo dos pop-ups e do tutorial) e só a bolinha "boia" por dentro (alvo de clique parado); `main` reserva `pb-24` para o botão não cobrir o fim da página; Esc/clique fora fecham; `prefers-reduced-motion` desliga as animações. **Fora do escopo desta versão:** chat livre com IA, Pixelito na tela de login, preferência de "silenciar" salva por usuário.
+
 ### 106. Checklist de UI antes de um PR
 
 Espelha o formato do [checklist de padrão de código (seção 88.3)](padroes-de-codigo.md#883-padrão-de-código--estrutura-e-formato-de-resposta-proposta). Toda View nova ou alterada:

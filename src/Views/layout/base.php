@@ -8,6 +8,7 @@ use App\Support\Avatar;
 use App\Support\Csrf;
 use App\Support\Icon;
 use App\Support\Labels;
+use App\Support\Pixelito;
 use App\Support\Session;
 use App\View;
 
@@ -112,7 +113,10 @@ if ($authUser !== null && !$hasSiteNav) {
     <script src="<?= View::e(View::asset('assets/js/veil.js')) ?>" defer></script>
     <script src="<?= View::e(View::asset('assets/js/dial.js')) ?>" defer></script>
     <?php if ($authUser !== null): ?>
+        <?php // Pixelito (mascote): mapa tipo→expressão vindo de App\Support\Pixelito — o JS nunca tem uma 2ª cópia. ?>
+        <script>window.COMPOST_PIXELITO = <?= json_encode(Pixelito::jsConfig(), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?>;</script>
         <script src="<?= View::e(View::asset('assets/js/notification-toast.js')) ?>" defer></script>
+        <script src="<?= View::e(View::asset('assets/js/pixelito.js')) ?>" defer></script>
     <?php endif; ?>
     <?php if ($tourSiteId !== null): ?>
         <script>window.COMPOST_TOUR_SITE_ID = <?= (int) $tourSiteId ?>;</script>
@@ -157,6 +161,9 @@ if ($authUser !== null && !$hasSiteNav) {
             <button type="button" class="dial-fab" data-dial-toggle aria-label="Abrir o menu" title="Abrir o menu">
                 <?= Icon::nav('menu') ?>
             </button>
+
+            <?php // Pixelito: ajudante do canto inferior direito (guia de dúvidas — layout/_pixelito.php). ?>
+            <?php require __DIR__ . '/_pixelito.php'; ?>
         <?php endif; ?>
 
         <div class="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -168,7 +175,8 @@ if ($authUser !== null && !$hasSiteNav) {
                 </a>
             </header>
 
-            <main id="conteudo" class="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+            <?php // pb-24: folga no fim da página pro botão flutuante do Pixelito não cobrir o último conteúdo. ?>
+            <main id="conteudo" class="flex-1 overflow-y-auto px-4 py-6 pb-24 sm:px-6 sm:py-8 sm:pb-24 lg:px-10">
                 <?php if ($flashSuccess !== null): ?>
                     <p role="status" class="mb-6 rounded-md border border-success/40 bg-success/10 px-3 py-2 text-sm text-success">
                         <?= View::e($flashSuccess) ?>

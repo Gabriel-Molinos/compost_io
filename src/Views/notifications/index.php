@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Support\Csrf;
 use App\Support\Icon;
 use App\Support\Labels;
+use App\Support\Pixelito;
 use App\View;
 
 /** @var list<array<string, mixed>> $notifications Mais recentes primeiro (até 50) */
@@ -189,7 +190,8 @@ $cardIndex = 0;
                             </span>
 
                             <div class="flex flex-wrap items-start gap-4 p-5 pt-7 sm:flex-nowrap">
-                                <span class="notif-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-full [&>svg]:h-5 [&>svg]:w-5"><?= Icon::nav($typeIcon($type)) ?></span>
+                                <?php // Pixelito na bolinha branca, com a expressão do tipo (App\Support\Pixelito) — o ícone do tipo continua na etiqueta acima. ?>
+                                <span class="notif-icon notif-icon--pixelito flex h-12 w-12 shrink-0 items-center justify-center rounded-full"><?= Pixelito::bubble(Pixelito::forNotificationType($type), 'lg') ?></span>
 
                                 <div class="min-w-0 flex-1">
                                     <p class="flex items-center gap-2">

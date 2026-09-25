@@ -62,6 +62,14 @@
             'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths + '</svg>';
     }
 
+    // Pixelito (mascote) na bolinha branca, com a expressão do tipo — o mapa vem de
+    // App\Support\Pixelito via window.COMPOST_PIXELITO (layout/base.php), nunca duplicado aqui.
+    var PX = window.COMPOST_PIXELITO || null;
+    function pixelitoBubble(type) {
+        var expr = (PX.byType && PX.byType[type]) || PX.default;
+        return '<span class="pixelito-bubble"><img src="' + PX.base + expr + '.webp" alt="" width="96" height="96" draggable="false"></span>';
+    }
+
     // --- som: "bolha estourando" sintetizado, sem arquivo de áudio ---
     var audioCtx = null;
     var audioUnlocked = false;
@@ -164,13 +172,25 @@
         el.setAttribute('role', 'button');
         el.setAttribute('tabindex', '0');
 
+        var fallbackIcon = '<span class="notif-toast-icon">' + svg(iconPaths) + '</span>';
         el.innerHTML =
-            '<span class="notif-toast-icon">' + svg(iconPaths) + '</span>' +
+            (PX ? pixelitoBubble(n.type) : fallbackIcon) +
             '<span class="notif-toast-body">' +
                 '<span class="notif-toast-title"></span>' +
                 '<span class="notif-toast-message"></span>' +
             '</span>' +
             '<button type="button" class="notif-toast-close" aria-label="Fechar">' + svg(CLOSE_ICON) + '</button>';
+
+        // Imagem do Pixelito não carregou (arquivo faltando, rede): volta pro ícone SVG do tipo.
+        var mascot = el.querySelector('.pixelito-bubble img');
+        if (mascot) {
+            mascot.addEventListener('error', function () {
+                var bubble = mascot.parentNode;
+                if (bubble && bubble.parentNode) {
+                    bubble.outerHTML = fallbackIcon;
+                }
+            }, { once: true });
+        }
 
         // Texto por textContent (nunca innerHTML) — título/mensagem vêm do banco.
         el.querySelector('.notif-toast-title').textContent = n.title;

@@ -308,7 +308,9 @@
         ensureDom();
 
         var canGoBack = getHistory().length > 1;
-        var titleHtml = '<p class="tour-tooltip-title">' + escapeHtml(step.title) + '</p>';
+        // O Pixelito é quem "fala" o tutorial: bolinha ao lado do título, com a expressão do momento.
+        var titleHtml = '<div class="tour-tooltip-head">' + pixelitoBubble(mood(step, i))
+            + '<p class="tour-tooltip-title">' + escapeHtml(step.title) + '</p></div>';
         var textHtml = '<p class="tour-tooltip-text">' + escapeHtml(step.text) + '</p>';
         var progressHtml = '<p class="tour-tooltip-progress">Passo ' + (i + 1) + ' de ' + STEPS.length + '</p>';
         var ctaLabel = escapeHtml(step.cta);
@@ -370,6 +372,22 @@
         place();
         setTimeout(place, 350); // depois do smooth-scroll assentar
         setTimeout(place, 800); // e depois do giro do tambor
+    }
+
+    // Expressão do Pixelito por momento do tutorial: acolhe na abertura, comemora no
+    // fim, chama a atenção nos passos que só apontam pro menu; nos demais, explica.
+    // (nomes válidos: App\Support\Pixelito::EXPRESSIONS; o base vem de window.COMPOST_PIXELITO)
+    function mood(step, i) {
+        if (i === 0) { return 'falando'; }
+        if (i === STEPS.length - 1) { return 'falando-orgulhoso'; }
+        if (step.selector && step.selector.indexOf('[data-tour="tab-') === 0) { return 'falando-confiante'; }
+        return 'falando';
+    }
+
+    function pixelitoBubble(expr) {
+        var px = window.COMPOST_PIXELITO;
+        if (!px) { return ''; } // layout sem o mapa: o tutorial funciona igual, só sem a carinha
+        return '<span class="pixelito-bubble"><img src="' + px.base + expr + '.webp" alt="" width="96" height="96" draggable="false"></span>';
     }
 
     function escapeHtml(s) {

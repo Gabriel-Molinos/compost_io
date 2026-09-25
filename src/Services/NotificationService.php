@@ -42,6 +42,26 @@ final class NotificationService
     }
 
     /**
+     * Como {@see self::notifySiteTeam()}, mas no máximo 1 vez por dia por site/tipo/título —
+     * pra avisos disparados por varredura periódica do worker (a cada 5 min), que senão
+     * virariam spam enquanto a pendência não for resolvida. Devolve se enviou.
+     */
+    public function notifySiteTeamOncePerDay(int $siteId, string $type, string $title, string $message, ?string $link = null): bool
+    {
+        $stmt = Connection::get()->prepare(
+            'SELECT 1 FROM notifications WHERE site_id = :s AND type = :t AND title = :ti AND DATE(created_at) = CURDATE() LIMIT 1'
+        );
+        $stmt->execute(['s' => $siteId, 't' => $type, 'ti' => $title]);
+        if ($stmt->fetchColumn() !== false) {
+            return false;
+        }
+
+        $this->notifySiteTeam($siteId, $type, $title, $message, $link);
+
+        return true;
+    }
+
+    /**
      * Avisa um Redator-Chefe que ganhou acesso a um site — usado tanto quando o
      * admin vincula pela tela do usuário quanto pela tela do site (mesma
      * mensagem, um lugar só).

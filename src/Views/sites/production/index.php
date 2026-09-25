@@ -72,9 +72,10 @@ $goalTagLabel = static function (string $period) use ($mesesAbrev): string {
     <div>
         <h1 class="font-display text-2xl font-bold text-text-primary">Produção</h1>
         <p class="mt-1 max-w-2xl text-sm text-text-secondary">
-            Todo dia, 1 rascunho novo é gerado automaticamente por este site (se estiver ativo) —
-            marcado como <span class="font-medium text-cyan">automático</span> na lista abaixo. Cada geração faz
-            várias chamadas ao Gemini e <strong>tem custo</strong>.
+            Todo dia, 1 rascunho novo é gerado automaticamente por este site (se estiver ativo e
+            <a href="/sites/<?= View::e($site['id']) ?>/goals" class="text-cyan hover:underline">tiver uma meta</a>
+            no mês atual ou no próximo) — marcado como <span class="font-medium text-cyan">automático</span> na lista abaixo.
+            Cada geração faz várias chamadas ao Gemini e <strong>tem custo</strong>.
         </p>
     </div>
 </div>

@@ -226,6 +226,8 @@ A plataforma deve registrar as fontes utilizadas.
 - Quem revisa vê o pedido no topo da página do artigo ("Pedido do redator"), e a lista de Produção marca esses rascunhos como **específico**.
 - Custo e limite diário são os mesmos do rascunho comum (várias chamadas ao Gemini por geração).
 
+**Geração automática diária — só com meta.** O worker gera 1 rascunho por dia por site ativo, seguindo a **meta do mês atual**; se o mês atual não tem meta, usa a **do próximo mês** (e distribui as categorias contando os artigos daquela meta). Se o site não tem meta em nenhum dos dois, **a geração automática fica pausada**: a equipe do site (admins + redator-chefe vinculado) recebe uma notificação "Geração automática pausada: falta a meta" (no máximo 1 por dia) e a geração volta sozinha, na varredura seguinte, assim que uma meta for cadastrada. O rascunho manual continua livre, com ou sem meta.
+
 ### 25. Imagens
 
 A geração de imagens será separada da geração de texto.

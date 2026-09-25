@@ -45,6 +45,7 @@ use App\Services\ArticleService;
 use App\Services\BacklinkSuggestionService;
 use App\Services\CostBudgetService;
 use App\Services\GoalService;
+use App\Services\NotificationService;
 use App\Services\Pipeline\ArticlePipeline;
 use App\Services\ReportService;
 use App\Services\ScheduleService;
@@ -88,6 +89,7 @@ $goalService = new GoalService();
 $siteService = new SiteService();
 $reportService = new ReportService();
 $costBudgetService = new CostBudgetService();
+$notificationService = new NotificationService();
 
 $queue->register('smoke.echo', function (Job $job): void {
     $message = $job->payload['message'] ?? '(sem mensagem)';
@@ -187,11 +189,25 @@ while (true) {
                     continue;
                 }
 
-                $goal = $goalService->findByPeriod($siteId, $period);
-                $goalId = $goal !== null ? (int) $goal['id'] : null;
-                $categoryId = $goalId !== null
-                    ? $goalService->mostUnderTargetCategory($siteId, $goalId, $period)
-                    : null;
+                // Sem meta, sem geração automática (pedido do responsável 2026-09-25): usa a do
+                // mês atual, senão a do próximo; se não há nenhuma, avisa a equipe (1x por dia)
+                // e pula — volta sozinha na próxima varredura depois que alguém cadastrar a meta.
+                $plan = $goalService->findForAutoGeneration($siteId);
+                if ($plan === null) {
+                    $nextPeriod = (new DateTimeImmutable('first day of next month'))->format('m/Y');
+                    $notificationService->notifySiteTeamOncePerDay(
+                        $siteId,
+                        NotificationService::TYPE_ATTENTION,
+                        'Geração automática pausada: falta a meta',
+                        'O site "' . $site['name'] . '" não tem meta para ' . date('m/Y') . ' nem para ' . $nextPeriod
+                            . '. A geração automática só volta quando você cadastrar uma meta.',
+                        '/sites/' . $siteId . '/goals/new',
+                    );
+                    fwrite(STDERR, "Site {$siteId}: geração automática pulada (sem meta no mês atual nem no próximo).\n");
+                    continue;
+                }
+                $goalId = (int) $plan['goal']['id'];
+                $categoryId = $goalService->mostUnderTargetCategory($siteId, $goalId, $plan['period'], $plan['is_next_month']);
 
                 $articleId = $articleService->createWithDailyLimit(
                     $siteId,

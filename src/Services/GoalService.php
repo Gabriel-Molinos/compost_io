@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Database\Connection;
+use DateTimeImmutable;
 use Throwable;
 
 /**
@@ -81,6 +82,33 @@ final class GoalService
     }
 
     /**
+     * Meta que a geração automática deve seguir hoje (pedido do responsável, 2026-09-25):
+     * a do mês atual; se não houver, a do PRÓXIMO mês; se também não houver, `null` — e a
+     * geração automática fica pausada até alguém cadastrar uma meta (bin/worker.php avisa a equipe).
+     * Só olha o mês seguinte, nunca mais adiante.
+     *
+     * @return array{goal: array<string, mixed>, period: string, is_next_month: bool}|null
+     */
+    public function findForAutoGeneration(int $siteId, ?DateTimeImmutable $today = null): ?array
+    {
+        $today ??= new DateTimeImmutable('now');
+        $current = $today->format('Y-m');
+        $next = $today->modify('first day of next month')->format('Y-m'); // '+1 month' no dia 31 pularia um mês
+
+        $goal = $this->findByPeriod($siteId, $current);
+        if ($goal !== null) {
+            return ['goal' => $goal, 'period' => $current, 'is_next_month' => false];
+        }
+
+        $goal = $this->findByPeriod($siteId, $next);
+        if ($goal !== null) {
+            return ['goal' => $goal, 'period' => $next, 'is_next_month' => true];
+        }
+
+        return null;
+    }
+
+    /**
      * Categoria mais atrasada em relação ao alvo do mês (maior `target - realizado`),
      * pra geração automática escolher sozinha (bin/worker.php).
      *
@@ -98,23 +126,28 @@ final class GoalService
      * `null` se a meta não tem distribuição por categoria ou se todo mundo já
      * bateu o alvo (a geração segue sem categoria, como já acontece quando o
      * campo fica em branco na geração manual).
+     *
+     * `$countByGoal`: usar quando a meta é a do PRÓXIMO mês (a do mês atual não existe) —
+     * os artigos gerados agora têm `created_at` do mês atual, então a contagem por mês
+     * daria sempre 0 e a mesma categoria seria escolhida todo dia. Conta pelo `goal_id`.
      */
-    public function mostUnderTargetCategory(int $siteId, int $goalId, string $period): ?int
+    public function mostUnderTargetCategory(int $siteId, int $goalId, string $period, bool $countByGoal = false): ?int
     {
         $targets = $this->categoryTargets($goalId);
         if ($targets === []) {
             return null;
         }
 
+        $scope = $countByGoal ? 'goal_id = :g' : "DATE_FORMAT(created_at, '%Y-%m') = :p";
         $stmt = Connection::get()->prepare(
             "SELECT category_id, COUNT(*) AS produced
              FROM articles
              WHERE site_id = :s AND category_id IS NOT NULL AND deleted_at IS NULL
-               AND DATE_FORMAT(created_at, '%Y-%m') = :p
+               AND {$scope}
                AND status != 'DISCARDED'
              GROUP BY category_id"
         );
-        $stmt->execute(['s' => $siteId, 'p' => $period]);
+        $stmt->execute($countByGoal ? ['s' => $siteId, 'g' => $goalId] : ['s' => $siteId, 'p' => $period]);
         $produced = [];
         foreach ($stmt->fetchAll() as $row) {
             $produced[(int) $row['category_id']] = (int) $row['produced'];

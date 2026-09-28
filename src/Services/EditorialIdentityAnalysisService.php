@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Integrations\AIException;
 use App\Integrations\AIProvider;
+use App\Integrations\Gemini\GeminiPricing;
 use App\Integrations\Gemini\GeminiProvider;
 use App\Integrations\WordPress\WordPressException;
 
@@ -38,6 +39,7 @@ final class EditorialIdentityAnalysisService
     private WordPressConnectionService $connections;
     private SiteService $sites;
     private AIProvider $ai;
+    private SiteAiCostService $costs;
 
     /** @var (\Closure(int): list<array{title: string, excerpt: string}>) */
     private \Closure $fetchPosts;
@@ -52,11 +54,13 @@ final class EditorialIdentityAnalysisService
         ?SiteService $sites = null,
         ?AIProvider $ai = null,
         ?\Closure $fetchPosts = null,
+        ?SiteAiCostService $costs = null,
     ) {
         $this->connections = $connections ?? new WordPressConnectionService();
         $this->sites = $sites ?? new SiteService();
         $this->ai = $ai ?? new GeminiProvider();
         $this->fetchPosts = $fetchPosts ?? fn (int $siteId): array => $this->connections->client($siteId)->listRecentPostsForAnalysis(self::POSTS_SAMPLE);
+        $this->costs = $costs ?? new SiteAiCostService();
     }
 
     /** @return bool true se uma sugestão foi gerada e aplicada */
@@ -82,6 +86,10 @@ final class EditorialIdentityAnalysisService
         } catch (AIException) {
             return false;
         }
+        // Achado real 2026-09-28: o gasto acontece aqui, tenha a sugestão sido aplicada ou
+        // não (ex.: corrida rara com edição manual entre a leitura e o UPDATE condicional
+        // abaixo) — sem isto, esta chamada ficava fora do orçamento de IA da Visão Geral.
+        $this->costs->log($siteId, SiteAiCostService::SOURCE_EDITORIAL_IDENTITY_SUGGESTION, GeminiPricing::estimate($result));
 
         $fields = $this->sanitize($result->json);
 

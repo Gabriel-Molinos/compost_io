@@ -90,6 +90,9 @@ knowledge_sources                 -- registro interno das fontes NotebookLM (int
 editorial_insights                -- [+] Centro de Inteligência Editorial (RF-014, §33) — análise narrativa por site
   id, site_id, content (JSON — as 6 respostas da §33), model, cost (DECIMAL),
   prompt_tokens, output_tokens, generated_by?, created_at
+
+site_ai_costs                     -- [+] migration 0029 — custo de IA por site SEM artigo (não cabe em ai_executions)
+  id, site_id, source ('intelligence_insight' | 'editorial_identity_suggestion'), cost (DECIMAL), created_at
 ```
 
 `?` = coluna nullable.
@@ -109,6 +112,7 @@ Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mant
 - `0011` — índices para os filtros de período dos relatórios: `articles (site_id, created_at)` / `(site_id, reviewed_at)`, `ai_executions (article_id, cost)` / `(created_at)`, `feedback (created_at)`. Só índice, nenhuma coluna nova. Fase 9 (performance) — levantamento mostrou scan de `ai_executions` inteira (todos os sites) na consulta de custo máximo global (`CostBudgetService`).
 - `0012` — nova tabela **`editorial_memory`**: "lições" duradouras de memória editorial, escritas por humano (Redator-Chefe/Admin), opcionalmente promovidas de um `feedback` existente. Fase 9 — fecha a pendência §87.2 abaixo.
 - `0028` — `sites.editorial_identity_suggested_at` (DATETIME, nullable): pedido do responsável 2026-09-28 — na 1ª conexão com o WordPress, `EditorialIdentityAnalysisService` lê os posts publicados de verdade e sugere nicho/público-alvo/tom/identidade editorial quando os 4 campos ainda estão vazios (site sem posts o bastante não sugere nada). Marca esta coluna pra a tela avisar "isto é sugestão, revise"; qualquer salvamento manual do formulário (`SiteService::update()`) limpa a marca.
+- `0029` — nova tabela **`site_ai_costs`**: achado real 2026-09-28 — o orçamento de IA da Visão Geral (`CostBudgetService`/`ReportService`) somava só `ai_executions` (sempre ligado a um artigo), deixando de fora o custo do Centro de Inteligência (`IntelligenceService`, já tinha `editorial_insights.cost`, mas nada somava) e da sugestão automática de identidade editorial (migration 0028, não registrava custo em lugar nenhum) — as duas são chamadas ao Gemini no nível do SITE, sem artigo. `SiteAiCostService` registra (`log()`) e `ReportService::currentSpend()`/`monthly()`/`trend()` somam as duas fontes.
 
 ### 87.1 Autenticação — sem tabela
 

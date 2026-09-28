@@ -21,10 +21,12 @@ final class ReportService
     private const APPROVED_STATES = "('APPROVED','SCHEDULED','PUBLISHED')";
 
     private CacheService $cache;
+    private SiteAiCostService $siteCosts;
 
-    public function __construct(?CacheService $cache = null)
+    public function __construct(?CacheService $cache = null, ?SiteAiCostService $siteCosts = null)
     {
         $this->cache = $cache ?? new CacheService();
+        $this->siteCosts = $siteCosts ?? new SiteAiCostService();
     }
 
     /**
@@ -54,10 +56,14 @@ final class ReportService
                  WHERE a.site_id = :s AND e.created_at >= :a AND e.created_at < :b"
             );
             $costStmt->execute($win);
+            // Achado real 2026-09-28: `ai_executions` é só o custo POR ARTIGO — Centro de
+            // Inteligência e sugestão automática de identidade editorial são chamadas
+            // pagas ao Gemini sem artigo nenhum, registradas à parte (`site_ai_costs`).
+            $otherCost = $this->siteCosts->sumForWindow($siteId, $win['a'], $win['b']);
 
             return [
                 'goal_total' => $goalTotal !== false ? (int) $goalTotal : null,
-                'ai_cost'    => (float) $costStmt->fetchColumn(),
+                'ai_cost'    => (float) $costStmt->fetchColumn() + $otherCost,
             ];
         });
     }
@@ -142,7 +148,8 @@ final class ReportService
              WHERE a.site_id = :s AND e.created_at >= :a AND e.created_at < :b"
         );
         $costStmt->execute($win);
-        $cost = (float) $costStmt->fetchColumn();
+        // Ver comentário em currentSpend() — soma as duas fontes de custo de IA.
+        $cost = (float) $costStmt->fetchColumn() + $this->siteCosts->sumForWindow($siteId, $win['a'], $win['b']);
 
         $reasonsStmt = $pdo->prepare(
             "SELECT f.reason, COUNT(*) AS total FROM feedback f
@@ -236,6 +243,10 @@ final class ReportService
                  FROM ai_executions e JOIN articles a ON a.id = e.article_id
                  WHERE a.site_id = :s AND e.created_at >= :a AND e.created_at < :b
                  GROUP BY ym", $win);
+            // Ver comentário em currentSpend() — soma as duas fontes de custo de IA, mês a mês.
+            foreach ($this->siteCosts->sumByMonthForWindow($siteId, $win['a'], $win['b']) as $ym => $v) {
+                $cost[$ym] = ($cost[$ym] ?? 0.0) + $v;
+            }
 
             return [
                 'periods'   => $periods,

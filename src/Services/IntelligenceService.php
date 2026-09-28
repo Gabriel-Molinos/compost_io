@@ -40,12 +40,18 @@ final class IntelligenceService
     private ReportService $reports;
     private FeedbackService $feedback;
     private AIProvider $ai;
+    private SiteAiCostService $costs;
 
-    public function __construct(?ReportService $reports = null, ?FeedbackService $feedback = null, ?AIProvider $ai = null)
-    {
+    public function __construct(
+        ?ReportService $reports = null,
+        ?FeedbackService $feedback = null,
+        ?AIProvider $ai = null,
+        ?SiteAiCostService $costs = null,
+    ) {
         $this->reports = $reports ?? new ReportService();
         $this->feedback = $feedback ?? new FeedbackService();
         $this->ai = $ai ?? new GeminiProvider();
+        $this->costs = $costs ?? new SiteAiCostService();
     }
 
     /** @return array<string, mixed>|null a análise mais recente do site, ou null se nunca gerou */
@@ -103,6 +109,8 @@ final class IntelligenceService
             throw new RuntimeException('A IA respondeu fora do formato esperado.');
         }
 
+        $cost = GeminiPricing::estimate($result);
+
         $pdo = Connection::get();
         $pdo->prepare(
             'INSERT INTO editorial_insights
@@ -112,11 +120,16 @@ final class IntelligenceService
             's'    => $siteId,
             'c'    => json_encode($answers, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
             'm'    => $result->model,
-            'cost' => GeminiPricing::estimate($result),
+            'cost' => $cost,
             'pt'   => $result->promptTokens,
             'ot'   => $result->outputTokens + $result->thoughtsTokens,
             'u'    => $userId,
         ]);
+        // Achado real 2026-09-28: `editorial_insights.cost` acima é só o histórico DESTA
+        // análise (aba Inteligência) — sem isto, esse gasto ficava fora do orçamento de IA
+        // mostrado na Visão Geral (`ReportService`/`CostBudgetService` só somavam
+        // `ai_executions`, sempre ligado a artigo, e isto não tem artigo nenhum).
+        $this->costs->log($siteId, SiteAiCostService::SOURCE_INTELLIGENCE_INSIGHT, $cost);
 
         $latest = $this->latest($siteId);
         if ($latest === null) {

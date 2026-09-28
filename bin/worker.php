@@ -109,7 +109,17 @@ const AUTO_GEN_SCAN_INTERVAL = 300; // 5 min — granularidade de sobra pra "já
 // nada revisitava. Um link real na publicação pode morrer meses depois.
 // Não edita o post ao vivo sozinho (reescrever conteúdo já publicado sem
 // humano decidir é destrutivo demais) — só grava um aviso pra alguém agir.
-$lastLinkRotScan = 0;
+//
+// $lastLinkRotScan começa em time() (não 0!) — achado real 2026-09-28: com 0,
+// "tempo desde a última vez" já nasce enorme e as 3 varreduras diárias (link
+// rot + backlink retroativo + sync de post apagado, todas abaixo) disparavam
+// JUNTAS na primeira volta do laço, TODA vez que o worker sobe — inclusive
+// hoje mesmo, travando a fila (jobs de geração automática do dia parados)
+// por vários minutos sem logar nada nesse meio tempo, parecendo travado sem
+// estar. Começar em time() faz a 1ª varredura de verdade só depois de um
+// intervalo completo — correto pra manutenção diária, que não precisa (e não
+// deve) rodar de novo a cada reinício do worker.
+$lastLinkRotScan = time();
 const LINK_ROT_SCAN_INTERVAL = 86400; // 24h
 const LINK_ROT_BATCH_PER_SITE = 20; // por site a cada ciclo — evita travar o worker num site com muito conteúdo
 $linkRotOffsets = []; // siteId => próximo offset — round-robin em memória entre ciclos deste processo
@@ -131,7 +141,7 @@ $dispatchedScheduleIds = [];
 // site a cada ciclo (throttle — cada varredura é uma chamada de IA de
 // verdade, custo real). Nunca aplica sozinho: só grava sugestão pro
 // Redator-Chefe aprovar na Central de Links (`BacklinkSuggestionService`).
-$lastBacklinkScan = 0;
+$lastBacklinkScan = time(); // ver comentário em $lastLinkRotScan acima — mesmo achado 2026-09-28
 const BACKLINK_SCAN_INTERVAL = 86400; // 24h
 
 // Sincronização de post apagado por fora (achado real 2026-09-14): um post
@@ -140,7 +150,7 @@ const BACKLINK_SCAN_INTERVAL = 86400; // 24h
 // continuava sendo sugerido como link interno (painel do editor, Central de
 // Links) mesmo morto. Corrige o estado local pra bater com a realidade —
 // mesmo efeito de `WordPressPublishService::retract()`, sem apagar de novo.
-$lastPublishSyncScan = 0;
+$lastPublishSyncScan = time(); // ver comentário em $lastLinkRotScan acima — mesmo achado 2026-09-28
 const PUBLISH_SYNC_SCAN_INTERVAL = 86400; // 24h
 
 while (true) {
@@ -232,6 +242,10 @@ while (true) {
 
     if (time() - $lastLinkRotScan >= LINK_ROT_SCAN_INTERVAL) {
         $lastLinkRotScan = time();
+        // Log de início (achado real 2026-09-28): esta varredura pode demorar (1 HTTP
+        // por link externo, de todos os sites) e roda ANTES do laço voltar a pegar job
+        // novo da fila — sem isto, minutos de silêncio pareciam worker travado.
+        fwrite(STDERR, "Iniciando revarredura de link rot...\n");
         try {
             $linkVerifier = new ExternalLinkVerifier();
             $notesService = new ArticleNoteService();
@@ -281,6 +295,9 @@ while (true) {
 
     if (time() - $lastBacklinkScan >= BACKLINK_SCAN_INTERVAL) {
         $lastBacklinkScan = time();
+        // Log de início — ver comentário na varredura de link rot acima: esta faz uma
+        // chamada de IA de verdade por site, também antes de voltar a pegar job da fila.
+        fwrite(STDERR, "Iniciando varredura de sugestão de link interno retroativo...\n");
         try {
             $notesService = new ArticleNoteService();
             $backlinkService = new BacklinkSuggestionService();
@@ -307,6 +324,8 @@ while (true) {
 
     if (time() - $lastPublishSyncScan >= PUBLISH_SYNC_SCAN_INTERVAL) {
         $lastPublishSyncScan = time();
+        // Log de início — ver comentário na varredura de link rot acima.
+        fwrite(STDERR, "Iniciando sincronização de posts apagados direto no WordPress...\n");
         try {
             $publishService = new \App\Services\WordPressPublishService();
             $fixed = 0;

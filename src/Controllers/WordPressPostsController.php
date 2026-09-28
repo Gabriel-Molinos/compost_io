@@ -67,14 +67,29 @@ final class WordPressPostsController extends Controller
 
         $filters = ['origin' => $origin, 'author' => $author, 'hasImage' => $hasImage, 'search' => $search];
 
+        // Paginado (achado real de performance 2026-09-28, testado na Gavsy — 171 posts):
+        // sem isso, a lista trazia e renderizava TODO post do filtro de uma vez.
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $totalFiltered = $configured ? $this->mirror->countFiltered((int) $site['id'], $filters) : 0;
+        $perPage = 20;
+        $totalPages = max(1, (int) ceil($totalFiltered / $perPage));
+        $page = min($page, $totalPages);
+
+        // Cabeçalho (pílulas/autor/última sync) numa consulta só, cacheada — ver
+        // WordPressPostMirrorService::summary() (achado de performance 2026-09-28).
+        $summary = $configured ? $this->mirror->summary((int) $site['id']) : ['lastSyncedAt' => null, 'origins' => ['all' => 0, 'compost' => 0, 'external' => 0], 'authors' => []];
+
         View::render('sites/wordpress-posts/index', [
             'title'        => 'Todos os posts · ' . $site['name'],
             'site'         => $site,
             'configured'   => $configured,
-            'posts'        => $configured ? $this->mirror->listForSite((int) $site['id'], $filters) : [],
-            'lastSyncedAt' => $configured ? $this->mirror->lastSyncedAt((int) $site['id']) : null,
-            'originCounts' => $configured ? $this->mirror->originCounts((int) $site['id']) : ['all' => 0, 'compost' => 0, 'external' => 0],
-            'authors'      => $configured ? $this->mirror->distinctAuthors((int) $site['id']) : [],
+            'posts'        => $configured ? $this->mirror->listForSite((int) $site['id'], $filters, $page, $perPage) : [],
+            'totalFiltered' => $totalFiltered,
+            'page'         => $page,
+            'totalPages'   => $totalPages,
+            'lastSyncedAt' => $summary['lastSyncedAt'],
+            'originCounts' => $summary['origins'],
+            'authors'      => $summary['authors'],
             'origin'       => $origin,
             'author'       => $author,
             'image'        => $imageParam,

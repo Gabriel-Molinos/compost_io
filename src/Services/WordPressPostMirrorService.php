@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Cache\CacheService;
 use App\Database\Connection;
 
 /**
@@ -16,14 +17,37 @@ use App\Database\Connection;
  */
 final class WordPressPostMirrorService
 {
+    private CacheService $cache;
+
+    public function __construct(?CacheService $cache = null)
+    {
+        $this->cache = $cache ?? new CacheService();
+    }
+
     public const ORIGIN_COMPOST = 'compost';
     public const ORIGIN_EXTERNAL = 'external';
     /** Sentinela pro filtro de autor "sem autor" — nunca um nome de verdade (`WordPressPostMirrorService::listForSite()`). */
     public const AUTHOR_NONE = '__none__';
 
+    /** Colunas da lista/tela — de propósito SEM `content` (ver comentário em `listForSite()`). */
+    private const LIST_COLUMNS = 'id, site_id, wordpress_post_id, article_id, title, slug, link, status, excerpt,
+        featured_image_url, wordpress_author_name, wordpress_category_names,
+        wordpress_published_at, wordpress_modified_at, last_synced_at, created_at';
+
+    private const PER_PAGE = 20;
+
     /**
-     * Lista filtrada, mais recentes primeiro. Todo filtro é opcional/combinável
-     * (mesmo espírito do filtro de Produção — `ArticleService::allForSite()`).
+     * Lista filtrada e PAGINADA, mais recentes primeiro. Todo filtro é
+     * opcional/combinável (mesmo espírito do filtro de Produção —
+     * `ArticleService::allForSite()`).
+     *
+     * Achado real 2026-09-28 (perf, testado na Gavsy — 171 posts): esta
+     * consulta chegava a ~2s porque trazia `content` (o HTML inteiro de CADA
+     * post, ~13 KB em média aqui) pra TODOS os posts, embora a lista só
+     * mostre título/miniatura/badges — `content` só é usado na tela de
+     * EDIÇÃO de um post por vez (`find()`, que continua `SELECT *`). Tirar
+     * essa coluna daqui + paginar (como a Produção já fazia) reduz a
+     * consulta a uma fração disso e o HTML renderizado de ~170 cards pra 20.
      *
      * @param array{
      *   origin?: 'compost'|'external'|null,
@@ -33,58 +57,84 @@ final class WordPressPostMirrorService
      * } $filters
      * @return list<array<string, mixed>>
      */
-    public function listForSite(int $siteId, array $filters = []): array
+    public function listForSite(int $siteId, array $filters = [], int $page = 1, int $perPage = self::PER_PAGE): array
     {
         [$where, $params] = $this->buildWhere($siteId, $filters);
+        $perPage = max(1, min(100, $perPage));
+        $offset = max(0, ($page - 1)) * $perPage;
+
         $stmt = Connection::get()->prepare(
-            "SELECT * FROM wordpress_posts_mirror
+            "SELECT " . self::LIST_COLUMNS . " FROM wordpress_posts_mirror
              WHERE {$where}
-             ORDER BY wordpress_published_at IS NULL, wordpress_published_at DESC, id DESC"
+             ORDER BY wordpress_published_at IS NULL, wordpress_published_at DESC, id DESC
+             LIMIT {$perPage} OFFSET {$offset}"
         );
         $stmt->execute($params);
 
         return $stmt->fetchAll();
     }
 
-    /**
-     * Nomes de autor distintos já vistos no espelho — insumo do `<select>` de
-     * filtro (não é uma lista "autores do WordPress", é só quem já apareceu
-     * aqui; evita outra chamada à API só pra montar um filtro).
-     *
-     * @return list<string>
-     */
-    public function distinctAuthors(int $siteId): array
+    /** Total de posts que batem no filtro (pra montar a paginação) — mesmo WHERE de `listForSite()`, sem LIMIT. */
+    public function countFiltered(int $siteId, array $filters = []): int
     {
-        $stmt = Connection::get()->prepare(
-            "SELECT DISTINCT wordpress_author_name FROM wordpress_posts_mirror
-             WHERE site_id = :s AND wordpress_author_name IS NOT NULL AND wordpress_author_name <> ''
-             ORDER BY wordpress_author_name"
-        );
-        $stmt->execute(['s' => $siteId]);
+        [$where, $params] = $this->buildWhere($siteId, $filters);
+        $stmt = Connection::get()->prepare("SELECT COUNT(*) FROM wordpress_posts_mirror WHERE {$where}");
+        $stmt->execute($params);
 
-        return array_map('strval', $stmt->fetchAll(\PDO::FETCH_COLUMN));
+        return (int) $stmt->fetchColumn();
+    }
+
+    /** Separador improvável de aparecer num nome de autor de verdade — usado só pra "desmontar" o GROUP_CONCAT abaixo. */
+    private const AUTHOR_SEP = "\x01";
+
+    /**
+     * Cabeçalho da tela (pílulas de origem, `<select>` de autor, "última
+     * sincronização") numa consulta SÓ. Achado real de performance
+     * 2026-09-28 (testado na Gavsy): cada consulta paga ~290ms de ida-e-volta
+     * até o banco remoto (mesma latência documentada em
+     * `docs/technical/testes-e-observabilidade.md §97`) — carregar essa tela
+     * fazia `lastSyncedAt()` + `originCounts()` + `distinctAuthors()` como 3
+     * consultas SEPARADAS (~870ms só nisso, antes de qualquer post ser
+     * listado). Cacheado por 2 min (mesmo TTL de `ReportService::currentSpend()`)
+     * porque só muda quando alguém sincroniza — não precisa ser em tempo real.
+     *
+     * @return array{lastSyncedAt: ?string, origins: array{all:int, compost:int, external:int}, authors: list<string>}
+     */
+    public function summary(int $siteId): array
+    {
+        return $this->cache->remember("wpposts:summary:{$siteId}", 120, function () use ($siteId): array {
+            $stmt = Connection::get()->prepare(
+                "SELECT
+                    MAX(last_synced_at) AS last_synced_at,
+                    COUNT(*) AS total,
+                    SUM(article_id IS NOT NULL) AS compost,
+                    GROUP_CONCAT(DISTINCT NULLIF(wordpress_author_name, '')
+                                 ORDER BY wordpress_author_name SEPARATOR '" . self::AUTHOR_SEP . "') AS authors
+                 FROM wordpress_posts_mirror WHERE site_id = :s"
+            );
+            $stmt->execute(['s' => $siteId]);
+            $row = $stmt->fetch() ?: [];
+
+            $total = (int) ($row['total'] ?? 0);
+            $compost = (int) ($row['compost'] ?? 0);
+            $authorsRaw = (string) ($row['authors'] ?? '');
+
+            return [
+                'lastSyncedAt' => isset($row['last_synced_at']) && $row['last_synced_at'] !== null ? (string) $row['last_synced_at'] : null,
+                'origins'      => ['all' => $total, 'compost' => $compost, 'external' => $total - $compost],
+                'authors'      => $authorsRaw !== '' ? explode(self::AUTHOR_SEP, $authorsRaw) : [],
+            ];
+        });
     }
 
     /**
-     * Contagens pra badge dos filtros de origem (pílulas "Todos"/"COMPOST"/"Direto no WordPress")
-     * — sempre do site INTEIRO, nunca do resultado já filtrado (senão a pílula não-ativa
-     * mostraria a contagem errada assim que outro filtro entrasse em jogo).
-     *
-     * @return array{all:int, compost:int, external:int}
+     * Chamado por `WordPressSyncService::syncPostsMirror()` depois de um sync bem-sucedido
+     * — sem isso, "Sincronizar agora" salva os posts novos mas a tela continua mostrando a
+     * "última sincronização"/contagens antigas até o cache de `summary()` expirar (até 2 min).
      */
-    public function originCounts(int $siteId): array
+    public function invalidateSummaryCache(int $siteId): void
     {
-        $stmt = Connection::get()->prepare(
-            'SELECT COUNT(*) AS total, SUM(article_id IS NOT NULL) AS compost
-             FROM wordpress_posts_mirror WHERE site_id = :s'
-        );
-        $stmt->execute(['s' => $siteId]);
-        $row = $stmt->fetch() ?: ['total' => 0, 'compost' => 0];
-
-        $total = (int) $row['total'];
-        $compost = (int) $row['compost'];
-
-        return ['all' => $total, 'compost' => $compost, 'external' => $total - $compost];
+        $this->cache->forget("wpposts:summary:{$siteId}");
     }
 
     /**
@@ -150,18 +200,6 @@ final class WordPressPostMirrorService
         $stmt->execute(['s' => $siteId]);
 
         return (int) $stmt->fetchColumn();
-    }
-
-    /** Timestamp da sincronização mais recente do site, ou null se nunca sincronizou. */
-    public function lastSyncedAt(int $siteId): ?string
-    {
-        $stmt = Connection::get()->prepare(
-            'SELECT MAX(last_synced_at) FROM wordpress_posts_mirror WHERE site_id = :s'
-        );
-        $stmt->execute(['s' => $siteId]);
-        $at = $stmt->fetchColumn();
-
-        return $at !== false && $at !== null ? (string) $at : null;
     }
 
     /**

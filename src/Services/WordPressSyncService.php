@@ -254,6 +254,9 @@ final class WordPressSyncService
         }
 
         $this->mirror->pruneMissing($siteId, $seenIds);
+        // "Sincronizar agora" tem que refletir na hora — sem isto, a tela ficava até
+        // 2 min mostrando "última sincronização"/contagens de antes (summary() cacheado).
+        $this->mirror->invalidateSummaryCache($siteId);
 
         return ['synced' => count($seenIds), 'compost' => $compost, 'external' => count($seenIds) - $compost];
     }

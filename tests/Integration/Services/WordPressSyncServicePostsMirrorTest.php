@@ -72,7 +72,12 @@ final class WordPressSyncServicePostsMirrorTest extends TestCase
         $this->assertSame(['synced' => 2, 'compost' => 0, 'external' => 2], $result);
         $rows = $this->mirror->listForSite($this->siteId);
         $this->assertCount(2, $rows);
-        $this->assertSame('<p>Post externo</p>', $rows[1]['content']); // conteúdo de verdade guardado local
+        // listForSite() de propósito NÃO traz `content` (achado de performance 2026-09-28 —
+        // ver WordPressPostMirrorService::LIST_COLUMNS); quem quer o conteúdo guardado de
+        // verdade usa find(), que continua SELECT *.
+        $this->assertArrayNotHasKey('content', $rows[1]);
+        $found = $this->mirror->find($this->siteId, (int) $rows[1]['id']);
+        $this->assertSame('<p>Post externo</p>', $found['content']); // conteúdo de verdade guardado local
     }
 
     public function testPostCreatedByCompostGetsLinkedToItsArticle(): void
@@ -130,14 +135,17 @@ final class WordPressSyncServicePostsMirrorTest extends TestCase
         $this->assertSame(301, (int) $rows[0]['wordpress_post_id']);
     }
 
-    public function testLastSyncedAtReflectsTheSync(): void
+    public function testLastSyncedAtReflectsTheSyncEvenThoughSummaryIsCached(): void
     {
-        $this->assertNull($this->mirror->lastSyncedAt($this->siteId));
+        // summary() é cacheado (2 min, achado de performance 2026-09-28) — este teste também
+        // cobre que syncPostsMirror() invalida esse cache (invalidateSummaryCache()), senão a
+        // 2ª leitura abaixo veria o "null" de antes do sync até o cache expirar sozinho.
+        $this->assertNull($this->mirror->summary($this->siteId)['lastSyncedAt']);
 
         (new WordPressSyncService(fetchPostsPage: $this->onePageOf([$this->fakePost(401, 'X')])))
             ->syncPostsMirror($this->siteId);
 
-        $this->assertNotNull($this->mirror->lastSyncedAt($this->siteId));
+        $this->assertNotNull($this->mirror->summary($this->siteId)['lastSyncedAt']);
     }
 
     public function testDeletingTheSiteCascadesTheMirror(): void

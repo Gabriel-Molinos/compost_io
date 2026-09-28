@@ -18,11 +18,21 @@ use App\View;
 /** @var string $image */
 /** @var string|null $search */
 /** @var bool $filtersActive */
+/** @var int $totalFiltered */
+/** @var int $page */
+/** @var int $totalPages */
 
 $activeTab = 'wpposts';
 require __DIR__ . '/../_tabs.php';
 
 $base = '/sites/' . View::e($site['id']) . '/wordpress-posts';
+// Preserva os filtros ativos ao trocar de página (mesmo padrão de sites/production/index.php).
+$baseParams = ['origin' => $origin, 'author' => $author, 'image' => $image !== '' ? $image : null, 'q' => $search];
+$pageUrl = static function (int $p) use ($base, $baseParams): string {
+    $params = array_filter($baseParams + ['page' => $p > 1 ? $p : null], static fn ($v): bool => $v !== null && $v !== '');
+
+    return $base . ($params !== [] ? '?' . http_build_query($params) : '');
+};
 $statusMap = [
     'publish' => ['Publicado', 'success'],
     'future'  => ['Agendado', 'cyan'],
@@ -141,7 +151,9 @@ $statusMap = [
                 </p>
             </section>
         <?php else: ?>
-            <p class="mt-4 text-xs text-text-muted"><?= count($posts) ?> post(s) neste filtro.</p>
+            <p class="mt-4 text-xs text-text-muted">
+                <?= $totalFiltered ?> post(s) neste filtro<?= $totalPages > 1 ? ' — página ' . $page . ' de ' . $totalPages : '' ?>.
+            </p>
             <ul class="mt-3 space-y-3">
                 <?php foreach ($posts as $p): ?>
                     <?php
@@ -200,6 +212,23 @@ $statusMap = [
                     </li>
                 <?php endforeach; ?>
             </ul>
+
+            <?php if ($totalPages > 1): ?>
+                <?php $pagerBtn = 'btn btn-secondary px-3 py-1.5 text-sm'; ?>
+                <nav class="mt-5 flex items-center justify-center gap-3 text-sm" aria-label="Paginação">
+                    <?php if ($page > 1): ?>
+                        <a href="<?= View::e($pageUrl($page - 1)) ?>" class="<?= $pagerBtn ?>">← Anterior</a>
+                    <?php else: ?>
+                        <span class="<?= $pagerBtn ?>" aria-disabled="true">← Anterior</span>
+                    <?php endif; ?>
+                    <span class="text-text-secondary">Página <?= $page ?> de <?= $totalPages ?></span>
+                    <?php if ($page < $totalPages): ?>
+                        <a href="<?= View::e($pageUrl($page + 1)) ?>" class="<?= $pagerBtn ?>">Próxima →</a>
+                    <?php else: ?>
+                        <span class="<?= $pagerBtn ?>" aria-disabled="true">Próxima →</span>
+                    <?php endif; ?>
+                </nav>
+            <?php endif; ?>
         <?php endif; ?>
     </div>
 <?php endif; ?>

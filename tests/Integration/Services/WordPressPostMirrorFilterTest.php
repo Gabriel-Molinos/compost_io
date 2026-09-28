@@ -126,14 +126,44 @@ final class WordPressPostMirrorFilterTest extends TestCase
         $this->assertSame([], $this->titles(['search' => '%_%']));
     }
 
-    public function testOriginCountsReflectTheWholeSiteNotTheFilteredResult(): void
+    public function testSummaryOriginCountsReflectTheWholeSiteNotAnyFilter(): void
     {
-        $counts = $this->mirror->originCounts($this->siteId);
-        $this->assertSame(['all' => 4, 'compost' => 1, 'external' => 3], $counts);
+        // summary() é a consulta única (achado de performance 2026-09-28) que substituiu
+        // originCounts()/distinctAuthors()/lastSyncedAt() separadas — as contagens de origem
+        // continuam sempre do site INTEIRO, nunca de um filtro aplicado.
+        $this->assertSame(['all' => 4, 'compost' => 1, 'external' => 3], $this->mirror->summary($this->siteId)['origins']);
     }
 
-    public function testDistinctAuthorsListsEachNameOnce(): void
+    public function testSummaryDistinctAuthorsListsEachNameOnce(): void
     {
-        $this->assertSame(['João', 'Maria'], $this->mirror->distinctAuthors($this->siteId));
+        $this->assertSame(['João', 'Maria'], $this->mirror->summary($this->siteId)['authors']);
+    }
+
+    public function testListForSiteNeverReturnsTheContentColumn(): void
+    {
+        // Achado de performance 2026-09-28 (~2s numa lista de 171 posts, ~13 KB de HTML cada):
+        // a lista nunca precisa do corpo do post, só find() (uma edição por vez) precisa.
+        $rows = $this->mirror->listForSite($this->siteId);
+        $this->assertNotEmpty($rows);
+        foreach ($rows as $row) {
+            $this->assertArrayNotHasKey('content', $row);
+        }
+    }
+
+    public function testPaginationSplitsResultsAndCountFilteredMatchesTheTotal(): void
+    {
+        $page1 = $this->mirror->listForSite($this->siteId, [], page: 1, perPage: 2);
+        $page2 = $this->mirror->listForSite($this->siteId, [], page: 2, perPage: 2);
+
+        $this->assertCount(2, $page1);
+        $this->assertCount(2, $page2);
+        $this->assertSame([], array_intersect(array_column($page1, 'id'), array_column($page2, 'id')));
+        $this->assertSame(4, $this->mirror->countFiltered($this->siteId));
+    }
+
+    public function testCountFilteredRespectsTheSameFiltersAsListForSite(): void
+    {
+        $this->assertSame(2, $this->mirror->countFiltered($this->siteId, ['author' => 'João']));
+        $this->assertSame(1, $this->mirror->countFiltered($this->siteId, ['author' => WordPressPostMirrorService::AUTHOR_NONE]));
     }
 }

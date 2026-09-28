@@ -41,6 +41,15 @@ encontrado no cache" e nunca cachearia esse caso.
 | `cache:report:current_spend:{siteId}:{period}`      | 2 min                                 | `ReportService::currentSpend()`                       | por site + período    |
 | `cache:report:trend:{siteId}:{period}:{months}`     | 5 min                                 | `ReportService::trend()`                              | por site + período + janela |
 | `cache:report:monthly:{siteId}:{period}`            | 2 min (mês corrente) / 24h (mês passado) | `ReportService::monthly()`                        | por site + período    |
+| `cache:wpposts:summary:{siteId}`                     | 2 min                                | `WordPressPostMirrorService::summary()`               | por site              |
+
+**`summary()` é a primeira chave invalidada de propósito** (achado de
+performance 2026-09-28, "Todos os posts" chegando a ~2s — ver
+[testes-e-observabilidade.md §97](testes-e-observabilidade.md#97-performance-para-60-sites-fase-9)):
+`WordPressSyncService::syncPostsMirror()` chama `invalidateSummaryCache()`
+(→ `CacheService::forget()`) ao terminar, pra "Sincronizar agora" refletir
+na tela na hora, sem esperar o TTL — até aqui `forget()` existia mas nenhum
+caller usava.
 
 **`monthly()` tem uma ressalva importante**: o campo `pending_now` (artigos
 em revisão agora) é por definição um retrato do momento atual, não do

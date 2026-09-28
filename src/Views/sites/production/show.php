@@ -284,12 +284,12 @@ $compBlockingCount = count((array) ($compliance['blocking'] ?? []));
                     . '">' . $okCount . '/' . count($checklist) . ' ok</span>';
                 $qualityCardOpen(Icon::nav('check'), 'Checklist de pré-aprovação', $badge);
                 ?>
-                <p class="mt-1 text-xs text-text-muted">Obrigatório — aprovar só é permitido com os 3 itens ok.</p>
-                <ul class="mt-3 space-y-2">
+                <p class="mt-1 text-xs text-text-muted">Obrigatório — aprovar só é permitido com os <?= count($checklist) ?> itens ok.</p>
+                <ul class="mt-3 space-y-1.5">
                     <?php foreach ($checklist as $item): ?>
-                        <li class="flex items-start gap-2 text-sm">
-                            <span class="mt-0.5 shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold uppercase <?= $item['ok'] ? 'border-success/40 bg-success/15 text-success' : 'border-danger/40 bg-danger/15 text-danger' ?>">
-                                <?= $item['ok'] ? 'ok' : 'falhou' ?>
+                        <li class="flex items-start gap-3 rounded-lg border px-2.5 py-2 text-sm <?= $item['ok'] ? 'border-success/20 bg-success/5' : 'border-danger/25 bg-danger/5' ?>">
+                            <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full [&>svg]:h-3 [&>svg]:w-3 <?= $item['ok'] ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger' ?>">
+                                <?= Icon::nav($item['ok'] ? 'check' : 'close') ?>
                             </span>
                             <span>
                                 <span class="block font-medium text-text-primary"><?= View::e($item['label']) ?></span>

@@ -153,6 +153,13 @@ const BACKLINK_SCAN_INTERVAL = 86400; // 24h
 $lastPublishSyncScan = time(); // ver comentário em $lastLinkRotScan acima — mesmo achado 2026-09-28
 const PUBLISH_SYNC_SCAN_INTERVAL = 86400; // 24h
 
+// Espelho local de TODOS os posts do WordPress, COMPOST ou não (pedido do
+// responsável 2026-09-28: tudo pelo COMPOST + cópia local por segurança — já
+// houve invasão de site antes). Mantém `wordpress_posts_mirror` sempre fresco
+// sozinho, além do botão manual "Sincronizar agora" na tela.
+$lastPostsMirrorScan = time(); // mesmo motivo do $lastLinkRotScan acima — não roda na hora, só depois de 1 intervalo
+const POSTS_MIRROR_SCAN_INTERVAL = 86400; // 24h
+
 while (true) {
     if (time() - $lastScheduleScan >= SCHEDULE_SCAN_INTERVAL) {
         $lastScheduleScan = time();
@@ -341,6 +348,28 @@ while (true) {
             }
         } catch (\Throwable $e) {
             fwrite(STDERR, 'Falha na sincronização de posts apagados: ' . $e->getMessage() . "\n");
+        }
+    }
+
+    if (time() - $lastPostsMirrorScan >= POSTS_MIRROR_SCAN_INTERVAL) {
+        $lastPostsMirrorScan = time();
+        fwrite(STDERR, "Iniciando espelho de posts do WordPress...\n");
+        try {
+            $wpSync = new \App\Services\WordPressSyncService();
+            $mirrored = 0;
+            foreach ($siteService->all() as $site) {
+                try {
+                    $r = $wpSync->syncPostsMirror((int) $site['id']);
+                    $mirrored += $r['synced'];
+                } catch (\App\Integrations\WordPress\WordPressException) {
+                    continue; // site sem WordPress conectado, ou falha de rede — pula, tenta de novo no próximo ciclo
+                }
+            }
+            if ($mirrored > 0) {
+                fwrite(STDERR, "{$mirrored} post(s) do WordPress espelhado(s) localmente.\n");
+            }
+        } catch (\Throwable $e) {
+            fwrite(STDERR, 'Falha no espelho de posts do WordPress: ' . $e->getMessage() . "\n");
         }
     }
 

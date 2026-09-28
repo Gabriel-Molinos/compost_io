@@ -118,6 +118,8 @@ Fluxo proibido:
 Navegador → API Key externa → Serviço externo
 ```
 
+> **Reduzir login direto no wp-admin** (decisão do responsável 2026-09-28, motivada por invasão real de site antes). O COMPOST fala com o WordPress via Application Password (`site_wordpress_connections`, §46-47) — um caminho de autenticação separado do login normal por sessão/cookie. Quanto menos gente abre o wp-admin no navegador, menor a exposição a ataques que dependem exatamente disso (credencial roubada por phishing, plugin malicioso/XSS disparando ao logar, sequestro de sessão) — não é uma segunda via independente do WordPress (se a REST API dele estiver fora do ar, o COMPOST também não consegue nada), é reduzir QUEM precisa abrir o painel de verdade. Por isso a tela "Todos os posts" (`fluxo-editorial.md §31`) cobre listar, copiar link e **editar** qualquer post — inclusive os feitos direto no WordPress — sem sair do COMPOST, e guarda uma cópia local do conteúdo (`wordpress_posts_mirror`) como backup adicional contra uma invasão futura. Isto não substitui as práticas básicas de segurança do WordPress em si (senha forte, 2FA, plugins atualizados) — é redução de exposição, não blindagem.
+
 ### 50. Checklist de segurança antes de cada deploy
 
 Antes de colocar qualquer versão em produção. Auditado de verdade contra o

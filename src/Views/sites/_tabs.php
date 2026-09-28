@@ -23,6 +23,9 @@ $tabs = [
     ['sources',    'Fontes',      '/sites/' . $site['id'] . '/sources',    true],
     ['links',      'Links',       '/sites/' . $site['id'] . '/links',      true],
     ['calendar',   'Calendário',  '/sites/' . $site['id'] . '/calendar',   true],
+    // "Todos os posts" — sem AuthService::isAdmin() de propósito, é pro Redator-Chefe
+    // usar em vez de logar no wp-admin (pedido do responsável 2026-09-28).
+    ['wpposts',    'Todos os posts', '/sites/' . $site['id'] . '/wordpress-posts', true],
     ['reports',    'Relatórios',  '/sites/' . $site['id'] . '/reports',    true],
     ['intelligence', 'Inteligência', '/sites/' . $site['id'] . '/intelligence', true],
     // Editar configurações do site é liberado pro Redator-Chefe também

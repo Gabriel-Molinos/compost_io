@@ -104,6 +104,17 @@ final class WordPressClient
         return $this->request('DELETE', 'wp/v2/media/' . $mediaId, query: ['force' => 'true']);
     }
 
+    /**
+     * Só pra resolver a URL de uma mídia já existente (ex.: imagem destacada
+     * atual de um post, ao abrir a edição — `WordPressPostsController::edit()`).
+     *
+     * @return array<string, mixed>
+     */
+    public function getMedia(int $mediaId): array
+    {
+        return $this->request('GET', 'wp/v2/media/' . $mediaId);
+    }
+
     // --- Taxonomias / autores (insumo da 7.3) ----------------------------
 
     /**
@@ -193,6 +204,72 @@ final class WordPressClient
             return [
                 'title'   => trim(html_entity_decode(strip_tags((string) ($r['title']['rendered'] ?? '')), ENT_QUOTES, 'UTF-8')),
                 'excerpt' => mb_substr($excerpt, 0, 400),
+            ];
+        }, $rows);
+    }
+
+    /**
+     * Uma página de TODOS os posts (qualquer status) com o suficiente pra
+     * espelhar localmente (`WordPressSyncService::syncPostsMirror()`, pedido
+     * do responsável 2026-09-28 — cópia de todo o conteúdo do WordPress,
+     * inclusive posts feitos direto lá, pra não perder nada numa invasão).
+     * `_embed=1` traz autor/categorias/mídia destacada numa chamada só —
+     * sem isso, seria 1 chamada extra por post só pra achar a URL da imagem.
+     *
+     * @return list<array<string, mixed>> cada item já com `title`/`excerpt`/`content`
+     *         "desembrulhados" de `{campo}.rendered`, `featured_image_url`,
+     *         `author_name` e `category_names` (list<string>) resolvidos do `_embedded`
+     */
+    public function listAllPostsPage(int $page, int $perPage = 50): array
+    {
+        $rows = $this->requestList('GET', 'wp/v2/posts', [
+            'page'     => max(1, $page),
+            'per_page' => max(1, min(100, $perPage)),
+            'status'   => 'publish,future,draft,pending,private',
+            'orderby'  => 'date',
+            'order'    => 'desc',
+            '_embed'   => '1',
+            '_fields'  => 'id,link,slug,status,date_gmt,modified_gmt,title,excerpt,content,_links,_embedded',
+        ]);
+
+        return array_map(static function (array $r): array {
+            $embedded = is_array($r['_embedded'] ?? null) ? $r['_embedded'] : [];
+
+            $featuredUrl = null;
+            $media = $embedded['wp:featuredmedia'][0] ?? null;
+            if (is_array($media) && !empty($media['source_url'])) {
+                $featuredUrl = (string) $media['source_url'];
+            }
+
+            $authorName = null;
+            $author = $embedded['author'][0] ?? null;
+            if (is_array($author) && !empty($author['name'])) {
+                $authorName = html_entity_decode((string) $author['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+
+            $categoryNames = [];
+            foreach ((array) ($embedded['wp:term'][0] ?? []) as $term) {
+                if (is_array($term) && !empty($term['name'])) {
+                    $categoryNames[] = html_entity_decode((string) $term['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                }
+            }
+
+            return [
+                'id'                => (int) ($r['id'] ?? 0),
+                'link'              => (string) ($r['link'] ?? ''),
+                'slug'              => (string) ($r['slug'] ?? ''),
+                'status'            => (string) ($r['status'] ?? ''),
+                'date_gmt'          => (string) ($r['date_gmt'] ?? ''),
+                'modified_gmt'      => (string) ($r['modified_gmt'] ?? ''),
+                // title/excerpt vêm com entities do WordPress (ex.: "&#8217;") — decodifica aqui
+                // porque a view escapa de novo pra exibir (View::e()); sem isso, dobra o escape e
+                // mostra a entity literal na tela (achado real 2026-09-28, visto na Gavsy de verdade).
+                'title'             => html_entity_decode((string) ($r['title']['rendered'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                'excerpt'           => html_entity_decode(trim(strip_tags((string) ($r['excerpt']['rendered'] ?? ''))), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                'content'           => (string) ($r['content']['rendered'] ?? ''), // HTML de verdade, renderizado sem escape — entities ficam como vieram
+                'featured_image_url' => $featuredUrl,
+                'author_name'       => $authorName,
+                'category_names'    => $categoryNames,
             ];
         }, $rows);
     }

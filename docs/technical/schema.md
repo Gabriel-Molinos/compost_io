@@ -94,6 +94,11 @@ editorial_insights                -- [+] Centro de Inteligência Editorial (RF-0
 
 site_ai_costs                     -- [+] migration 0029 — custo de IA por site SEM artigo (não cabe em ai_executions)
   id, site_id, source ('intelligence_insight' | 'editorial_identity_suggestion'), cost (DECIMAL), created_at
+
+wordpress_posts_mirror            -- [+] migration 0031 — cópia local de TODOS os posts do WordPress (COMPOST ou não)
+  id, site_id, wordpress_post_id, article_id? (COMPOST-criado quando não-NULL), title, slug?, link, status,
+  excerpt?, content? (HTML publicado — o backup em si), featured_image_url?, wordpress_author_name?,
+  wordpress_category_names?, wordpress_published_at?, wordpress_modified_at?, last_synced_at, created_at
 ```
 
 `?` = coluna nullable.
@@ -115,6 +120,7 @@ Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mant
 - `0028` — `sites.editorial_identity_suggested_at` (DATETIME, nullable): pedido do responsável 2026-09-28 — na 1ª conexão com o WordPress, `EditorialIdentityAnalysisService` lê os posts publicados de verdade e sugere nicho/público-alvo/tom/identidade editorial quando os 4 campos ainda estão vazios (site sem posts o bastante não sugere nada). Marca esta coluna pra a tela avisar "isto é sugestão, revise"; qualquer salvamento manual do formulário (`SiteService::update()`) limpa a marca.
 - `0029` — nova tabela **`site_ai_costs`**: achado real 2026-09-28 — o orçamento de IA da Visão Geral (`CostBudgetService`/`ReportService`) somava só `ai_executions` (sempre ligado a um artigo), deixando de fora o custo do Centro de Inteligência (`IntelligenceService`, já tinha `editorial_insights.cost`, mas nada somava) e da sugestão automática de identidade editorial (migration 0028, não registrava custo em lugar nenhum) — as duas são chamadas ao Gemini no nível do SITE, sem artigo. `SiteAiCostService` registra (`log()`) e `ReportService::currentSpend()`/`monthly()`/`trend()` somam as duas fontes.
 - `0030` — `images.sort_order` (SMALLINT UNSIGNED, nullable): pedido do responsável 2026-09-28 — o Redator-Chefe escolher e ver onde cada imagem de corpo vai ficar no artigo, em vez da distribuição 100% automática (ordem de geração) que existia. Só usada pra `role = 'BODY'` (`ImageService::reorderBody()`); NULL = nunca reordenada manualmente, cai pra ordem de criação (`id`) — compatível com toda imagem já existente. `BodyImageInjector::assignSlots()` (extraído de `inject()`) é a MESMA conta usada na prévia da tela (`sites/production/show.php`) e na publicação de verdade (`WordPressPublishService::bodyImages()`), pra nunca divergir.
+- `0031` — nova tabela **`wordpress_posts_mirror`**: pedido do responsável 2026-09-28 — o chefe quer tudo pelo COMPOST (o redator nunca precisa logar no wp-admin — menos exposição, já houve invasão de site antes) e uma cópia local de TODO o conteúdo do WordPress, COMPOST ou não, pra não perder nada numa invasão futura. `WordPressSyncService::syncPostsMirror()` espelha todos os posts (`content` guarda o HTML publicado de verdade, não só metadado); `article_id` liga com o artigo local quando o post foi criado pelo COMPOST (cruza por `schedules.wordpress_post_id`), fica `NULL` quando foi feito direto no WordPress. Tela "Todos os posts" (`WordPressPostsController`) lista, copia link e edita (título/resumo/categoria/autor/imagem destacada/corpo) — a edição fala com o WordPress ao vivo (`getPost()`/`updatePost()`), o espelho é só pra listar/backup.
 
 ### 87.1 Autenticação — sem tabela
 

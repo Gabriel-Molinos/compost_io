@@ -23,6 +23,7 @@ use App\Controllers\ScheduleController;
 use App\Controllers\SiteController;
 use App\Controllers\UserController;
 use App\Controllers\WordPressConnectionController;
+use App\Controllers\WordPressPostsController;
 use App\Router;
 
 /**
@@ -129,6 +130,13 @@ return static function (Router $router): void {
     $router->add('POST', '/sites/{id}/wordpress/delete',          [WordPressConnectionController::class, 'destroy'],        admin: true);
     $router->add('POST', '/sites/{id}/wordpress/sync-authors',    [WordPressConnectionController::class, 'syncAuthors'],    admin: true);
     $router->add('POST', '/sites/{id}/wordpress/sync-categories', [WordPressConnectionController::class, 'syncCategories'], admin: true);
+
+    // "Todos os posts" (pedido 2026-09-28): auth: true (não admin: true) de propósito —
+    // é exatamente pro Redator-Chefe usar em vez de logar no wp-admin.
+    $router->add('GET',  '/sites/{id}/wordpress-posts',              [WordPressPostsController::class, 'index'], auth: true);
+    $router->add('POST', '/sites/{id}/wordpress-posts/sync',         [WordPressPostsController::class, 'sync'],  auth: true);
+    $router->add('GET',  '/sites/{id}/wordpress-posts/{pid}/edit',   [WordPressPostsController::class, 'edit'],  auth: true);
+    $router->add('POST', '/sites/{id}/wordpress-posts/{pid}',        [WordPressPostsController::class, 'update'], auth: true);
 
     // Playground de IA do site (somente ADMIN — cada execução é chamada real ao Gemini)
     $router->add('GET',  '/sites/{id}/ai-playground', [AiPlaygroundController::class, 'index'], admin: true);

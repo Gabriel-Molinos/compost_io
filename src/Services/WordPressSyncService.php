@@ -15,9 +15,15 @@ use App\Integrations\WordPress\WordPressClient;
  */
 final class WordPressSyncService
 {
+    /** @var (\Closure(int, int): list<array<string, mixed>>)|null ponto de substituição só pros testes — ver syncPostsMirror() */
+    private ?\Closure $fetchPostsPage;
+
     public function __construct(
         private readonly WordPressConnectionService $connections = new WordPressConnectionService(),
+        private readonly WordPressPostMirrorService $mirror = new WordPressPostMirrorService(),
+        ?\Closure $fetchPostsPage = null,
     ) {
+        $this->fetchPostsPage = $fetchPostsPage;
     }
 
     /**
@@ -192,6 +198,64 @@ final class WordPressSyncService
             'guidelines_filled' => $guidelinesFilled,
             'unmatched_local' => $unmatchedLocal,
         ];
+    }
+
+    /**
+     * Espelha TODOS os posts do WordPress em `wordpress_posts_mirror` (pedido
+     * do responsável 2026-09-28) — cópia local de verdade, COMPOST ou não.
+     * `article_id` é resolvido cruzando `wordpress_post_id` com `schedules`
+     * (site COMPOST-criado tem um agendamento com esse id gravado); post sem
+     * correspondência é "criado direto no WordPress" (`article_id = NULL`).
+     * Como `syncCategories()`/`syncAuthors()`: nunca cria/mexe em nada do lado
+     * do WordPress, só lê e grava local.
+     *
+     * @return array{synced:int, compost:int, external:int}
+     */
+    public function syncPostsMirror(int $siteId): array
+    {
+        $fetchPage = $this->fetchPostsPage ?? function (int $page, int $perPage) use ($siteId): array {
+            return $this->connections->client($siteId)->listAllPostsPage($page, $perPage);
+        };
+
+        /** @var array<int, int> $articleByWpPostId wordpress_post_id => article_id, só do próprio site */
+        $articleByWpPostId = [];
+        $stmt = Connection::get()->prepare(
+            'SELECT s.wordpress_post_id, s.article_id
+             FROM schedules s JOIN articles a ON a.id = s.article_id
+             WHERE a.site_id = :s AND s.wordpress_post_id IS NOT NULL'
+        );
+        $stmt->execute(['s' => $siteId]);
+        foreach ($stmt->fetchAll() as $row) {
+            $articleByWpPostId[(int) $row['wordpress_post_id']] = (int) $row['article_id'];
+        }
+
+        $seenIds = [];
+        $compost = 0;
+        for ($page = 1; $page <= 40; $page++) { // cap de segurança: até 4000 posts
+            $batch = $fetchPage($page, 100);
+            if ($batch === []) {
+                break;
+            }
+            foreach ($batch as $post) {
+                $wpId = (int) $post['id'];
+                if ($wpId === 0) {
+                    continue;
+                }
+                $seenIds[] = $wpId;
+                $articleId = $articleByWpPostId[$wpId] ?? null;
+                if ($articleId !== null) {
+                    $compost++;
+                }
+                $this->mirror->upsert($siteId, $post, $articleId);
+            }
+            if (count($batch) < 100) {
+                break;
+            }
+        }
+
+        $this->mirror->pruneMissing($siteId, $seenIds);
+
+        return ['synced' => count($seenIds), 'compost' => $compost, 'external' => count($seenIds) - $compost];
     }
 
     /**

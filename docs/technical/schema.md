@@ -21,7 +21,9 @@ users
   id, name, email (unique), password_hash, role (ADMIN | REDATOR_CHEFE), is_active, timestamps
 
 sites
-  id, name, niche, language, target_audience, tone, wordpress_url, is_active, timestamps
+  id, name, niche, language, target_audience, tone, editorial_identity,
+  editorial_identity_suggested_at? (DATETIME),       -- migration 0028: não-NULL = "IA sugeriu, ainda não revisado" (EditorialIdentityAnalysisService); qualquer save manual limpa
+  wordpress_url, is_active, timestamps
 
 user_site                         -- N:N usuário <-> site (unique user_id+site_id)
   id, user_id, site_id, timestamps
@@ -106,6 +108,7 @@ Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mant
 - `0010` — `articles.status`: +`ERROR` no ENUM — falha técnica definitiva do pipeline rodando via fila (retries esgotados). Fase 9.1b.
 - `0011` — índices para os filtros de período dos relatórios: `articles (site_id, created_at)` / `(site_id, reviewed_at)`, `ai_executions (article_id, cost)` / `(created_at)`, `feedback (created_at)`. Só índice, nenhuma coluna nova. Fase 9 (performance) — levantamento mostrou scan de `ai_executions` inteira (todos os sites) na consulta de custo máximo global (`CostBudgetService`).
 - `0012` — nova tabela **`editorial_memory`**: "lições" duradouras de memória editorial, escritas por humano (Redator-Chefe/Admin), opcionalmente promovidas de um `feedback` existente. Fase 9 — fecha a pendência §87.2 abaixo.
+- `0028` — `sites.editorial_identity_suggested_at` (DATETIME, nullable): pedido do responsável 2026-09-28 — na 1ª conexão com o WordPress, `EditorialIdentityAnalysisService` lê os posts publicados de verdade e sugere nicho/público-alvo/tom/identidade editorial quando os 4 campos ainda estão vazios (site sem posts o bastante não sugere nada). Marca esta coluna pra a tela avisar "isto é sugestão, revise"; qualquer salvamento manual do formulário (`SiteService::update()`) limpa a marca.
 
 ### 87.1 Autenticação — sem tabela
 

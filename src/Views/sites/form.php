@@ -237,6 +237,20 @@ $isAdminUser = AuthService::isAdmin();
     </div>
 
     <div class="mx-auto mt-8 max-w-3xl space-y-6">
+        <?php // Sugestão automática ao conectar o WordPress (pedido do responsável 2026-09-28):
+        // nicho/tom/público/identidade abaixo foram preenchidos pela IA a partir dos posts
+        // publicados do site — some sozinho assim que o formulário for salvo (SiteService::update()
+        // limpa a marca), confirmado ou não os valores tenham mudado. ?>
+        <?php if (!empty($site['editorial_identity_suggested_at'])): ?>
+            <div class="flex items-start gap-3 rounded-xl border border-cyan/25 bg-cyan/5 p-4">
+                <span class="mt-0.5 shrink-0 text-cyan [&>svg]:h-5 [&>svg]:w-5"><?= Icon::nav('ai') ?></span>
+                <p class="text-sm leading-relaxed text-text-primary">
+                    <strong class="font-semibold">Nicho, tom, público e identidade editorial abaixo foram sugeridos automaticamente</strong>
+                    a partir dos posts publicados no WordPress conectado. Revise e ajuste o que quiser — salvar esta página confirma.
+                </p>
+            </div>
+        <?php endif; ?>
+
         <?php // ── Identidade: nome, nicho e situação, com prévia de como o site aparece no COMPOST ── ?>
         <?php
         $nicheValue = trim((string) ($site['niche'] ?? ''));

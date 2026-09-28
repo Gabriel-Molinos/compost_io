@@ -227,16 +227,56 @@ final class SiteService
         return (int) $pdo->lastInsertId();
     }
 
-    /** @param array<string, mixed> $data */
+    /**
+     * `editorial_identity_suggested_at = NULL` sempre que alguém salva o formulário
+     * manualmente: essa coluna só existe pra marcar "isto foi a IA que sugeriu, ainda
+     * não foi revisado por humano" (ver `suggestEditorialIdentity()`) — qualquer
+     * salvamento aqui já é a revisão, confirmada ou não os valores tenham mudado.
+     *
+     * @param array<string, mixed> $data
+     */
     public function update(int $id, array $data): void
     {
         $stmt = Connection::get()->prepare(
             'UPDATE sites SET name = :name, niche = :niche, language = :language,
                 target_audience = :audience, tone = :tone, editorial_identity = :identity,
+                editorial_identity_suggested_at = NULL,
                 wordpress_url = :url, is_active = :active
              WHERE id = :id'
         );
         $stmt->execute($this->params($data) + ['id' => $id]);
+    }
+
+    /**
+     * Preenche nicho/público/tom/identidade a partir da análise automática do site
+     * conectado (`EditorialIdentityAnalysisService`, pedido do responsável 2026-09-28)
+     * — só se os 4 campos ainda estiverem vazios (nunca pisa em cima do que um humano
+     * já escreveu). Marca `editorial_identity_suggested_at` pra a tela de configurações
+     * avisar "isto é sugestão, revise" até alguém salvar o formulário de verdade.
+     *
+     * @param array{niche: string, target_audience: string, tone: string, editorial_identity: string} $fields
+     * @return bool true se aplicou (false = algum campo já não estava mais vazio — corrida rara com edição manual entre a leitura e aqui)
+     */
+    public function suggestEditorialIdentity(int $siteId, array $fields): bool
+    {
+        $stmt = Connection::get()->prepare(
+            "UPDATE sites SET niche = :niche, target_audience = :audience, tone = :tone,
+                editorial_identity = :identity, editorial_identity_suggested_at = NOW()
+             WHERE id = :id
+               AND (niche IS NULL OR niche = '')
+               AND (target_audience IS NULL OR target_audience = '')
+               AND (tone IS NULL OR tone = '')
+               AND (editorial_identity IS NULL OR editorial_identity = '')"
+        );
+        $stmt->execute([
+            'id'       => $siteId,
+            'niche'    => self::nullable($fields['niche']),
+            'audience' => self::nullable($fields['target_audience']),
+            'tone'     => self::nullable($fields['tone']),
+            'identity' => self::nullable($fields['editorial_identity']),
+        ]);
+
+        return $stmt->rowCount() > 0;
     }
 
     /**

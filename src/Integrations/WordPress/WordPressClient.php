@@ -170,6 +170,34 @@ final class WordPressClient
     }
 
     /**
+     * Título + resumo (texto puro, sem HTML) dos posts publicados mais recentes —
+     * insumo pra `EditorialIdentityAnalysisService` "ler" o site na primeira conexão
+     * e sugerir nicho/público/tom/identidade. Sem cache (chamada rara, só na conexão).
+     *
+     * @return list<array{title: string, excerpt: string}>
+     */
+    public function listRecentPostsForAnalysis(int $limit = 12): array
+    {
+        $rows = $this->requestList('GET', 'wp/v2/posts', [
+            'per_page' => max(1, min(50, $limit)),
+            'status'   => 'publish',
+            'orderby'  => 'date',
+            'order'    => 'desc',
+            '_fields'  => 'title,excerpt',
+        ]);
+
+        return array_map(static function (array $r): array {
+            $excerpt = (string) ($r['excerpt']['rendered'] ?? '');
+            $excerpt = trim(html_entity_decode(strip_tags($excerpt), ENT_QUOTES, 'UTF-8'));
+
+            return [
+                'title'   => trim(html_entity_decode(strip_tags((string) ($r['title']['rendered'] ?? '')), ENT_QUOTES, 'UTF-8')),
+                'excerpt' => mb_substr($excerpt, 0, 400),
+            ];
+        }, $rows);
+    }
+
+    /**
      * Primeiro post ou página com aquele slug (qualquer status), ou null.
      *
      * @return array<string, mixed>|null

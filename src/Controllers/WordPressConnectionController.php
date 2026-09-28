@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Integrations\WordPress\WordPressException;
+use App\Services\EditorialIdentityAnalysisService;
 use App\Services\WordPressConnectionService;
 use App\Services\WordPressSyncService;
 use App\Support\Csrf;
@@ -21,11 +22,13 @@ final class WordPressConnectionController extends Controller
 {
     private WordPressConnectionService $connections;
     private WordPressSyncService $sync;
+    private EditorialIdentityAnalysisService $identity;
 
     public function __construct()
     {
         $this->connections = new WordPressConnectionService();
         $this->sync = new WordPressSyncService($this->connections);
+        $this->identity = new EditorialIdentityAnalysisService($this->connections);
     }
 
     public function edit(string $siteId): void
@@ -165,7 +168,17 @@ final class WordPressConnectionController extends Controller
         try {
             $cats = $this->sync->syncCategories($siteId);
             $this->sync->syncAuthors($siteId);
-            Session::flash('success', trim((string) Session::pullFlash('success') . ' ' . $this->categorySyncSummary($cats)));
+            $summary = trim((string) Session::pullFlash('success') . ' ' . $this->categorySyncSummary($cats));
+
+            // Best-effort dentro de um best-effort (achado real 2026-09-28): falha na
+            // análise (IA fora do ar, site sem posts o bastante) nunca pode derrubar o
+            // import de categorias/autores acima, que já rodou com sucesso.
+            if ($this->identity->suggest($siteId)) {
+                $summary .= ' Nicho, público-alvo, tom e identidade editorial foram sugeridos'
+                    . ' automaticamente a partir dos posts do site — confira em "Configurações" e ajuste se quiser.';
+            }
+
+            Session::flash('success', $summary);
         } catch (WordPressException) {
             // conexão salva mas ainda não validou — o import acontece no "Testar conexão"
         }

@@ -72,7 +72,8 @@ feedback                          -- motivo + justificativa de rejeição (fluxo
   id, article_id, reason (VARCHAR — lista em evolução), justification, created_by?, timestamps
 
 images                            -- opções do Nano Banana + escolha do redator
-  id, article_id, url, role (FEATURED | BODY), alt_text?, selected, prompt?, format?, timestamps
+  id, article_id, url, role (FEATURED | BODY), alt_text?, selected, prompt?, format?,
+  sort_order? (SMALLINT — migration 0030, só BODY: ordem de entrada no artigo, NULL = ordem de criação), timestamps
 
 schedules                         -- agendamento de publicação
   id, article_id, author_id?, image_id?, scheduled_date (DATETIME),
@@ -113,6 +114,7 @@ Além dessas, o runner [`database/migrate.php`](../../database/migrate.php) mant
 - `0012` — nova tabela **`editorial_memory`**: "lições" duradouras de memória editorial, escritas por humano (Redator-Chefe/Admin), opcionalmente promovidas de um `feedback` existente. Fase 9 — fecha a pendência §87.2 abaixo.
 - `0028` — `sites.editorial_identity_suggested_at` (DATETIME, nullable): pedido do responsável 2026-09-28 — na 1ª conexão com o WordPress, `EditorialIdentityAnalysisService` lê os posts publicados de verdade e sugere nicho/público-alvo/tom/identidade editorial quando os 4 campos ainda estão vazios (site sem posts o bastante não sugere nada). Marca esta coluna pra a tela avisar "isto é sugestão, revise"; qualquer salvamento manual do formulário (`SiteService::update()`) limpa a marca.
 - `0029` — nova tabela **`site_ai_costs`**: achado real 2026-09-28 — o orçamento de IA da Visão Geral (`CostBudgetService`/`ReportService`) somava só `ai_executions` (sempre ligado a um artigo), deixando de fora o custo do Centro de Inteligência (`IntelligenceService`, já tinha `editorial_insights.cost`, mas nada somava) e da sugestão automática de identidade editorial (migration 0028, não registrava custo em lugar nenhum) — as duas são chamadas ao Gemini no nível do SITE, sem artigo. `SiteAiCostService` registra (`log()`) e `ReportService::currentSpend()`/`monthly()`/`trend()` somam as duas fontes.
+- `0030` — `images.sort_order` (SMALLINT UNSIGNED, nullable): pedido do responsável 2026-09-28 — o Redator-Chefe escolher e ver onde cada imagem de corpo vai ficar no artigo, em vez da distribuição 100% automática (ordem de geração) que existia. Só usada pra `role = 'BODY'` (`ImageService::reorderBody()`); NULL = nunca reordenada manualmente, cai pra ordem de criação (`id`) — compatível com toda imagem já existente. `BodyImageInjector::assignSlots()` (extraído de `inject()`) é a MESMA conta usada na prévia da tela (`sites/production/show.php`) e na publicação de verdade (`WordPressPublishService::bodyImages()`), pra nunca divergir.
 
 ### 87.1 Autenticação — sem tabela
 

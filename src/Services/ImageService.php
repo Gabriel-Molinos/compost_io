@@ -39,16 +39,78 @@ final class ImageService
         return (int) $pdo->lastInsertId();
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * `COALESCE(sort_order, id)`: imagem nunca reordenada manualmente (`sort_order`
+     * NULL) cai pra ordem de criação — mesmo comportamento de antes da migration 0030,
+     * pra toda imagem existente e pra FEATURED (que não usa `sort_order`).
+     *
+     * @return list<array<string, mixed>>
+     */
     public function forArticle(int $articleId): array
     {
         $stmt = Connection::get()->prepare(
-            'SELECT id, url, role, alt_text, selected, prompt, format, aspect_ratio, created_at
-             FROM images WHERE article_id = :a ORDER BY role DESC, id'
+            'SELECT id, url, role, alt_text, selected, prompt, format, aspect_ratio, sort_order, created_at
+             FROM images WHERE article_id = :a ORDER BY role DESC, COALESCE(sort_order, id), id'
         );
         $stmt->execute(['a' => $articleId]);
 
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Só as imagens de corpo, na ordem em que vão ser injetadas no artigo — o que
+     * `WordPressPublishService::bodyImages()` também usa na publicação de verdade
+     * (mesma query, mesma ordem: nunca a prévia mostrar uma ordem e a publicação
+     * usar outra).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function bodyImagesOrdered(int $articleId): array
+    {
+        $stmt = Connection::get()->prepare(
+            "SELECT id, url, alt_text, sort_order FROM images
+             WHERE article_id = :a AND role = 'BODY'
+             ORDER BY COALESCE(sort_order, id), id"
+        );
+        $stmt->execute(['a' => $articleId]);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Redator-Chefe escolhe a ordem das imagens de corpo (pedido do responsável
+     * 2026-09-28) — `$imageIdsInOrder` precisa ser EXATAMENTE o conjunto de imagens
+     * BODY do artigo (nenhuma de fora, nenhuma faltando), senão não aplica nada:
+     * meio-aplicado deixaria `sort_order` inconsistente (algumas imagens numeradas,
+     * outras não, sem dar pra saber a intenção de quem reordenou).
+     *
+     * @param list<int> $imageIdsInOrder
+     */
+    public function reorderBody(int $articleId, array $imageIdsInOrder): bool
+    {
+        $current = array_column($this->bodyImagesOrdered($articleId), 'id');
+        sort($current);
+        $given = array_map('intval', $imageIdsInOrder);
+        $givenSorted = $given;
+        sort($givenSorted);
+        if ($current === [] || $givenSorted !== $current) {
+            return false;
+        }
+
+        $pdo = Connection::get();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare('UPDATE images SET sort_order = :o WHERE id = :id AND article_id = :a');
+            foreach ($given as $position => $imageId) {
+                $stmt->execute(['o' => $position + 1, 'id' => $imageId, 'a' => $articleId]);
+            }
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+
+        return true;
     }
 
     /**

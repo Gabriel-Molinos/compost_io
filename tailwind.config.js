@@ -12,9 +12,14 @@ module.exports = {
   // as classes de @layer components inteiras (select-shell/trigger/listbox/
   // option, is-active/is-selected/is-disabled) somiam do CSS compilado sem
   // erro nenhum, exatamente como o caso do Icon.php acima.
+  // src/Integrations incluído pelo MESMO motivo (achado real 2026-09-28):
+  // BodyImageInjector::previewFigure() monta a classe "body-image-preview"
+  // fora de src/Views/src/Support — sumia do CSS compilado sem erro nenhum,
+  // 3ª vez que esse exato bug acontece nesta base.
   content: [
     './src/Views/**/*.php',
     './src/Support/**/*.php',
+    './src/Integrations/**/*.php',
     './public/**/*.php',
     './public/assets/js/**/*.js',
   ],

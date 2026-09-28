@@ -9,19 +9,83 @@ use DOMElement;
 
 /**
  * Insere as imagens de corpo (já enviadas à media library) no HTML do artigo,
- * distribuídas entre as seções `<h2>`, na ordem em que foram geradas
- * (decisão do usuário — Fase 7.5). Sem depender do `placement` da IA.
+ * distribuídas entre as seções `<h2>`, na ORDEM DADA (decisão do usuário —
+ * Fase 7.5; a partir de 2026-09-28 essa ordem é escolhida pelo Redator-Chefe
+ * via `ImageService::reorderBody()`, antes disso era sempre a ordem de
+ * geração). Sem depender do `placement` da IA.
  *
  * Imagens além do número de seções (ou artigos sem `<h2>`) vão para o fim.
  */
 final class BodyImageInjector
 {
     /**
+     * Pra qual seção (índice 0-based entre os candidatos — todo `<h2>` menos o
+     * 1º) cada imagem, na ordem dada, vai ANTES — `null` = vai pro fim do
+     * artigo (mais imagens que seção, ou artigo sem `<h2>` o bastante).
+     * Distribuição uniforme (mesmo espaçamento entre imagens). Extraído de
+     * `inject()` pra ser a MESMA conta usada na prévia que o Redator-Chefe vê
+     * na tela (`ProductionController::show()`/`sites/production/show.php`) —
+     * nunca duas implementações da mesma matemática podendo divergir.
+     *
+     * @return list<int|null> um item por imagem, na mesma ordem de entrada
+     */
+    public static function assignSlots(int $imageCount, int $slotCount): array
+    {
+        $used = -1;
+        $out = [];
+        for ($i = 0; $i < $imageCount; $i++) {
+            $idx = null;
+            if ($slotCount > 0) {
+                $candidate = (int) floor(($i + 1) * ($slotCount + 1) / ($imageCount + 1)) - 1;
+                $candidate = max(0, min($slotCount - 1, $candidate));
+                if ($candidate <= $used) {
+                    $candidate = $used + 1;
+                }
+                if ($candidate < $slotCount) {
+                    $used = $candidate;
+                    $idx = $candidate;
+                }
+            }
+            $out[] = $idx;
+        }
+
+        return $out;
+    }
+
+    /**
      * @param list<array{src:string, alt:string}> $images
      */
     public static function inject(string $html, array $images): string
     {
         $images = array_values(array_filter($images, static fn ($i) => trim($i['src'] ?? '') !== ''));
+
+        return self::place($html, $images, static fn (DOMDocument $doc, array $image): DOMElement => self::figure($doc, $image['src'], $image['alt'] ?? ''));
+    }
+
+    /**
+     * Mesma distribuição de `inject()`, mas pra prévia INTERATIVA que o Redator-Chefe
+     * vê na tela (`sites/production/show.php`) — cada `<figure>` carrega `data-image-id`
+     * e fica arrastável (`draggable`), pra `image-reorder.js` reordenar direto ali dentro
+     * do corpo (pedido do responsável 2026-09-28: "tem que aparecer no corpo do post e
+     * poder arrastar pra mudar", não uma lista à parte com texto dizendo onde vai ficar).
+     * `inject()` continua sendo a versão limpa usada na publicação de verdade
+     * (`WordPressPublishService`) — HTML sem nada de chrome de editor.
+     *
+     * @param list<array{id:int, src:string, alt:string}> $images
+     */
+    public static function injectForPreview(string $html, array $images): string
+    {
+        $images = array_values(array_filter($images, static fn ($i) => trim($i['src'] ?? '') !== ''));
+
+        return self::place($html, $images, static fn (DOMDocument $doc, array $image): DOMElement => self::previewFigure($doc, (int) $image['id'], $image['src'], $image['alt'] ?? ''));
+    }
+
+    /**
+     * @param list<array{src:string, alt:string}> $images
+     * @param callable(DOMDocument, array{src:string, alt:string}): DOMElement $buildFigure
+     */
+    private static function place(string $html, array $images, callable $buildFigure): string
+    {
         if ($images === [] || trim($html) === '') {
             return $html;
         }
@@ -57,30 +121,16 @@ final class BodyImageInjector
             }
         }
 
-        $count = count($images);
         // Posições candidatas: antes de cada h2 exceto o primeiro (não colar no topo).
         $candidates = array_slice($headings, 1);
-        $slots = count($candidates);
+        $slotIndexes = self::assignSlots(count($images), count($candidates));
 
-        $used = -1;
         foreach ($images as $i => $image) {
-            $figure = self::figure($doc, $image['src'], $image['alt'] ?? '');
+            $figure = $buildFigure($doc, $image);
+            $idx = $slotIndexes[$i];
 
-            $target = null;
-            if ($slots > 0) {
-                $idx = (int) floor(($i + 1) * ($slots + 1) / ($count + 1)) - 1;
-                $idx = max(0, min($slots - 1, $idx));
-                if ($idx <= $used) {
-                    $idx = $used + 1;
-                }
-                if ($idx < $slots) {
-                    $used = $idx;
-                    $target = $candidates[$idx];
-                }
-            }
-
-            if ($target !== null) {
-                $target->parentNode?->insertBefore($figure, $target);
+            if ($idx !== null) {
+                $candidates[$idx]->parentNode?->insertBefore($figure, $candidates[$idx]);
             } else {
                 $root->appendChild($figure);
             }
@@ -113,6 +163,17 @@ final class BodyImageInjector
             $caption->appendChild($doc->createTextNode($alt));
             $figure->appendChild($caption);
         }
+
+        return $figure;
+    }
+
+    /** Mesma figura, mais o gancho de arrastar (`image-reorder.js`) — ver `injectForPreview()`. */
+    private static function previewFigure(DOMDocument $doc, int $imageId, string $src, string $alt): DOMElement
+    {
+        $figure = self::figure($doc, $src, $alt);
+        $figure->setAttribute('class', trim($figure->getAttribute('class') . ' body-image-preview'));
+        $figure->setAttribute('data-image-id', (string) $imageId);
+        $figure->setAttribute('draggable', 'true');
 
         return $figure;
     }

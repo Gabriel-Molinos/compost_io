@@ -628,6 +628,67 @@ final class ProductionController extends Controller
     }
 
     /**
+     * Redator-Chefe escolhe a ordem das imagens de corpo — e com isso, onde cada
+     * uma vai ficar no artigo (pedido do responsável 2026-09-28; antes disso a
+     * distribuição era só a ordem de geração, sem controle nenhum).
+     *
+     * Melhoria progressiva (mesmo padrão de `NotificationController::wantsJson()`):
+     * `image-reorder.js` arrasta e manda `fetch` com `Accept: application/json` —
+     * resposta JSON, sem reload. Sem JS, os botões ▲/▼ de cada imagem enviam um
+     * `<form>` comum (POST com a lista já trocada) e a página recarrega normal.
+     */
+    public function reorderImages(string $siteId, string $articleId): void
+    {
+        $site = $this->requireSite($siteId);
+        $wantsJson = $this->wantsJson();
+        $back = '/sites/' . $site['id'] . '/production/' . $articleId . '#imagens';
+
+        if ($wantsJson) {
+            header('Content-Type: application/json; charset=utf-8');
+            if (!Csrf::check($_POST['_token'] ?? null)) {
+                http_response_code(419);
+                echo json_encode(['ok' => false, 'error' => 'Sessão expirada — recarregue a página.'], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+        } else {
+            Csrf::verify();
+        }
+
+        $article = $this->articles->find((int) $site['id'], (int) $articleId);
+        if ($article === null) {
+            if ($wantsJson) {
+                http_response_code(404);
+                echo json_encode(['ok' => false, 'error' => 'Artigo não encontrado.'], JSON_UNESCAPED_UNICODE);
+            } else {
+                Session::flash('error', 'Artigo não encontrado.');
+                Http::redirect($back);
+            }
+            return;
+        }
+
+        $ids = array_map('intval', (array) ($_POST['image_ids'] ?? []));
+        $ok = (new ImageService())->reorderBody((int) $article['id'], $ids);
+
+        if ($wantsJson) {
+            if ($ok) {
+                echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE);
+            } else {
+                http_response_code(422);
+                echo json_encode(['ok' => false, 'error' => 'Lista de imagens inválida — recarregue a página e tente de novo.'], JSON_UNESCAPED_UNICODE);
+            }
+            return;
+        }
+
+        Session::flash($ok ? 'success' : 'error', $ok ? 'Ordem das imagens atualizada.' : 'Lista de imagens inválida — recarregue a página e tente de novo.');
+        Http::redirect($back);
+    }
+
+    private function wantsJson(): bool
+    {
+        return str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json');
+    }
+
+    /**
      * Imagem própria (destacada ou de corpo) no lugar das geradas pela IA.
      * O arquivo é validado pelos bytes (WebP, largura, proporção, tamanho —
      * ver ImageUploadValidator). A destacada enviada já vira a escolhida:

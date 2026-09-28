@@ -411,6 +411,47 @@
     .hover-card:hover { transform: none; }
   }
 
+  /* Imagem de corpo arrastável DENTRO do preview do artigo (pedido do
+     responsável 2026-09-28: "tem que aparecer no corpo do post... e poder
+     arrastar pra mudar" — ver `BodyImageInjector::injectForPreview()` e
+     `assets/js/image-reorder.js`). O `<figure>` já vem com `style=` inline do
+     injetor (mesmo HTML que vai pro WordPress) — esta classe só soma um
+     contorno tracejado ciano + o ícone de "arrastar" no canto, pra ficar
+     óbvio que aquilo ali é diferente do resto do texto (interativo), sem
+     mexer no HTML que de fato é publicado (`inject()`, sem esta classe). */
+  .body-image-preview {
+    position: relative;
+    outline: 2px dashed rgb(0 208 240 / .35);
+    outline-offset: 4px;
+    border-radius: .5rem;
+    cursor: grab;
+    transition: outline-color 160ms ease;
+  }
+  .body-image-preview:hover {
+    outline-color: rgb(0 208 240 / .75);
+  }
+  .body-image-preview::before {
+    content: '⠿';
+    position: absolute;
+    top: .5rem;
+    left: .5rem;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    background: rgb(5 11 15 / .75);
+    color: #00d0f0;
+    font-size: 1rem;
+    line-height: 1;
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .body-image-preview { transition: none; }
+  }
+
   /* Seleções (cards de radio/checkbox, chips, interruptores em cartão) — mesma
      linguagem dos botões e dos cards clicáveis (pedido do responsável,
      2026-09-18: "aquele efeito do hover em motion, não só nele mas nas seleções

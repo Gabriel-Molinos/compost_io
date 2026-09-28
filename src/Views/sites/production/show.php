@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Integrations\WordPress\BodyImageInjector;
 use App\Services\ArticleReviewService;
 use App\Support\Csrf;
 use App\Support\Icon;
@@ -853,7 +854,11 @@ $maxAttempts = 3;
                 <div>
                     <p class="text-sm font-medium text-text-primary">Imagens do corpo — <?= count($body) ?></p>
                     <p class="text-xs text-text-muted">
-                        Distribuídas automaticamente pelo texto na publicação, sempre na mesma proporção da destacada.
+                        <?php if (count($body) > 1): ?>
+                            Veja e arraste pra reordenar direto no <a href="#corpo" class="text-cyan hover:text-cyan-bright">corpo do artigo, abaixo ↓</a>.
+                        <?php else: ?>
+                            Vai ficar distribuída pelo texto na publicação, na mesma proporção da destacada.
+                        <?php endif; ?>
                         A descrição (alt) de cada uma só aparece ao ampliar.
                     </p>
                 </div>
@@ -866,30 +871,56 @@ $maxAttempts = 3;
                     </button>
                 </form>
             </div>
+            <?php // Miniaturas só pra gerenciar (substituir/remover) — onde cada uma FICA no
+            // artigo (e reordenar arrastando) é mostrado de verdade dentro do corpo, não aqui
+            // como texto (pedido do responsável 2026-09-28: "tem que aparecer no corpo do post"). ?>
             <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <?php foreach ($body as $i): ?>
+                <?php foreach ($body as $img): ?>
                     <figure class="hover-card overflow-hidden rounded-lg border border-border bg-surface p-2">
                         <span class="relative block overflow-hidden rounded">
-                            <img src="<?= View::e($i['url']) ?>" alt="<?= View::e($i['alt_text'] ?? '') ?>" loading="lazy" class="w-full rounded" />
+                            <img src="<?= View::e($img['url']) ?>" alt="<?= View::e($img['alt_text'] ?? '') ?>" loading="lazy" class="w-full rounded" />
                             <button type="button"
-                                    data-lightbox="<?= View::e($i['url']) ?>"
-                                    data-lightbox-caption="<?= View::e($i['alt_text'] ?? '') ?>"
+                                    data-lightbox="<?= View::e($img['url']) ?>"
+                                    data-lightbox-caption="<?= View::e($img['alt_text'] ?? '') ?>"
                                     aria-label="Ver imagem em tamanho grande"
                                     class="absolute inset-0 flex items-center justify-center bg-[#050B0F]/40 opacity-0 transition hover:opacity-100 focus-visible:opacity-100">
                                 <span class="rounded-md bg-surface/90 px-3 py-1.5 text-sm font-medium text-text-primary">Ver ampliado</span>
                             </button>
                         </span>
                         <figcaption class="mt-2 text-xs font-medium text-text-secondary">
-                            Imagem de corpo <span class="font-normal text-text-muted">· <?= View::e($i['format'] ?? '') ?><?= trim((string) ($i['prompt'] ?? '')) === '' ? ' · enviada por você' : '' ?></span>
+                            Imagem de corpo <span class="font-normal text-text-muted">· <?= View::e($img['format'] ?? '') ?><?= trim((string) ($img['prompt'] ?? '')) === '' ? ' · enviada por você' : '' ?></span>
                         </figcaption>
                         <div class="mt-3 flex gap-2">
                             <?php // Imagem própria não tem prompt guardado — não há o que regenerar. ?>
-                            <?php if (trim((string) ($i['prompt'] ?? '')) !== ''): $regenerateForm($i); endif; ?>
-                            <?php $deleteForm($i); ?>
+                            <?php if (trim((string) ($img['prompt'] ?? '')) !== ''): $regenerateForm($img); endif; ?>
+                            <?php $deleteForm($img); ?>
                         </div>
                     </figure>
                 <?php endforeach; ?>
             </div>
+            <?php if (count($body) > 1): ?>
+                <?php // Sem JS não dá pra arrastar no corpo — mesma reordenação, via <select> de
+                // posição por imagem (melhoria progressiva, formulário comum). ?>
+                <details class="mt-4" data-image-reorder-fallback>
+                    <summary class="cursor-pointer text-xs font-medium text-cyan hover:text-cyan-bright">Reordenar sem arrastar</summary>
+                    <form method="post" action="<?= $base ?>/images/reorder" class="mt-3 space-y-2 rounded-lg border border-border bg-surface-2 p-3">
+                        <?= Csrf::field() ?>
+                        <?php foreach ($body as $pos => $ignored): ?>
+                            <div class="flex items-center gap-2 text-sm">
+                                <span class="w-16 shrink-0 text-text-muted">Posição <?= $pos + 1 ?></span>
+                                <select name="image_ids[]" class="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-text-primary">
+                                    <?php foreach ($body as $j => $opt): ?>
+                                        <?php $label = trim((string) ($opt['alt_text'] ?? '')) !== '' ? mb_strimwidth((string) $opt['alt_text'], 0, 50, '…') : 'Imagem de corpo #' . $opt['id']; ?>
+                                        <option value="<?= View::e($opt['id']) ?>" <?= $j === $pos ? 'selected' : '' ?>><?= View::e($label) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        <?php endforeach; ?>
+                        <p class="text-xs text-text-muted">Escolha uma imagem diferente pra cada posição (sem repetir) e salve.</p>
+                        <button type="submit" class="btn btn-secondary px-3 py-1.5 text-xs">Salvar ordem</button>
+                    </form>
+                </details>
+            <?php endif; ?>
         <?php endif; ?>
 
         <?php
@@ -1108,16 +1139,36 @@ $execStatusBadge = static function (string $status): string {
     <?php endif; ?>
 </section>
 
-<section class="mt-8">
+<section id="corpo" class="mt-8">
     <h3 class="font-display text-sm font-semibold uppercase tracking-wide text-text-muted">
         Corpo <?php if ($version && $version['word_count']): ?><span class="text-text-muted">(<?= View::e($version['word_count']) ?> palavras)</span><?php endif; ?>
     </h3>
     <?php if ($version === null): ?>
         <p class="mt-2 text-text-secondary">Ainda sem corpo — a escrita não chegou a rodar.</p>
     <?php else: ?>
-        <article class="article-body mt-3 max-w-none rounded-lg border border-border p-6">
-            <?= $version['content'] /* HTML gerado pela IA (ou editado pelo Redator-Chefe) — renderizado como veio */ ?>
+        <?php
+        // Imagens de corpo aparecem DE VERDADE aqui dentro (pedido do responsável 2026-09-28:
+        // "tem que aparecer no corpo do post, não escrito onde ela vai ficar") — mesma
+        // distribuição que a publicação de verdade usa (BodyImageInjector), só que arrastável.
+        $bodyPreviewHtml = $body !== []
+            ? BodyImageInjector::injectForPreview((string) $version['content'], array_map(
+                static fn (array $img): array => ['id' => (int) $img['id'], 'src' => (string) $img['url'], 'alt' => (string) ($img['alt_text'] ?? '')],
+                $body,
+            ))
+            : (string) $version['content'];
+        ?>
+        <?php if (count($body) > 1): ?>
+            <p class="mt-3 flex items-center gap-1.5 text-xs text-text-muted">
+                <span class="shrink-0 [&>svg]:h-3.5 [&>svg]:w-3.5"><?= Icon::nav('arrow') ?></span>
+                Arraste uma imagem pra outro lugar do texto pra mudar onde ela entra na publicação.
+            </p>
+        <?php endif; ?>
+        <article class="article-body mt-3 max-w-none rounded-lg border border-border p-6" data-image-reorder data-reorder-action="<?= $base ?>/images/reorder">
+            <?= $bodyPreviewHtml /* HTML gerado pela IA (ou editado pelo Redator-Chefe), com as imagens de corpo já posicionadas — renderizado como veio */ ?>
         </article>
+        <?php if (count($body) > 1): ?>
+            <script src="<?= View::e(View::asset('assets/js/image-reorder.js')) ?>" defer></script>
+        <?php endif; ?>
         <?php if ($article['status'] === 'IN_REVIEW'): ?>
             <?php
             $linkSnippet = static function (string $href, string $text, bool $external = false): string {

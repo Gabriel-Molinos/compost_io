@@ -386,12 +386,19 @@ final class WordPressPublishService
         return $schedule;
     }
 
-    /** @return list<array<string,mixed>> */
+    /**
+     * `COALESCE(sort_order, id)` — mesma ordem que `ImageService::bodyImagesOrdered()`
+     * usa na prévia que o Redator-Chefe vê na tela (pedido 2026-09-28: escolher e ver
+     * onde cada imagem de corpo vai ficar). Nunca a prévia mostrar uma ordem e a
+     * publicação de verdade usar outra.
+     *
+     * @return list<array<string,mixed>>
+     */
     private function bodyImages(int $articleId): array
     {
         $stmt = Connection::get()->prepare(
             "SELECT id, url, format, alt_text FROM images
-             WHERE article_id = :a AND role = 'BODY' ORDER BY id"
+             WHERE article_id = :a AND role = 'BODY' ORDER BY COALESCE(sort_order, id), id"
         );
         $stmt->execute(['a' => $articleId]);
 

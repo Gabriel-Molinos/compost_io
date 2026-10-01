@@ -257,33 +257,9 @@ docs/
 
 Cada documento deve conter: objetivo, como funciona, configuração, variáveis necessárias, endpoints utilizados, tratamento de erros, limitações, documentação oficial, exemplos sem credenciais reais.
 
-### 43. Google Identity Services (Login com Google)
+### 43. Google Identity Services (Login com Google) — REMOVIDO
 
-Responsável por: autenticação alternativa de usuários já cadastrados (sem auto-cadastro) via conta Google, na tela `/login`.
-
-> **Implementado nesta sessão.** Front-end: Google Identity Services (`accounts.google.com/gsi/client`, carregado em `src/Views/layout/auth.php`), botão em modo redirect-POST (`data-login_uri` absoluta, montada de `APP_URL` + `/oauth/callback`, `src/Views/auth/login.php`). Back-end: rota `POST /oauth/callback` → `AuthController::googleCallback()` (dentro do `Router`, como as demais rotas) + `google/apiclient` (`Google\Client::verifyIdToken`) + `AuthService::attemptGoogle()`. CSRF via double-submit `g_csrf_token` (`App\Support\GoogleCsrf`). Vínculo em `users.google_id` (migration `0022_users_google_id.sql`). Ver [docs/technical/requisitos.md §64.2](requisitos.md#642-autenticação).
-
-**Configuração no Google Cloud Console** (achados reais 2026-09-15):
-1. `data-login_uri` precisa ser uma **URL absoluta** (com esquema/host) — um
-   caminho relativo (`/oauth/callback`) dá `Erro 400: redirect_uri_mismatch`
-   mesmo com a URL certa cadastrada, porque o GIS não consegue casar um
-   caminho relativo contra o valor registrado no Console.
-2. Como `data-ux_mode="redirect"` faz o GIS usar o mecanismo de redirect do
-   OAuth de verdade por baixo dos panos, essa URL precisa estar cadastrada em
-   **"URIs de redirecionamento autorizados"** do Client ID (Credenciais →
-   OAuth 2.0 Client ID), não só em "Origens JavaScript autorizadas" — e
-   precisa bater **byte a byte** (porta, caminho, com/sem barra final) com o
-   que está cadastrado lá, não só o domínio:
-```
-http://localhost:8080/oauth/callback   (dev — porta 8080 é a padrão do projeto)
-https://SEU-DOMINIO/oauth/callback     (produção, quando existir)
-```
-
-Documentação:
-- Sign In With Google (HTML API): https://developers.google.com/identity/gsi/web/guides/overview
-- Modos de UX (popup vs. redirect — é aqui que o requisito de redirect URI está documentado): https://developers.google.com/identity/gsi/web/guides/UX-modes
-- Verificação do ID token no servidor: https://developers.google.com/identity/sign-in/web/backend-auth
-- `google/apiclient` (Packagist): https://packagist.org/packages/google/apiclient
+> **Removido em 2026-09-30** (pedido do responsável). O login da COMPOST é só e-mail + senha. Saíram a rota `POST /oauth/callback`, `AuthController::googleCallback()`, `AuthService::attemptGoogle()`, `App\Support\GoogleCsrf`, o script `accounts.google.com/gsi/client`, a variável `GOOGLE_CLIENT_ID` e a dependência `google/apiclient`. A coluna `users.google_id` (migration `0022`) continua no banco, sem uso — nenhum código lê nem grava nela.
 
 ## Ver também
 

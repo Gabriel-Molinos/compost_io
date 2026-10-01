@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Config\Env;
 use App\Support\Csrf;
 use App\Support\Icon;
 use App\View;
@@ -91,57 +90,6 @@ $describedBy = $error !== null ? 'login-error' : null;
         <span id="login-submit-label">Entrar</span>
     </button>
 </form>
-
-<div class="mt-6 flex items-center gap-3 text-xs text-text-muted">
-    <span class="h-px flex-1 bg-border"></span>
-    <span>ou continue com</span>
-    <span class="h-px flex-1 bg-border"></span>
-</div>
-
-<?php
-// data-login_uri PRECISA ser absoluta (com esquema/host) — achado real
-// 2026-09-15: com só "/callback.php" (relativo), o Google devolvia
-// "Erro 400: redirect_uri_mismatch" mesmo com a URL certa cadastrada em
-// "URIs de redirecionamento autorizados" no Cloud Console, porque o GIS
-// não consegue casar um caminho relativo contra o que está lá.
-$loginUri = rtrim((string) Env::get('APP_URL', ''), '/') . '/oauth/callback';
-?>
-<div id="g_id_onload"
-     data-client_id="<?= View::e(Env::get('GOOGLE_CLIENT_ID', '')) ?>"
-     data-login_uri="<?= View::e($loginUri) ?>"
-     data-ux_mode="redirect">
-</div>
-
-<?php
-// Botão com a cara da COMPOST em vez do widget padrão do Google (achado
-// real 2026-09-15, pedido explícito de refazer o visual; 2026-09-22:
-// virou só o ícone, sem texto, pedido do responsável). O Google não
-// deixa customizar o botão renderizado por ele nem disparar o clique dele
-// via JS — a técnica aqui (documentada informalmente, usada por várias
-// apps) é sobrepor o botão de verdade do Google, invisível mas clicável,
-// por cima de um botão "de mentirinha" com a nossa cara: quem recebe o
-// clique de verdade é sempre o elemento do Google, então o fluxo
-// (CSRF/redirect/verificação) continua idêntico, só a aparência muda.
-// data-type="icon" (em vez de "standard") é o formato circular só-ícone
-// do próprio Google — o real por baixo já nasce do tamanho certo, sem
-// precisar forçar `data-width` como no botão de texto anterior.
-?>
-<div class="group relative mx-auto mt-4 h-12 w-12" title="Continuar com Google">
-    <div class="g_id_signin absolute inset-0 z-10 overflow-hidden rounded-full opacity-0"
-         data-type="icon" data-shape="circle" data-size="large"></div>
-
-    <div class="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full
-                border border-border bg-[#0A3247] shadow-[0_0_0_0_rgba(0,208,240,0)] transition-all duration-200
-                group-hover:-translate-y-0.5 group-hover:border-cyan group-hover:shadow-[0_6px_20px_-4px_rgba(0,208,240,.45)]
-                group-active:translate-y-0 group-active:bg-surface-2">
-        <svg width="20" height="20" viewBox="0 0 18 18" aria-hidden="true">
-            <path fill="#4285F4" d="M17.64 9.2045c0-.6381-.0573-1.2518-.1636-1.8409H9v3.4814h4.8436c-.2086 1.125-.8427 2.0782-1.7959 2.7164v2.2581h2.9086c1.7018-1.5668 2.6836-3.8741 2.6836-6.615z"/>
-            <path fill="#34A853" d="M9 18c2.43 0 4.4673-.8064 5.9564-2.1805l-2.9086-2.2581c-.8064.54-1.8368.8586-3.0477.8586-2.3441 0-4.3282-1.5831-5.0359-3.7104H.9573v2.3318C2.4382 15.9832 5.4818 18 9 18z"/>
-            <path fill="#FBBC05" d="M3.9641 10.71c-.18-.54-.2823-1.1168-.2823-1.71s.1023-1.17.2823-1.71V4.9582H.9573C.3477 6.1732 0 7.5477 0 9s.3477 2.8268.9573 4.0418L3.9641 10.71z"/>
-            <path fill="#EA4335" d="M9 3.5795c1.3214 0 2.5077.4541 3.4405 1.346l2.5814-2.5814C13.4632.8918 11.426 0 9 0 5.4818 0 2.4382 2.0168.9573 4.9582L3.9641 7.29C4.6718 5.1627 6.6559 3.5795 9 3.5795z"/>
-        </svg>
-    </div>
-</div>
 
 <p class="mt-6 text-center text-xs text-text-muted">
     Esqueceu a senha ou ainda não tem conta? Peça pro administrador do COMPOST liberar seu acesso.

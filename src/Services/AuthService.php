@@ -45,43 +45,6 @@ final class AuthService
         return $user;
     }
 
-    /**
-     * Autentica via Google (Login com Google, complementar ao e-mail+senha
-     * — docs/technical/requisitos.md §64.2). Sem auto-cadastro: só autentica
-     * um e-mail que já existe em `users` e está ativo; nunca cria linha
-     * nova. Vincula `google_id` (o `sub` do ID token) na primeira vez que
-     * aquele usuário loga via Google — depois disso, exige bater com o
-     * MESMO `google_id` (e-mail já vinculado a outra conta Google é
-     * tratado como suspeito, rejeitado).
-     *
-     * @return array<string, mixed>|null
-     */
-    public static function attemptGoogle(string $googleId, string $email): ?array
-    {
-        $pdo = Connection::get();
-        $stmt = $pdo->prepare(
-            'SELECT id, name, email, role, is_active, google_id
-             FROM users WHERE email = :email LIMIT 1'
-        );
-        $stmt->execute(['email' => $email]);
-        $user = $stmt->fetch();
-
-        if ($user === false || (int) $user['is_active'] !== 1) {
-            return null;
-        }
-
-        if ($user['google_id'] === null) {
-            $pdo->prepare('UPDATE users SET google_id = :g WHERE id = :id')
-                ->execute(['g' => $googleId, 'id' => $user['id']]);
-        } elseif ($user['google_id'] !== $googleId) {
-            return null;
-        }
-
-        unset($user['google_id']);
-
-        return $user;
-    }
-
     /** @param array<string, mixed> $user */
     public static function login(array $user): void
     {

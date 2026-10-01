@@ -40,8 +40,6 @@ GEMINI_API_KEY=
 
 REDIS_URL=
 
-GOOGLE_CLIENT_ID=
-
 IMAGE_API_KEY=
 ```
 
@@ -106,7 +104,7 @@ Somente o backend pode acessar: Gemini API, banco de dados, Redis, credenciais W
 
 O navegador (HTML/JavaScript entregue ao usuário) **nunca** deve receber `GEMINI_API_KEY`, `DATABASE_PASSWORD`, `WORDPRESS_PASSWORD` ou qualquer outro secret — mesmo sendo uma aplicação PHP única, essas credenciais ficam restritas à camada de Services/Integrations, nunca chegam a uma View ou resposta enviada ao navegador.
 
-**Exceção deliberada: `GOOGLE_CLIENT_ID`** (Login com Google, `docs/technical/requisitos.md §64.2`) — este SIM aparece no HTML (`data-client_id` em `src/Views/auth/login.php`), porque um Client ID OAuth 2.0 não é secreto por natureza (é público em qualquer app que usa Google Identity Services). O que nunca existe neste projeto é um **client secret** do Google — o fluxo implementado só verifica o ID token (`Google\Client::verifyIdToken`), nunca faz troca de authorization code no servidor, então não há secret nenhum pra proteger.
+*(Até 2026-09-30 havia uma exceção aqui: o `GOOGLE_CLIENT_ID` do Login com Google, público por natureza. O login com Google foi removido e a variável saiu junto.)*
 
 Fluxo correto:
 ```
@@ -132,7 +130,7 @@ que uma dessas áreas mudar, não confiar no ✅ indefinidamente):
 - [x] Nenhuma senha aparece no código — mesma varredura, nenhuma ocorrência; `DATABASE_PASSWORD` só é lido via `Env::get()` em `Connection.php`.
 - [x] Nenhuma credencial aparece nos logs — os 2 únicos `error_log()` do projeto (`Connection.php:50`, `HomeController.php:57`) logam `$e->getMessage()` de falha de conexão, que não inclui senha (comentário no código já documenta essa preocupação).
 - [x] Credenciais WordPress estão separadas por site — cada site tem sua própria linha de conexão WordPress cifrada (§46/§47), nunca um valor global no `.env`.
-- [x] Frontend não possui secrets — único `Env::get()` usado em `src/Views/` é `APP_URL` e `GOOGLE_CLIENT_ID` (`login.php`), e este último é público por natureza (ver §49).
+- [x] Frontend não possui secrets — nenhuma View lê o `.env` pra mandar ao navegador (o `GOOGLE_CLIENT_ID` do antigo login com Google saiu em 2026-09-30).
 - [x] CORS — não há nenhum header `Access-Control-Allow-*` no projeto, **de propósito**: é uma app PHP server-rendered same-origin, sem API consumida por outra origem no browser. Ausência de CORS é o estado correto aqui, não uma lacuna.
 - [ ] Acesso ao banco está restrito — depende da infraestrutura (allowlist de IP/"trusted sources" no cluster gerenciado), não do código; **confirmar manualmente na hospedagem escolhida antes do deploy**, não dá pra auditar por aqui. `DATABASE_SSL=true` já está configurado (TLS ligado), mas com `PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT = false` — verificação de certificado do servidor desligada de propósito (decisão do responsável, 2026-09-17: não é prioridade agora).
 - [x] Usuários possuem permissões adequadas — `Router::dispatch()` centraliza a checagem (`admin: true` em 19 rotas, incluindo a mais destrutiva, `/sites/{id}/delete`); nenhuma rota sensível depende de checagem manual espalhada por Controller.

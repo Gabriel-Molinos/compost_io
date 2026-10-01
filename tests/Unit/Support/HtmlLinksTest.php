@@ -40,6 +40,26 @@ final class HtmlLinksTest extends TestCase
         $this->assertSame(0, $counts['external']);
     }
 
+    public function testCountByTypeIgnoresWwwPrefixOnEitherSide(): void
+    {
+        // Caso real (Penazo, 2026-10-01): site sem www, links da IA com www.
+        $html = '<p><a href="https://www.meusite.com/a">a</a> <a href="https://meusite.com/b">b</a>'
+            . ' <a href="https://www.irs.gov/x">fonte</a></p>';
+
+        $this->assertSame(['internal' => 2, 'external' => 1], HtmlLinks::countByType($html, 'meusite.com'));
+        $this->assertSame(['internal' => 2, 'external' => 1], HtmlLinks::countByType($html, 'www.meusite.com'));
+    }
+
+    public function testCountByTypeIgnoresTableOfContentsAnchorsAndMailto(): void
+    {
+        // Caso real (Manual da Cozinha): sumário com #âncoras entrava como link interno.
+        $html = '<ul><li><a href="#ingredientes">Ingredientes</a></li><li><a href="#faq">FAQ</a></li></ul>'
+            . '<p><a href="mailto:x@meusite.com">e-mail</a> <a href="tel:+5511999999999">tel</a>'
+            . ' <a href="https://meusite.com/post">post</a></p>';
+
+        $this->assertSame(['internal' => 1, 'external' => 0], HtmlLinks::countByType($html, 'meusite.com'));
+    }
+
     public function testCountByTypeHandlesEmptyHtml(): void
     {
         $counts = HtmlLinks::countByType('', 'meusite.com');

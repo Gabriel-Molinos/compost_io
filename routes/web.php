@@ -160,6 +160,7 @@ return static function (Router $router): void {
     $router->add('POST', '/sites/{id}/production/{aid}/approve', [ProductionController::class, 'approve'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/reject',  [ProductionController::class, 'reject'],  auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/regenerate', [ProductionController::class, 'regenerate'], auth: true);
+    $router->add('POST', '/sites/{id}/production/{aid}/reaudit', [ProductionController::class, 'reaudit'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/content',   [ProductionController::class, 'updateContent'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/sources/suggest', [ProductionController::class, 'suggestExternalLinks'], auth: true);
     $router->add('POST', '/sites/{id}/production/{aid}/internal-links/suggest', [ProductionController::class, 'suggestInternalLinks'], auth: true);

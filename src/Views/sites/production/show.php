@@ -273,7 +273,7 @@ foreach ((array) ($compliance['warnings'] ?? []) as $w) {
 $compBlockingCount = count((array) ($compliance['blocking'] ?? []));
 ?>
 <?php if ($hasQualitySignals): ?>
-    <section class="mt-6">
+    <section id="qualidade" class="mt-6 scroll-mt-6">
         <?php $sectionHeading(Icon::nav('check'), 'Qualidade do artigo', 'Sinais automáticos pra ajudar a decidir — a decisão final é sempre sua.'); ?>
         <div class="mt-3 grid gap-3 lg:grid-cols-2">
             <?php if ($checklist !== null): ?>
@@ -299,6 +299,43 @@ $compBlockingCount = count((array) ($compliance['blocking'] ?? []));
                         </li>
                     <?php endforeach; ?>
                 </ul>
+                <?php // Pedido 2026-10-01: o redator editou o texto e quer que a IA reveja.
+                      // Os 4 itens acima já se recalculam sozinhos do texto atual; o que
+                      // fica velho são os pareceres da IA (Parecer/SEO/Compliance) — é
+                      // isso que o botão refaz (ProductionController::reaudit()). ?>
+                <?php
+                $reauditNote = $notes['pipeline']['reaudit'] ?? null;
+                $reauditBusy = \App\Controllers\ProductionController::reauditRunning($reauditNote);
+                ?>
+                <form method="post" action="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($article['id']) ?>/reaudit"
+                      class="mt-3 border-t border-border pt-3" data-reaudit>
+                    <?= Csrf::field() ?>
+                    <button type="submit" <?= $reauditBusy ? 'disabled' : '' ?>
+                            class="btn btn-secondary flex w-full items-center justify-center gap-1.5 px-3 py-2 text-xs">
+                        <span class="btn-spin <?= $reauditBusy ? '' : 'hidden' ?> h-3.5 w-3.5" aria-hidden="true" data-reaudit-spin></span>
+                        <span data-reaudit-label><?= $reauditBusy ? 'Reavaliando… recarregue a página em 1 a 2 minutos' : 'Editei o texto — pedir pra IA reavaliar' ?></span>
+                    </button>
+                    <p class="mt-1.5 text-[11px] text-text-muted">
+                        Refaz os pareceres de SEO, Compliance e da IA sobre o texto atual (1 a 2 minutos).
+                        <?php if (($reauditNote['status'] ?? null) === 'done'): ?>
+                            Última reavaliação: <?= View::e(date('d/m H:i', (int) strtotime((string) $reauditNote['finished_at']))) ?>.
+                        <?php endif; ?>
+                    </p>
+                    <?php if (($reauditNote['status'] ?? null) === 'failed'): ?>
+                        <p class="mt-1 text-[11px] text-danger">A última reavaliação falhou: <?= View::e((string) ($reauditNote['error'] ?? '')) ?></p>
+                    <?php endif; ?>
+                </form>
+                <script>
+                    (function () {
+                        var form = document.querySelector('form[data-reaudit]');
+                        if (!form) { return; }
+                        form.addEventListener('submit', function () {
+                            form.querySelector('button').disabled = true;
+                            form.querySelector('[data-reaudit-spin]').classList.remove('hidden');
+                            form.querySelector('[data-reaudit-label]').textContent = 'Enviando…';
+                        });
+                    })();
+                </script>
                 </div>
             <?php endif; ?>
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Queue;
 
+use App\Services\ArticleNoteService;
 use App\Services\ArticleService;
 use App\Services\NotificationService;
 use App\Services\Pipeline\ArticlePipeline;
@@ -121,6 +122,46 @@ final class ArticleJobHandlers
             } catch (Throwable $e) {
                 $onFailure($e, (int) $job->payload['site_id'], $userId);
                 throw $e;
+            }
+        });
+
+        // Reavaliação dos pareceres sobre o texto editado (pedido 2026-10-01).
+        // Fila e não na requisição: 3 passos de IA levaram ~110s no teste real,
+        // acima dos 100s em que o Cloudflare corta a resposta (erro 524). Falha
+        // aqui NUNCA vira ERROR — o artigo continua bom, só o parecer não veio;
+        // por isso não passa pelo $onFailure. O andamento fica em
+        // `pipeline.reaudit` (a tela do artigo mostra "reavaliando…" a partir dela).
+        $queue->register('article.reaudit', function (Job $job) use ($pipeline, $articles, $notifications): void {
+            $articleId = (int) $job->payload['article_id'];
+            $siteId = (int) $job->payload['site_id'];
+            $userId = isset($job->payload['user_id']) && $job->payload['user_id'] !== null ? (int) $job->payload['user_id'] : null;
+            $noteService = new ArticleNoteService();
+            $article = $articles->find($siteId, $articleId);
+            $title = $article !== null && !empty($article['title']) ? (string) $article['title'] : 'Rascunho #' . $articleId;
+            $link = '/sites/' . $siteId . '/production/' . $articleId . '#qualidade';
+
+            try {
+                $result = $pipeline->reaudit(
+                    $articleId,
+                    $siteId,
+                    $job->payload['goal_id'] !== null ? (int) $job->payload['goal_id'] : null,
+                    $job->payload['category_id'] !== null ? (int) $job->payload['category_id'] : null,
+                );
+            } catch (Throwable $e) {
+                $noteService->merge($articleId, 'pipeline', ['reaudit' => ['status' => 'failed', 'finished_at' => date('Y-m-d H:i:s'), 'error' => $e->getMessage()]]);
+                if ($userId !== null) {
+                    $notifications->notify($userId, NotificationService::TYPE_ATTENTION, 'Reavaliação não concluída',
+                        "\"{$title}\" — a IA não conseguiu reavaliar: {$e->getMessage()}", $siteId, $link);
+                }
+                throw $e;
+            }
+
+            $noteService->merge($articleId, 'pipeline', ['reaudit' => ['status' => 'done', 'finished_at' => date('Y-m-d H:i:s')]]);
+            if ($userId !== null) {
+                $notifications->notify($userId, NotificationService::TYPE_ARTICLE_READY, 'Reavaliação concluída',
+                    "\"{$title}\" — " . ($result['recommendation'] === 'ready_for_human'
+                        ? 'a IA considera o texto atual pronto pra revisão.'
+                        : 'a IA ainda aponta ajustes; veja os pareceres.'), $siteId, $link);
             }
         });
     }

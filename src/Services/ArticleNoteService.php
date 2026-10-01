@@ -27,6 +27,20 @@ final class ArticleNoteService
     }
 
     /**
+     * Grava só alguns campos de uma nota, mantendo o resto do payload como
+     * estava (`save()` sobrescreve tudo). Usado pra marcar o andamento da
+     * reavaliação (`pipeline.reaudit`, pedido 2026-10-01) sem criar valor
+     * novo no ENUM de `step` — evitou uma migration só pra isso.
+     *
+     * @param array<string, mixed> $fields
+     */
+    public function merge(int $articleId, string $step, array $fields): void
+    {
+        $current = $this->forArticle($articleId)[$step] ?? [];
+        $this->save($articleId, $step, $fields + $current);
+    }
+
+    /**
      * Artigos do site com link pendente de ação humana — Central de Links
      * (`/sites/{id}/links`, achado real 2026-09-10): ambíguo (bloqueio de bot,
      * não confirmado) ou link rot (morreu depois de publicado,

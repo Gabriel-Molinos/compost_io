@@ -132,6 +132,13 @@ final class HtmlLinks
      * `InternalLinkResolver`: sem host (link relativo) ou host igual ao do
      * site é interno; qualquer outro host é externo.
      *
+     * `www.` é ignorado dos dois lados (achado real 2026-10-01, Penazo:
+     * site cadastrado como `penazo.com`, IA linkando `www.penazo.com` →
+     * "0 internos, 5 externos" num artigo com 4 internos de verdade). Âncora
+     * de sumário (`#faq`), `mailto:`/`tel:` e afins não são link interno nem
+     * externo — antes os `#…` do índice entravam como internos e estouravam
+     * o máximo de 5.
+     *
      * @return array{internal: int, external: int}
      */
     public static function countByType(string $html, ?string $siteHost): array
@@ -150,18 +157,22 @@ final class HtmlLinks
         libxml_clear_errors();
         libxml_use_internal_errors($prev);
 
-        $siteHost = $siteHost !== null ? strtolower($siteHost) : null;
+        $siteHost = $siteHost !== null ? self::normalizeHost($siteHost) : null;
 
         foreach ($doc->getElementsByTagName('a') as $a) {
             if (!$a instanceof DOMElement) {
                 continue;
             }
             $href = trim($a->getAttribute('href'));
-            if ($href === '') {
+            if ($href === '' || str_starts_with($href, '#')) {
                 continue;
             }
+            $scheme = parse_url($href, PHP_URL_SCHEME);
+            if (is_string($scheme) && !in_array(strtolower($scheme), ['http', 'https'], true)) {
+                continue; // mailto:, tel:, javascript: — não é link de navegação
+            }
             $host = parse_url($href, PHP_URL_HOST);
-            $host = is_string($host) ? strtolower($host) : null;
+            $host = is_string($host) ? self::normalizeHost($host) : null;
 
             if ($host === null || $host === $siteHost) {
                 $counts['internal']++;
@@ -171,6 +182,14 @@ final class HtmlLinks
         }
 
         return $counts;
+    }
+
+    /** `WWW.Site.com` e `site.com` são o mesmo site pra fins de link interno. */
+    private static function normalizeHost(string $host): string
+    {
+        $host = strtolower(trim($host));
+
+        return str_starts_with($host, 'www.') ? substr($host, 4) : $host;
     }
 
     /** @return array{html:string, changed:bool} */

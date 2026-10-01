@@ -866,6 +866,66 @@ final class ProductionController extends Controller
         Http::redirect('/sites/' . $site['id'] . '/production/' . $article['id'] . '#imagens');
     }
 
+    /**
+     * Refaz os pareceres da IA (SEO, Compliance, Parecer) sobre o texto atual —
+     * botão no card "Checklist de pré-aprovação", pro redator usar depois de
+     * editar o rascunho (pedido 2026-10-01). Vai pra fila (`article.reaudit`,
+     * ArticleJobHandlers): no teste real levou ~110s, e o Cloudflare corta
+     * resposta acima de 100s. `pipeline.reaudit` marca o andamento pra tela.
+     */
+    public function reaudit(string $siteId, string $articleId): void
+    {
+        $site = $this->requireSite($siteId);
+        Csrf::verify();
+        $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
+        $back = '/sites/' . $site['id'] . '/production/' . $article['id'] . '#qualidade';
+
+        if ($article['status'] !== 'IN_REVIEW') {
+            Session::flash('error', 'Só dá pra reavaliar um artigo que está em revisão.');
+            Http::redirect($back);
+        }
+        $notes = new ArticleNoteService();
+        if (self::reauditRunning($notes->forArticle((int) $article['id'])['pipeline']['reaudit'] ?? null)) {
+            Session::flash('error', 'Já tem uma reavaliação em andamento pra este artigo.');
+            Http::redirect($back);
+        }
+
+        $notes->merge((int) $article['id'], 'pipeline', ['reaudit' => ['status' => 'running', 'started_at' => date('Y-m-d H:i:s')]]);
+
+        try {
+            $this->dispatchArticleJob(new Job('article.reaudit', [
+                'article_id'  => (int) $article['id'],
+                'site_id'     => (int) $site['id'],
+                'goal_id'     => $article['goal_id'] !== null ? (int) $article['goal_id'] : null,
+                'category_id' => $article['category_id'] !== null ? (int) $article['category_id'] : null,
+                'user_id'     => AuthService::id(),
+            ]));
+            Session::flash('success', 'Reavaliação pedida — a IA está relendo o texto atual. Leva 1 a 2 minutos; você recebe uma notificação quando terminar.');
+        } catch (Throwable $e) {
+            // Só com QUEUE_DRIVER=sync o erro aparece aqui (rodou na mesma requisição).
+            Session::flash('error', 'Não deu pra reavaliar agora: ' . $e->getMessage());
+        }
+
+        Http::redirect($back);
+    }
+
+    /**
+     * Reavaliação (`pipeline.reaudit`) em andamento? Passou de 15 min (mesma folga de
+     * ArticleService::GENERATION_STALE_MINUTES) conta como travada — o
+     * botão volta a funcionar em vez de ficar preso pra sempre.
+     *
+     * @param array<string, mixed>|null $note
+     */
+    public static function reauditRunning(?array $note): bool
+    {
+        if (($note['status'] ?? null) !== 'running') {
+            return false;
+        }
+        $started = strtotime((string) ($note['started_at'] ?? ''));
+
+        return $started !== false && (time() - $started) < ArticleService::GENERATION_STALE_MINUTES * 60;
+    }
+
     /** Substitui (regenera) uma imagem já existente — mesmo prompt, novo resultado do gerador. */
     public function regenerateImage(string $siteId, string $articleId, string $imageId): void
     {

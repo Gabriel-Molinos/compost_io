@@ -803,6 +803,84 @@ final class ArticlePipeline
     }
 
     /**
+     * Refaz só os pareceres da IA (seo → compliance → review) em cima da
+     * versão ATUAL do texto (pedido 2026-10-01: o redator editou o rascunho
+     * e os pareceres continuavam falando do texto que a IA escreveu). Mesmos
+     * passos, mesmo prompt e mesma ordem do run() — só que sem planejar,
+     * pesquisar nem escrever de novo. O checklist de pré-aprovação não entra
+     * aqui: ele já é recalculado do texto atual a cada abertura da página.
+     * Os avisos desses 3 passos na nota `pipeline` são trocados pelos novos;
+     * os demais avisos (pesquisa, links, imagens) ficam como estavam.
+     *
+     * @return array{recommendation: string}
+     * @throws PipelineException
+     */
+    public function reaudit(int $articleId, int $siteId, ?int $goalId, ?int $categoryId): array
+    {
+        $article = $this->articles->find($siteId, $articleId);
+        $version = $this->articles->latestVersion($articleId);
+        $html = (string) ($version['content'] ?? '');
+        if ($article === null || trim($html) === '') {
+            throw new PipelineException('Artigo sem texto pra reavaliar.', $articleId, 'reaudit');
+        }
+
+        $notes = $this->notes->forArticle($articleId);
+        $brief = [
+            'title'         => (string) ($article['title'] ?? ''),
+            'focus_keyword' => (string) ($article['focus_keyword'] ?? ''),
+            'angle'         => (string) ($notes['planning']['angle'] ?? ''),
+        ];
+        $wordCount = (int) ($version['word_count'] ?? 0);
+        $draft = [
+            'title'            => (string) ($article['title'] ?? ''),
+            'slug'             => (string) ($article['slug'] ?? ''),
+            'meta_description' => (string) ($article['meta_description'] ?? ''),
+            'word_count'       => $wordCount > 0 ? $wordCount : str_word_count(strip_tags($html)),
+            'content_html'     => $html,
+        ];
+
+        $warnings = [];
+
+        $this->prompts->setInternalLinkCandidates($this->existingWordPressPostsDigest($siteId));
+        try {
+            $seo = $this->step('seo', $articleId, $siteId, $goalId, $categoryId, $brief, $draft);
+            $compliance = $this->step('compliance', $articleId, $siteId, $goalId, $categoryId, $brief, $draft);
+        } finally {
+            $this->prompts->setInternalLinkCandidates(null);
+        }
+        foreach ((array) ($seo['issues'] ?? []) as $issue) {
+            if (is_array($issue) && ($issue['severity'] ?? '') === 'block') {
+                $warnings[] = 'SEO (bloqueio): ' . (string) ($issue['item'] ?? '') . ' — ' . (string) ($issue['fix'] ?? '');
+            }
+        }
+        if (($seo['cannibalization'] ?? 'none') === 'high') {
+            $warnings[] = 'SEO: risco alto de canibalização de palavra-chave.';
+        }
+        foreach ((array) ($compliance['blocking'] ?? []) as $b) {
+            if (is_array($b)) {
+                $warnings[] = 'Compliance (bloqueio): ' . (string) ($b['rule'] ?? '') . ' — ' . (string) ($b['fix'] ?? $b['evidence'] ?? '');
+            }
+        }
+
+        $review = $this->step('review', $articleId, $siteId, $goalId, $categoryId, $brief + ['notes' => $this->auditDigest($seo, $compliance)], $draft);
+        $recommendation = (string) ($review['recommendation'] ?? 'needs_fix');
+        if ($recommendation !== 'ready_for_human') {
+            $warnings[] = 'Revisão da IA: ' . $recommendation . ' — ' . (string) ($review['summary'] ?? '');
+        }
+
+        $pipelineNote = $notes['pipeline'] ?? [];
+        $kept = array_values(array_filter(
+            array_map('strval', (array) ($pipelineNote['warnings'] ?? [])),
+            static fn (string $w): bool => !preg_match('/^(SEO \(bloqueio\):|SEO: risco alto|Compliance \(bloqueio\):|Revisão da IA:)/u', $w),
+        ));
+        if ($pipelineNote !== [] || $warnings !== []) {
+            $this->notes->save($articleId, 'pipeline', ['warnings' => array_merge($kept, $warnings)] + $pipelineNote);
+        }
+
+        return ['recommendation' => $recommendation];
+    }
+
+    /**
      * @param array<string, mixed> $seo
      * @param array<string, mixed> $compliance
      */

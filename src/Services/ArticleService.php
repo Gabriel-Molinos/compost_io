@@ -58,6 +58,70 @@ final class ArticleService
         return array_merge(...array_values(self::STATUS_GROUPS));
     }
 
+    /** Status em que a IA ainda está trabalhando no rascunho (pipeline rodando ou na fila). */
+    public const GENERATING_STATUSES = ['PLANNED', 'IN_PROGRESS'];
+
+    /**
+     * Depois disso gerando, é quase certo que o worker parou — o rascunho
+     * deixa de ficar trancado (dá pra abrir e ver os passos da IA) e a lista
+     * mostra o aviso de "demorando mais que o esperado".
+     */
+    public const GENERATION_STALE_MINUTES = 15;
+
+    /** @param array<string,mixed> $article */
+    public static function isGenerating(array $article): bool
+    {
+        return in_array($article['status'] ?? null, self::GENERATING_STATUSES, true);
+    }
+
+    /** @param array<string,mixed> $article */
+    public static function isGenerationStale(array $article): bool
+    {
+        return self::isGenerating($article)
+            && strtotime((string) $article['created_at']) <= strtotime('-' . self::GENERATION_STALE_MINUTES . ' minutes');
+    }
+
+    /**
+     * Rascunho ainda sendo gerado — não abre até ficar 100% pronto (pedido do
+     * responsável, 2026-09-29: antes a tela do post recarregava sozinha a cada
+     * 5s mostrando ele pela metade). Travado há muito tempo não tranca, senão
+     * um worker parado deixaria o rascunho inacessível pra sempre.
+     *
+     * @param array<string,mixed> $article
+     */
+    public static function isLockedForGeneration(array $article): bool
+    {
+        return self::isGenerating($article) && !self::isGenerationStale($article);
+    }
+
+    /**
+     * Situação de geração de vários artigos do site, pro polling da lista
+     * (`assets/js/production-status.js`). Id que não existe/não é do site
+     * simplesmente não volta.
+     *
+     * @param list<int> $ids
+     * @return array<int, array{status: string, created_at: string}>
+     */
+    public function generationStates(int $siteId, array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = Connection::get()->prepare(
+            "SELECT id, status, created_at FROM articles
+             WHERE site_id = ? AND deleted_at IS NULL AND id IN ({$placeholders})"
+        );
+        $stmt->execute([$siteId, ...$ids]);
+
+        $states = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $states[(int) $row['id']] = ['status' => (string) $row['status'], 'created_at' => (string) $row['created_at']];
+        }
+
+        return $states;
+    }
+
     /**
      * Página da listagem de artigos (Produção). Paginado desde 2026-09-15 —
      * antes buscava tudo sem `LIMIT`, o que crescia sem parar com o

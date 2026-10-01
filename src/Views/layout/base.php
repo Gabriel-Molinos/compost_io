@@ -14,7 +14,6 @@ use App\View;
 
 /** @var string $content */
 /** @var string $title */
-/** @var int|null $metaRefresh */
 /** @var array<string,mixed>|null $site  — setado por sites/_tabs.php quando a página é de um site */
 /** @var list<array{0:string,1:string,2:string,3:bool}>|null $tabs — idem */
 
@@ -92,9 +91,6 @@ if ($authUser !== null && !$hasSiteNav) {
     <meta name="color-scheme" content="dark">
     <meta name="csrf-token" content="<?= View::e(Csrf::token()) ?>">
     <title><?= View::e($title) ?> · COMPOST</title>
-    <?php if (!empty($metaRefresh)): ?>
-        <meta http-equiv="refresh" content="<?= (int) $metaRefresh ?>">
-    <?php endif; ?>
 
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/brand/favicon-32.png">
     <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png">

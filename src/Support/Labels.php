@@ -40,6 +40,25 @@ final class Labels
     }
 
     /**
+     * O que a IA está fazendo agora num rascunho que ainda está gerando (card
+     * trancado da Produção) — `null` = nenhum passo começou ainda (na fila).
+     */
+    public static function generationStep(?string $step): string
+    {
+        return match ($step) {
+            null           => 'Na fila, aguardando a IA',
+            'planning'     => 'Planejando o artigo',
+            'research'     => 'Pesquisando fontes',
+            'writing'      => 'Escrevendo o texto',
+            'seo'          => 'Ajustando SEO',
+            'compliance'   => 'Checando conformidade',
+            'review'       => 'Revisão da IA',
+            'image'        => 'Gerando as imagens',
+            default        => 'Finalizando',
+        };
+    }
+
+    /**
      * Tom semântico do status (pra badge colorida — R-UI-07: cor nunca é a
      * única pista, a badge sempre carrega o texto do status junto).
      * `success`/`warning`/`danger`/`info` mapeiam direto pras cores da

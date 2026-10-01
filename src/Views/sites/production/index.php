@@ -10,6 +10,7 @@ use App\View;
 
 /** @var array<string,mixed> $site */
 /** @var list<array<string,mixed>> $articles */
+/** @var array<int, string> $generationSteps article_id => passo atual da IA, só dos que ainda estão gerando */
 /** @var list<array<string,mixed>> $goals */
 /** @var list<array<string,mixed>> $categories */
 /** @var array{all: int, done: int, attention: int, progress: int, discarded: int} $counts */
@@ -385,7 +386,11 @@ $reqMax = ArticleService::WRITER_REQUEST_MAX;
         <?php foreach ($articles as $i => $a): ?>
             <?php
             $tone = Labels::articleStatusTone((string) $a['status']);
-            $isGenerating = in_array($a['status'], ['PLANNED', 'IN_PROGRESS'], true);
+            $isGenerating = ArticleService::isGenerating($a);
+            // Trancado = ainda gerando: não abre até ficar 100% pronto (ver
+            // ArticleService::isLockedForGeneration e assets/js/production-status.js,
+            // que troca este card pelo pronto sem recarregar a página).
+            $isLocked = ArticleService::isLockedForGeneration($a);
             // Fundo e animação por estado (.article-card--* em input.css). Entrada
             // escalonada só nos primeiros cards; fase negativa por posição pra
             // os brilhos/respirações não baterem todos no mesmo instante.
@@ -402,7 +407,8 @@ $reqMax = ArticleService::WRITER_REQUEST_MAX;
             $details[] = '<span class="font-mono">US$ ' . number_format((float) $a['ai_cost'], 4) . '</span>';
             ?>
             <li class="article-card <?= Labels::articleCardTone($tone) ?> flex flex-col gap-2.5 rounded-lg px-4 pb-3.5 pt-5"
-                style="<?= View::e($cardStyle) ?>">
+                style="<?= View::e($cardStyle) ?>" data-article-card="<?= View::e($a['id']) ?>"
+                <?= $isLocked ? 'data-generating-article="' . View::e($a['id']) . '"' : '' ?>>
                 <span class="article-card-fx" aria-hidden="true"></span>
                 <?php // Tag da situação (cor do estado, sobre a borda de cima) — texto + cor, nunca só cor (R-UI-07). ?>
                 <span class="article-card-tag">
@@ -417,10 +423,17 @@ $reqMax = ArticleService::WRITER_REQUEST_MAX;
                 <?php endif; ?>
                 <div class="flex items-start justify-between gap-4">
                     <div class="min-w-0">
-                        <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>"
-                           class="article-card-title font-semibold">
-                            <?= View::e($a['title'] ?: 'Rascunho #' . $a['id']) ?>
-                        </a>
+                        <?php if ($isLocked): ?>
+                            <span class="article-card-title cursor-not-allowed font-semibold opacity-70"
+                                  title="Ainda sendo gerado — abre quando ficar pronto" aria-disabled="true">
+                                <?= View::e($a['title'] ?: 'Rascunho #' . $a['id']) ?>
+                            </span>
+                        <?php else: ?>
+                            <a href="/sites/<?= View::e($site['id']) ?>/production/<?= View::e($a['id']) ?>"
+                               class="article-card-title font-semibold">
+                                <?= View::e($a['title'] ?: 'Rascunho #' . $a['id']) ?>
+                            </a>
+                        <?php endif; ?>
                         <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
                             <span class="article-card-fact">
                                 <span class="article-card-icon"><?= Icon::nav('calendar') ?></span>
@@ -451,13 +464,16 @@ $reqMax = ArticleService::WRITER_REQUEST_MAX;
                     </form>
                 </div>
                 <?php if ($isGenerating): ?>
-                    <?php $isStale = strtotime((string) $a['created_at']) <= strtotime('-15 minutes'); ?>
-                    <?php if ($isStale): ?>
+                    <?php if (!$isLocked): ?>
                         <p class="text-xs text-warning">
                             Isso está demorando mais que o esperado — provavelmente o processo em
                             segundo plano (worker) não está rodando. Avise o time técnico.
                         </p>
                     <?php else: ?>
+                        <p class="text-xs text-text-secondary" aria-live="polite">
+                            <span data-generating-step><?= View::e(Labels::generationStep($generationSteps[(int) $a['id']] ?? null)) ?></span>…
+                            abre quando ficar pronto.
+                        </p>
                         <div class="loading-bar-track" role="progressbar" aria-label="A IA está gerando este rascunho">
                             <div class="loading-bar-fill"></div>
                         </div>
@@ -580,3 +596,5 @@ $reqMax = ArticleService::WRITER_REQUEST_MAX;
         }
     })();
 </script>
+
+<script src="<?= View::e(View::asset('assets/js/production-status.js')) ?>" defer></script>

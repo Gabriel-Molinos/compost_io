@@ -30,6 +30,7 @@ use App\Support\ImageUploadValidator;
 use App\Services\Pipeline\PipelineException;
 use App\Support\Csrf;
 use App\Support\Http;
+use App\Support\Labels;
 use App\Support\Session;
 use App\View;
 use Throwable;
@@ -105,10 +106,18 @@ final class ProductionController extends Controller
         $totalPages = max(1, (int) ceil($totalForGroup / ArticleService::PER_PAGE));
         $page = max(1, min($totalPages, (int) ($_GET['page'] ?? 1)));
 
+        $articles = $this->articles->allForSite((int) $site['id'], $statusGroup, $page, ArticleService::PER_PAGE, $exactStatus, $categoryId, $origin, $search, $goalId);
+        $generatingIds = array_map(
+            static fn (array $a): int => (int) $a['id'],
+            array_values(array_filter($articles, [ArticleService::class, 'isGenerating'])),
+        );
+
         View::render('sites/production/index', [
             'title'        => 'Produção · ' . $site['name'],
             'site'         => $site,
-            'articles'     => $this->articles->allForSite((int) $site['id'], $statusGroup, $page, ArticleService::PER_PAGE, $exactStatus, $categoryId, $origin, $search, $goalId),
+            'articles'     => $articles,
+            // Etapa atual de cada rascunho ainda gerando (card trancado) — article_id => step.
+            'generationSteps' => $this->executions->latestSteps($generatingIds),
             'goals'        => $goals,
             'goalId'       => $goalId,
             'categories'   => $categories,
@@ -127,6 +136,36 @@ final class ProductionController extends Controller
             // O que o redator já digitou no "Rascunho específico" quando a validação falhou — não perder um texto longo.
             'customOld'    => $this->pullCustomDraftOld(),
         ]);
+    }
+
+    /**
+     * Polling dos cards trancados da lista (`assets/js/production-status.js`):
+     * GET ?ids=1,2,3 → situação de cada um. `locked=false` = ficou pronto (ou
+     * falhou, ou travou) — o JS troca o card pela versão nova do servidor.
+     */
+    public function generationStatus(string $siteId): void
+    {
+        $site = $this->requireSite($siteId);
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+
+        $ids = array_slice(array_values(array_unique(array_filter(
+            array_map('intval', explode(',', (string) ($_GET['ids'] ?? ''))),
+            static fn (int $id): bool => $id > 0,
+        ))), 0, ArticleService::PER_PAGE);
+
+        $states = $this->articles->generationStates((int) $site['id'], $ids);
+        $steps = $this->executions->latestSteps(array_keys($states));
+
+        $articles = [];
+        foreach ($states as $id => $state) {
+            $articles[(string) $id] = [
+                'locked' => ArticleService::isLockedForGeneration($state),
+                'step'   => Labels::generationStep($steps[$id] ?? null),
+            ];
+        }
+
+        echo json_encode(['ok' => true, 'articles' => $articles], JSON_UNESCAPED_UNICODE);
     }
 
     /** @return array{category_id:string, goal_id:string, writer_request:string}|null */
@@ -250,7 +289,27 @@ final class ProductionController extends Controller
             return;
         }
 
-        Session::flash('success', 'Geração iniciada — atualize a página em alguns segundos.');
+        $this->redirectAfterDispatch($site, $articleId, 'Rascunho gerado — já está em revisão.');
+    }
+
+    /**
+     * Depois de despachar uma geração: se já terminou (driver `sync`, rodou
+     * inline), abre o rascunho; se ainda está na fila/gerando (`redis`), volta
+     * pra lista — o rascunho fica trancado até ficar pronto e o aviso de
+     * "Rascunho pronto" (ArticleJobHandlers) chega por notificação.
+     *
+     * @param array<string,mixed> $site
+     */
+    private function redirectAfterDispatch(array $site, int $articleId, string $readyMessage): void
+    {
+        $article = $this->articles->find((int) $site['id'], $articleId);
+        if ($article !== null && ArticleService::isLockedForGeneration($article)) {
+            Session::flash('success', 'Geração iniciada — o rascunho abre aqui na lista assim que ficar 100% pronto (você recebe um aviso).');
+            Http::redirect('/sites/' . $site['id'] . '/production');
+            return;
+        }
+
+        Session::flash('success', $readyMessage);
         Http::redirect('/sites/' . $site['id'] . '/production/' . $articleId);
     }
 
@@ -275,10 +334,16 @@ final class ProductionController extends Controller
         $site = $this->requireSite($siteId);
         $article = $this->articles->find((int) $site['id'], (int) $articleId) ?? $this->notFound();
 
-        $schedules = new ScheduleService();
+        // Ainda gerando: não abre pela metade (antes a página recarregava sozinha
+        // a cada 5s até terminar). Link direto/antigo cai de volta na lista, onde
+        // o card mostra a etapa atual e destrava sozinho quando fica pronto.
+        if (ArticleService::isLockedForGeneration($article)) {
+            Session::flash('success', 'Esse rascunho ainda está sendo gerado — ele abre assim que ficar 100% pronto (você recebe um aviso).');
+            Http::redirect('/sites/' . $site['id'] . '/production');
+            return;
+        }
 
-        // Enquanto o worker ainda está rodando (Fase 9.1b), a página se atualiza sozinha.
-        $generating = in_array($article['status'], ['PLANNED', 'IN_PROGRESS'], true);
+        $schedules = new ScheduleService();
 
         $internalCandidates = $this->publishedWordPressPosts((int) $site['id']);
         // A checagem de sugestão travada (freshNotes) usa o pool local, que é
@@ -298,7 +363,6 @@ final class ProductionController extends Controller
 
         View::render('sites/production/show', [
             'title'       => ($article['title'] ?: 'Rascunho #' . $article['id']) . ' · ' . $site['name'],
-            'metaRefresh' => $generating ? 5 : null,
             'site'       => $site,
             'article'    => $article,
             'version'    => $version,
@@ -420,8 +484,7 @@ final class ProductionController extends Controller
             return;
         }
 
-        Session::flash('success', 'Nova tentativa iniciada — atualize a página em alguns segundos.');
-        Http::redirect('/sites/' . $site['id'] . '/production/' . $prepared['article_id']);
+        $this->redirectAfterDispatch($site, (int) $prepared['article_id'], 'Nova tentativa gerada — já está em revisão.');
     }
 
     /**

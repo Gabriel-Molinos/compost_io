@@ -42,7 +42,8 @@ use Throwable;
  *     -> writing     (corpo -> article_versions; artigo vira IN_PROGRESS)
  *     -> seo         (auditoria on-page)
  *     -> compliance  (auditoria de qualidade/AdSense)
- *     -> review      (parecer pré-humano)  -> artigo vira IN_REVIEW
+ *     -> review      (parecer pré-humano)
+ *     -> image       (brief visual + imagens)  -> artigo vira IN_REVIEW
  *
  * Cada passo é uma execução rastreada em `ai_executions` com retry (4.3); o JSON
  * de cada passo é gravado em `article_ai_notes`. A aprovação é sempre humana
@@ -404,10 +405,6 @@ final class ArticlePipeline
             $warnings[] = 'Revisão da IA: ' . $recommendation . ' — ' . (string) ($review['summary'] ?? '');
         }
 
-        // O humano é quem aprova (requisitos §65.1) — o artigo entra na fila de revisão
-        // mesmo com pendências; elas ficam visíveis nas notas.
-        $this->articles->setStatus($articleId, 'IN_REVIEW');
-
         // --- imagens (Fase 5.3) ------------------------------------------------
         // Nunca bloqueia: falha de imagem vira aviso, o artigo segue em revisão.
         try {
@@ -415,6 +412,12 @@ final class ArticlePipeline
         } catch (Throwable $e) {
             $warnings[] = 'Geração de imagens falhou: ' . $e->getMessage();
         }
+
+        // O humano é quem aprova (requisitos §65.1) — o artigo entra na fila de revisão
+        // mesmo com pendências; elas ficam visíveis nas notas. Só DEPOIS das imagens
+        // (2026-09-29): antes virava IN_REVIEW com as imagens ainda sendo geradas, e o
+        // rascunho — que agora fica trancado enquanto gera — abriria incompleto.
+        $this->articles->setStatus($articleId, 'IN_REVIEW');
 
         // Achado real (2026-09-09): $warnings era calculado o pipeline todo
         // (link removido, canibalização, pesquisa sem fonte, palavra abaixo

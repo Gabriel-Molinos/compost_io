@@ -99,6 +99,34 @@ final class AiExecutionService
         return $stmt->fetchAll();
     }
 
+    /**
+     * Passo mais recente de cada artigo (o que a IA está fazendo agora, pra
+     * quem ainda está gerando) — uma consulta só pra lista inteira.
+     *
+     * @param list<int> $articleIds
+     * @return array<int, string> article_id => step
+     */
+    public function latestSteps(array $articleIds): array
+    {
+        if ($articleIds === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($articleIds), '?'));
+        $stmt = Connection::get()->prepare(
+            "SELECT e.article_id, e.step FROM ai_executions e
+             JOIN (SELECT article_id, MAX(id) AS id FROM ai_executions
+                   WHERE article_id IN ({$placeholders}) GROUP BY article_id) last ON last.id = e.id"
+        );
+        $stmt->execute(array_values($articleIds));
+
+        $steps = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $steps[(int) $row['article_id']] = (string) $row['step'];
+        }
+
+        return $steps;
+    }
+
     /** Custo total de IA já registrado para um artigo (USD). */
     public function totalCostForArticle(int $articleId): float
     {
